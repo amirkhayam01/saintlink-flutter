@@ -50,10 +50,10 @@ class TripsScreen extends ConsumerWidget {
               child: ErrorNotice(error.toString(), onRetry: () => ref.invalidate(tripsProvider)),
             ),
           ),
-          data: (bookings) => TabBarView(
+          data: (state) => TabBarView(
             children: [
-              _TripList(bookings.where((b) => b.isUpcoming).toList(), empty: 'No upcoming trips. Book one and it will appear here.', onRefresh: () => ref.refresh(tripsProvider.future)),
-              _TripList(bookings.where((b) => !b.isUpcoming).toList(), empty: 'No past trips yet.', onRefresh: () => ref.refresh(tripsProvider.future)),
+              _TripList(state.upcoming, state: state, empty: 'No upcoming trips. Book one and it will appear here.'),
+              _TripList(state.past, state: state, empty: 'No past trips yet.'),
             ],
           ),
         ),
@@ -69,25 +69,67 @@ class TripsScreen extends ConsumerWidget {
   }
 }
 
-class _TripList extends StatelessWidget {
-  const _TripList(this.bookings, {required this.empty, required this.onRefresh});
+class _TripList extends ConsumerWidget {
+  const _TripList(this.bookings, {required this.state, required this.empty});
 
   final List<Booking> bookings;
+  final TripsState state;
   final String empty;
-  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      onRefresh: () => ref.refresh(tripsProvider.future),
+      child: bookings.isEmpty && !state.hasMore
+          ? ListView(children: [Padding(padding: const EdgeInsets.all(40), child: Text(empty, textAlign: TextAlign.center, style: TextStyle(color: context.colors.inkMuted)))])
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
+              // One extra row at the end for the pager while there are pages left.
+              itemCount: bookings.length + (state.hasMore ? 1 : 0),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (context, index) => index < bookings.length
+                  ? _TripCard(bookings[index])
+                  : _LoadMore(
+                      isLoading: state.isLoadingMore,
+                      error: state.loadMoreError,
+                      onLoad: () => ref.read(tripsProvider.notifier).loadMore(),
+                    ),
+            ),
+    );
+  }
+}
+
+/// The last row of a list with more pages: fetches the next page as soon as
+/// it scrolls into view, and falls back to a button if that fetch failed.
+class _LoadMore extends StatefulWidget {
+  const _LoadMore({required this.isLoading, required this.error, required this.onLoad});
+
+  final bool isLoading;
+  final String? error;
+  final VoidCallback onLoad;
+
+  @override
+  State<_LoadMore> createState() => _LoadMoreState();
+}
+
+class _LoadMoreState extends State<_LoadMore> {
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isLoading && widget.error == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => widget.onLoad());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: bookings.isEmpty
-          ? ListView(children: [Padding(padding: EdgeInsets.all(40), child: Text(empty, textAlign: TextAlign.center, style: TextStyle(color: context.colors.inkMuted)))])
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
-              itemCount: bookings.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _TripCard(bookings[index]),
-            ),
+    if (widget.error != null) {
+      return ErrorNotice(widget.error!, onRetry: widget.onLoad);
+    }
+
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5))),
     );
   }
 }

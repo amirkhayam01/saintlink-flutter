@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:saints_link/src/core/api_exception.dart';
 import 'package:saints_link/src/domain/booking.dart';
 import 'package:saints_link/src/domain/customer.dart';
+import 'package:saints_link/src/domain/page_meta.dart';
 import 'package:saints_link/src/domain/payment_sheet_details.dart';
 import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/domain/quote.dart';
@@ -70,6 +71,12 @@ class FakeBookingRepository implements BookingRepository {
   final quoteRequests = <Map<String, dynamic>>[];
   final bookingRequests = <Map<String, dynamic>>[];
 
+  /// Pages of bookings for `myBookings`, index 0 being page 1. When unset,
+  /// a single page holding [nextBooking] if there is one.
+  List<List<Booking>>? pages;
+  ApiException? pageError;
+  final pagesRequested = <int>[];
+
   @override
   Future<List<VehicleCategory>> vehicleCategories() async => vehicles;
 
@@ -105,7 +112,16 @@ class FakeBookingRepository implements BookingRepository {
   }
 
   @override
-  Future<List<Booking>> myBookings() async => [?nextBooking];
+  Future<Paginated<Booking>> myBookings({int page = 1}) async {
+    pagesRequested.add(page);
+    if (pageError != null && page > 1) throw pageError!;
+    final all = pages ?? [[?nextBooking]];
+
+    return Paginated(
+      items: all[page - 1],
+      meta: PageMeta(currentPage: page, lastPage: all.length, total: all.fold(0, (n, p) => n + p.length)),
+    );
+  }
 
   @override
   Future<Booking> booking(String reference) async => nextBooking!;

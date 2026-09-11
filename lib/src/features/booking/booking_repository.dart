@@ -1,5 +1,6 @@
 import '../../core/api_client.dart';
 import '../../domain/booking.dart';
+import '../../domain/page_meta.dart';
 import '../../domain/payment_sheet_details.dart';
 import '../../domain/quote.dart';
 import '../../domain/vehicle_category.dart';
@@ -48,12 +49,16 @@ class BookingRepository {
     return Booking.fromJson(response['booking'] as Map<String, dynamic>);
   }
 
-  Future<List<Booking>> myBookings() async {
-    final response = await _api.get('/bookings');
+  /// Newest first, twenty to a page — the server's page size, not ours.
+  Future<Paginated<Booking>> myBookings({int page = 1}) async {
+    final response = await _api.get('/bookings', query: {'page': page});
 
-    return (response['data'] as List<dynamic>)
-        .map((item) => Booking.fromJson(item as Map<String, dynamic>))
-        .toList();
+    return Paginated(
+      items: (response['data'] as List<dynamic>)
+          .map((item) => Booking.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      meta: PageMeta.fromJson(response['meta'] as Map<String, dynamic>),
+    );
   }
 
   Future<Booking> booking(String reference) async {
