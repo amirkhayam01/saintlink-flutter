@@ -70,8 +70,8 @@ abstract class JourneyDraft with _$JourneyDraft {
       if (dropoff.placeId != null) 'dropoff_place_id': dropoff.placeId,
       if (dropoff.latitude != null) 'dropoff_lat': dropoff.latitude,
       if (dropoff.longitude != null) 'dropoff_lng': dropoff.longitude,
-      'via_addresses': via.map((stop) => stop.address.trim()).toList(),
-      'via_waypoints': via
+      'via_addresses': _filledVia.map((stop) => stop.address.trim()).toList(),
+      'via_waypoints': _filledVia
           .map((stop) => <String, dynamic>{
                 'place_id': stop.placeId,
                 'lat': stop.latitude,
@@ -91,6 +91,9 @@ abstract class JourneyDraft with _$JourneyDraft {
       if (_isFilled(returnTerminal)) 'return_terminal': returnTerminal!.trim(),
     };
   }
+
+  /// Stops the customer added but never filled in are not part of the journey.
+  Iterable<PlaceSelection> get _filledVia => via.where((stop) => !stop.isEmpty);
 
   Map<String, dynamic> toQuotePayload() => _journeyFields();
 
@@ -118,6 +121,21 @@ abstract class JourneyDraft with _$JourneyDraft {
       'terms_accepted': true,
     };
   }
+
+  /// The server's limit (`StoreQuoteRequest`: `via_addresses` max 5).
+  static const maxViaStops = 5;
+
+  bool get canAddViaStop => via.length < maxViaStops;
+
+  /// Adds an empty stop for the customer to fill in. Empty stops are dropped
+  /// from the payload, so an unfilled one never reaches the server.
+  JourneyDraft addViaStop() => copyWith(via: [...via, PlaceSelection.empty]);
+
+  JourneyDraft setViaStop(int index, PlaceSelection place) =>
+      copyWith(via: [for (var i = 0; i < via.length; i++) i == index ? place : via[i]]);
+
+  JourneyDraft removeViaStop(int index) =>
+      copyWith(via: [for (var i = 0; i < via.length; i++) if (i != index) via[i]]);
 
   /// A return journey that is switched off keeps no stale dates behind it.
   JourneyDraft withoutReturn() => copyWith(

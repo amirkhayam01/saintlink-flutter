@@ -85,6 +85,8 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                     Text(vehicle?.name ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                     const SizedBox(height: 8),
                     _RouteLine(icon: Icons.my_location, text: journey.pickup.address),
+                    for (final stop in journey.via.where((stop) => !stop.isEmpty))
+                      _RouteLine(icon: Icons.add_location_alt_outlined, text: stop.address),
                     _RouteLine(icon: Icons.flag_outlined, text: journey.dropoff.address),
                     const SizedBox(height: 8),
                     if (journey.pickupDate != null && journey.pickupTime != null)

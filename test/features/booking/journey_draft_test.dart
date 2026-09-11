@@ -10,6 +10,13 @@ import 'package:saints_link/src/features/booking/journey_draft.dart';
  * here that passes silently would surface as "Journey details changed" for
  * every customer at the last step of checkout.
  */
+JourneyDraft quotableDraft() => JourneyDraft(
+      pickup: const PlaceSelection(address: 'Southampton'),
+      dropoff: const PlaceSelection(address: 'Heathrow'),
+      pickupDate: DateTime(2026, 9, 12),
+      pickupTime: const TimeOfDay(hour: 9, minute: 5),
+    );
+
 void main() {
   final draft = JourneyDraft(
     pickup: const PlaceSelection(address: '  Southampton Central  Station ', placeId: 'p1', latitude: 50.9, longitude: -1.4),
@@ -95,5 +102,38 @@ void main() {
     expect(quote.isAvailable('executive'), isFalse);
     expect(quote.distanceMiles, isNull);
     expect(quote.estimatedDurationMinutes, 95);
+  });
+
+  group('via stops', () {
+    test('are capped at the server limit', () {
+      var draft = quotableDraft();
+      for (var i = 0; i < JourneyDraft.maxViaStops; i++) {
+        expect(draft.canAddViaStop, isTrue);
+        draft = draft.addViaStop();
+      }
+
+      expect(draft.via, hasLength(JourneyDraft.maxViaStops));
+      expect(draft.canAddViaStop, isFalse);
+    });
+
+    test('can be set and removed by index', () {
+      final draft = quotableDraft().addViaStop().addViaStop().setViaStop(1, const PlaceSelection(address: 'Winchester'));
+
+      expect(draft.via[1].address, 'Winchester');
+      expect(draft.removeViaStop(0).via.single.address, 'Winchester');
+    });
+
+    test('unfilled stops are left out of the payload, with waypoints kept aligned', () {
+      final payload = quotableDraft()
+          .addViaStop()
+          .addViaStop()
+          .setViaStop(1, const PlaceSelection(address: 'Winchester', placeId: 'w', latitude: 51.06, longitude: -1.31))
+          .toQuotePayload();
+
+      expect(payload['via_addresses'], ['Winchester']);
+      expect(payload['via_waypoints'], [
+        {'place_id': 'w', 'lat': 51.06, 'lng': -1.31},
+      ]);
+    });
   });
 }

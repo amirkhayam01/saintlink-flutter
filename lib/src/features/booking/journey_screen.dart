@@ -50,6 +50,26 @@ class JourneyScreen extends ConsumerWidget {
             value: journey.pickup,
             onChanged: (place) => controller.updateJourney((j) => j.copyWith(pickup: place)),
           ),
+          for (var i = 0; i < journey.via.length; i++) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: AddressField(
+                    label: 'Stop ${i + 1}',
+                    icon: Icons.add_location_alt_outlined,
+                    value: journey.via[i],
+                    onChanged: (place) => controller.updateJourney((j) => j.setViaStop(i, place)),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Remove stop',
+                  icon: const Icon(Icons.close),
+                  onPressed: () => controller.updateJourney((j) => j.removeViaStop(i)),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           AddressField(
             label: 'Destination',
@@ -57,6 +77,15 @@ class JourneyScreen extends ConsumerWidget {
             value: journey.dropoff,
             onChanged: (place) => controller.updateJourney((j) => j.copyWith(dropoff: place)),
           ),
+          if (journey.canAddViaStop)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => controller.updateJourney((j) => j.addViaStop()),
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(journey.via.isEmpty ? 'Add a stop on the way' : 'Add another stop'),
+              ),
+            ),
           const SizedBox(height: 24),
           const SectionTitle('When?'),
           const SizedBox(height: 12),

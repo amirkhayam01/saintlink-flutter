@@ -74,5 +74,3 @@ once the Google Pay business profile is approved.
 - Push notifications (driver assigned / on the way). The customer guard and
   device-named tokens are in place; an FCM token column and a notification
   service are the remaining backend work.
-- Via stops in the journey form. The API and `JourneyDraft` support them; the
-  screen does not expose them yet.
