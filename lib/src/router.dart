@@ -8,6 +8,7 @@ import 'features/booking/confirmation_screen.dart';
 import 'features/booking/details_screen.dart';
 import 'features/booking/journey_screen.dart';
 import 'features/booking/vehicle_screen.dart';
+import 'features/profile/profile_screen.dart';
 import 'features/trips/trip_detail_screen.dart';
 import 'features/trips/trips_screen.dart';
 
@@ -28,14 +29,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: listenable,
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
-      final wantsTrips = state.matchedLocation.startsWith('/trips');
+      final needsSignIn = state.matchedLocation.startsWith('/trips') || state.matchedLocation.startsWith('/profile');
 
       // Until the stored session has been checked, nobody is sent anywhere:
       // bouncing a signed-in customer to the sign-in screen for half a second
       // on every launch is exactly the flicker this avoids.
       if (auth.isRestoring) return null;
 
-      if (wantsTrips && !auth.isSignedIn) {
+      if (needsSignIn && !auth.isSignedIn) {
         return Uri(path: '/sign-in', queryParameters: {'redirect': state.matchedLocation}).toString();
       }
 
@@ -59,6 +60,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/sign-in',
         builder: (_, state) => SignInScreen(redirectTo: state.uri.queryParameters['redirect']),
       ),
+      GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
       GoRoute(
         path: '/trips',
         builder: (_, _) => const TripsScreen(),

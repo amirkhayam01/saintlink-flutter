@@ -49,7 +49,8 @@ lib/src/
     places/    address search proxied via the server (no Google key in the app)
     payment/   Stripe PaymentSheet wrapper
     trips/     my bookings, detail, pay, request cancellation
-  router.dart  go_router; /trips requires sign-in, booking does not
+  profile/   your details (name, email, marketing consent); phone is identity, not editable
+  router.dart  go_router; /trips and /profile require sign-in, booking does not
 ```
 
 ## The one invariant
@@ -75,4 +76,3 @@ once the Google Pay business profile is approved.
   service are the remaining backend work.
 - Via stops in the journey form. The API and `JourneyDraft` support them; the
   screen does not expose them yet.
-- Profile editing screen (the `PATCH /me` endpoint exists).

@@ -121,7 +121,9 @@ class FakeBookingRepository implements BookingRepository {
 class FakeAuthRepository implements AuthRepository {
   bool hasSession = false;
   ApiException? meError;
+  ApiException? updateError;
   int signOutCalls = 0;
+  final profileUpdates = <Map<String, Object?>>[];
 
   @override
   Future<bool> hasStoredSession() async => hasSession;
@@ -147,8 +149,18 @@ class FakeAuthRepository implements AuthRepository {
       throw UnimplementedError();
 
   @override
-  Future<Customer> updateProfile({String? firstName, String? lastName, String? email, bool? marketingConsent}) async =>
-      throw UnimplementedError();
+  Future<Customer> updateProfile({String? firstName, String? lastName, String? email, bool? marketingConsent}) async {
+    profileUpdates.add({'first_name': firstName, 'last_name': lastName, 'email': email, 'marketing_consent': marketingConsent});
+    if (updateError != null) throw updateError!;
+
+    return customer.copyWith(
+      firstName: firstName ?? customer.firstName,
+      lastName: lastName,
+      name: '${firstName ?? customer.firstName} ${lastName ?? ''}'.trim(),
+      email: email,
+      marketingConsent: marketingConsent ?? customer.marketingConsent,
+    );
+  }
 }
 
 class FakePaymentService implements PaymentService {

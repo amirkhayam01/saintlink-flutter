@@ -25,13 +25,17 @@ class TripsScreen extends ConsumerWidget {
           actions: [
             PopupMenuButton<String>(
               onSelected: (value) async {
-                if (value == 'signout') {
-                  await ref.read(authControllerProvider.notifier).signOut();
-                  if (context.mounted) context.go('/');
+                switch (value) {
+                  case 'profile':
+                    context.push('/profile');
+                  case 'signout':
+                    await ref.read(authControllerProvider.notifier).signOut();
+                    if (context.mounted) context.go('/');
                 }
               },
               itemBuilder: (_) => [
                 PopupMenuItem(enabled: false, child: Text(auth.customer?.name ?? '', style: const TextStyle(fontWeight: FontWeight.w600))),
+                const PopupMenuItem(value: 'profile', child: Text('Your details')),
                 const PopupMenuItem(value: 'signout', child: Text('Sign out')),
               ],
             ),
