@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/route_timeline.dart';
 import '../auth/auth_controller.dart';
 import '../../domain/booking.dart';
 import 'trips_controller.dart';
@@ -59,10 +60,8 @@ class TripsScreen extends ConsumerWidget {
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => context.go('/'),
-          backgroundColor: AppTheme.brand,
-          foregroundColor: AppTheme.midnight,
           icon: const Icon(Icons.add),
-          label: const Text('Book'),
+          label: const Text('Book a transfer'),
         ),
       ),
     );
@@ -141,42 +140,65 @@ class _TripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push('/trips/${booking.reference}'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(child: Text(booking.pickupAt == null ? booking.reference : Formatting.dateAndTime(booking.pickupAt!), style: const TextStyle(fontWeight: FontWeight.w700))),
-                  StatusChip(label: booking.statusLabel, status: booking.status),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(booking.pickupAddress ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-              Row(
-                children: [
-                  Icon(Icons.arrow_downward, size: 14, color: context.colors.inkMuted),
-                  const SizedBox(width: 4),
-                  Expanded(child: Text(booking.dropoffAddress ?? '', maxLines: 1, overflow: TextOverflow.ellipsis)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(child: Text('${booking.vehicle ?? ''}${booking.isReturn ? ' · return' : ''}', style: TextStyle(color: context.colors.inkMuted, fontSize: 13))),
-                  Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w700)),
-                  if (booking.canPay) ...[
-                    const SizedBox(width: 8),
-                    const Text('Unpaid', style: TextStyle(color: AppTheme.brandDark, fontSize: 12, fontWeight: FontWeight.w600)),
-                  ],
-                ],
-              ),
-            ],
+    final colors = context.colors;
+    final when = booking.pickupAt;
+
+    return Container(
+      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.push('/trips/${booking.reference}'),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date block, calendar-style, so a list of trips scans by day.
+                Container(
+                  width: 56,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(color: booking.isUpcoming ? AppTheme.brand : colors.surface, borderRadius: BorderRadius.circular(12)),
+                  child: Column(
+                    children: [
+                      Text(when == null ? '—' : Formatting.weekday(when).toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: booking.isUpcoming ? AppTheme.midnight : colors.inkMuted)),
+                      Text(when == null ? '' : '${when.day}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, height: 1.1, color: booking.isUpcoming ? AppTheme.midnight : colors.ink)),
+                      Text(when == null ? '' : Formatting.monthShort(when), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: booking.isUpcoming ? AppTheme.midnight : colors.inkMuted)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Text(when == null ? booking.reference : Formatting.time(when), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
+                          StatusChip(label: booking.statusLabel, status: booking.status),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      RouteTimeline(
+                        dense: true,
+                        points: [
+                          RoutePoint(address: booking.pickupAddress ?? ''),
+                          RoutePoint(address: booking.dropoffAddress ?? ''),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(child: Text('${booking.vehicle ?? ''}${booking.isReturn ? ' · return' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.inkMuted, fontSize: 13))),
+                          Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

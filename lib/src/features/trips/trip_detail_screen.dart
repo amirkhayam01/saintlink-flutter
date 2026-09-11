@@ -6,6 +6,7 @@ import '../../core/formatting.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/ticket_card.dart';
 import '../../domain/booking.dart';
 import '../payment/payment_controller.dart';
 import '../payment/payment_service.dart';
@@ -66,69 +67,64 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     final busy = _busy || paying;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.reference)),
+      appBar: AppBar(title: const Text('Your trip')),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Padding(padding: const EdgeInsets.all(24), child: ErrorNotice(error.toString(), onRetry: () => ref.invalidate(tripDetailProvider(widget.reference))))),
         data: (booking) => RefreshIndicator(
           onRefresh: () => ref.refresh(tripDetailProvider(widget.reference).future),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
             children: [
-              Row(
-                children: [
-                  StatusChip(label: booking.statusLabel, status: booking.status),
-                  const SizedBox(width: 8),
-                  StatusChip(label: booking.paymentStatusLabel, status: booking.isPaid ? 'confirmed' : 'pending'),
-                ],
-              ),
+              TicketCard(booking: booking),
               if (booking.cancellationRequest != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: AppTheme.brand.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(12)),
-                  child: Text(
-                    'Cancellation requested — awaiting review. Recommended refund: ${booking.cancellationRequest!.recommendedRefundPercentage.toStringAsFixed(0)}%.',
-                    style: const TextStyle(fontSize: 13),
+                  decoration: BoxDecoration(color: AppTheme.brand.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.hourglass_top, size: 18, color: AppTheme.brandDark),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Cancellation requested — awaiting review. Recommended refund: ${booking.cancellationRequest!.recommendedRefundPercentage.toStringAsFixed(0)}%.',
+                          style: const TextStyle(fontSize: 13, height: 1.35),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-              const SizedBox(height: 16),
-              for (final leg in booking.legs) ...[
+              for (final leg in booking.legs.where((l) => l.pickupWasAdjusted || l.flight != null || l.includedWaitingMinutes > 0)) ...[
+                const SizedBox(height: 16),
                 _LegCard(leg: leg, showDirection: booking.isReturn),
-                const SizedBox(height: 12),
               ],
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Fare', style: TextStyle(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 6),
-                      for (final item in booking.fareItems)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: Row(children: [Expanded(child: Text(item.label, style: TextStyle(color: context.colors.inkMuted))), Text(Formatting.money(item.amount, booking.currency))]),
-                        ),
-                      const Divider(height: 18),
-                      Row(children: [const Expanded(child: Text('Total', style: TextStyle(fontWeight: FontWeight.w700))), Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18))]),
-                    ],
-                  ),
+              const SizedBox(height: 16),
+              _Panel(
+                title: 'Fare',
+                child: Column(
+                  children: [
+                    for (final item in booking.fareItems)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(children: [Expanded(child: Text(item.label, style: TextStyle(color: context.colors.inkMuted))), Text(Formatting.money(item.amount, booking.currency))]),
+                      ),
+                    if (booking.fareItems.isNotEmpty) Divider(height: 20, color: context.colors.inkFaint),
+                    Row(children: [const Expanded(child: Text('Total', style: TextStyle(fontWeight: FontWeight.w700))), Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18))]),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      DetailRow('Passenger', booking.customerName ?? ''),
-                      DetailRow('Phone', booking.customerPhone ?? ''),
-                      if (booking.customerEmail != null) DetailRow('Email', booking.customerEmail!),
-                      if (booking.customerNotes != null) DetailRow('Notes', booking.customerNotes!),
-                    ],
-                  ),
+              _Panel(
+                title: 'Lead passenger',
+                child: Column(
+                  children: [
+                    DetailRow('Name', booking.customerName ?? ''),
+                    DetailRow('Phone', booking.customerPhone ?? ''),
+                    if (booking.customerEmail != null) DetailRow('Email', booking.customerEmail!),
+                    if (booking.customerNotes != null) DetailRow('Notes', booking.customerNotes!),
+                  ],
                 ),
               ),
             ],
@@ -167,54 +163,33 @@ class _LegCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showDirection) Text(leg.isReturnLeg ? 'Return journey' : 'Outward journey', style: const TextStyle(fontWeight: FontWeight.w700)),
-            if (leg.pickupAt != null) ...[
-              const SizedBox(height: 4),
-              Text(Formatting.fullDate(leg.pickupAt!), style: TextStyle(color: context.colors.inkMuted, fontSize: 13)),
-              Text('Pickup at ${Formatting.time(leg.pickupAt!)}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-              if (leg.pickupWasAdjusted)
-                Text('Adjusted from ${Formatting.time(leg.requestedPickupAt!)} to match your flight', style: const TextStyle(color: AppTheme.brandDark, fontSize: 12)),
-            ],
-            const SizedBox(height: 10),
-            _Stop(icon: Icons.my_location, text: leg.pickupAddress),
-            for (final via in leg.viaStops) _Stop(icon: Icons.more_vert, text: via.address),
-            _Stop(icon: Icons.flag_outlined, text: leg.dropoffAddress),
+    return _Panel(
+      title: showDirection ? (leg.isReturnLeg ? 'Return journey' : 'Outward journey') : 'Your pickup',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (leg.pickupAt != null) ...[
+            Text('${Formatting.fullDate(leg.pickupAt!)} · ${Formatting.time(leg.pickupAt!)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            if (leg.pickupWasAdjusted)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text('Moved from ${Formatting.time(leg.requestedPickupAt!)} to match your flight', style: const TextStyle(color: AppTheme.brandDark, fontSize: 12)),
+              ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 4,
-              children: [
-                if (leg.vehicle != null) _Fact(Icons.directions_car_outlined, leg.vehicle!),
-                _Fact(Icons.people_outline, '${leg.passengerCount}'),
-                if (leg.flight != null) _Fact(Icons.flight, '${leg.flight!.number}${leg.flight!.terminal != null ? ' · ${leg.flight!.terminal}' : ''}'),
-                if (leg.meetAndGreet) const _Fact(Icons.waving_hand_outlined, 'Meet & greet'),
-                if (leg.includedWaitingMinutes > 0) _Fact(Icons.hourglass_bottom, '${leg.includedWaitingMinutes} min waiting included'),
-              ],
-            ),
           ],
-        ),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              if (leg.flight != null) _Fact(Icons.flight, '${leg.flight!.number}${leg.flight!.terminal != null ? ' · ${leg.flight!.terminal}' : ''}${leg.flight!.status != null ? ' · ${leg.flight!.status}' : ''}'),
+              if (leg.meetAndGreet) const _Fact(Icons.waving_hand_outlined, 'Meet & greet'),
+              if (leg.includedWaitingMinutes > 0) _Fact(Icons.hourglass_bottom, '${leg.includedWaitingMinutes} min waiting included'),
+            ],
+          ),
+        ],
       ),
     );
   }
-}
-
-class _Stop extends StatelessWidget {
-  const _Stop({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, size: 18, color: context.colors.inkMuted), SizedBox(width: 8), Expanded(child: Text(text))]),
-      );
 }
 
 class _Fact extends StatelessWidget {
@@ -263,6 +238,31 @@ class _CancelDialogState extends State<_CancelDialog> {
           child: const Text('Request'),
         ),
       ],
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          child,
+        ],
+      ),
     );
   }
 }

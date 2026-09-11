@@ -11,7 +11,11 @@ import 'package:saints_link/src/features/auth/sign_in_screen.dart';
 import 'package:saints_link/src/features/booking/booking_flow_controller.dart';
 import 'package:saints_link/src/features/booking/details_screen.dart';
 import 'package:saints_link/src/features/booking/journey_screen.dart';
+import 'package:saints_link/src/features/booking/confirmation_screen.dart';
 import 'package:saints_link/src/features/booking/vehicle_screen.dart';
+import 'package:saints_link/src/features/trips/trip_detail_screen.dart';
+import 'package:saints_link/src/features/trips/trips_screen.dart';
+import 'package:saints_link/src/domain/booking.dart';
 
 import '../support/fakes.dart';
 
@@ -45,7 +49,33 @@ void main() {
   final bookings = FakeBookingRepository()
     ..vehicles = fixtureVehicles()
     ..nextQuote = quoteExpiringIn(const Duration(minutes: 28));
-  final auth = FakeAuthRepository();
+  final auth = FakeAuthRepository()..hasSession = true;
+
+  Booking sample(String ref, {int days = 4, bool paid = true}) => bookingWith(reference: ref, canPay: !paid).copyWith(
+        status: paid ? 'confirmed' : 'awaiting_payment',
+        statusLabel: paid ? 'Confirmed' : 'Awaiting payment',
+        paymentStatus: paid ? 'paid' : 'unpaid',
+        paymentStatusLabel: paid ? 'Paid' : 'Unpaid',
+        journeyType: 'return',
+        totalAmount: 310,
+        pickupAt: DateTime.now().add(Duration(days: days, hours: 3)),
+        pickupAddress: 'Southampton Central Station',
+        dropoffAddress: 'Heathrow Airport Terminal 5',
+        vehicle: 'Executive Saloon',
+        customerName: 'Ada Lovelace',
+        customerPhone: '07700 900000',
+        customerEmail: 'ada@example.com',
+        fareItems: const [FareItem(label: 'Outward journey', amount: 155), FareItem(label: 'Return journey', amount: 155)],
+        legs: [
+          BookingLeg(id: 1, direction: 'outbound', status: 'assigned', passengerCount: 2, largeLuggageCount: 1, includedWaitingMinutes: 45, meetAndGreet: true,
+              pickupAt: DateTime.now().add(Duration(days: days, hours: 3)), requestedPickupAt: DateTime.now().add(Duration(days: days, hours: 2, minutes: 40)),
+              vehicle: 'Executive Saloon', flight: const BookingFlight(number: 'BA123', terminal: 'T5', status: 'On time'),
+              stops: const [BookingStop(type: 'pickup', address: 'Southampton Central Station'), BookingStop(type: 'dropoff', address: 'Heathrow Airport Terminal 5')]),
+          BookingLeg(id: 2, direction: 'return', status: 'unassigned', passengerCount: 2, largeLuggageCount: 1, includedWaitingMinutes: 0, meetAndGreet: false,
+              pickupAt: DateTime.now().add(Duration(days: days + 4, hours: 8)),
+              stops: const [BookingStop(type: 'pickup', address: 'Heathrow Airport Terminal 5'), BookingStop(type: 'dropoff', address: 'Southampton Central Station')]),
+        ],
+      );
 
   ProviderContainer container() => ProviderContainer(overrides: [
         bookingRepositoryProvider.overrideWithValue(bookings),
@@ -98,4 +128,15 @@ void main() {
   testWidgets('vehicle', (t) => shot(t, 'vehicle', const VehicleScreen(), prime: primeQuote));
   testWidgets('details', (t) => shot(t, 'details', const DetailsScreen(), prime: primeQuote));
   testWidgets('sign in', (t) => shot(t, 'sign_in', const SignInScreen()));
+  testWidgets('confirmation', (t) => shot(t, 'confirmation', const ConfirmationScreen(), prime: (c) async {
+        await primeQuote(c);
+        bookings.nextBooking = sample('SL-8K2M', paid: false);
+        await c.read(bookingFlowProvider.notifier).confirmBooking(customerName: 'Ada Lovelace', customerPhone: '07700900000', customerEmail: 'ada@example.com');
+      }));
+  testWidgets('trips', (t) => shot(t, 'trips', const TripsScreen(), prime: (c) async {
+        bookings.pages = [[sample('SL-8K2M'), sample('SL-7QPA', days: 12, paid: false), sample('SL-2BXA', days: -20)]];
+      }));
+  testWidgets('trip detail', (t) => shot(t, 'trip_detail', const TripDetailScreen(reference: 'SL-8K2M'), prime: (c) async {
+        bookings.nextBooking = sample('SL-8K2M');
+      }));
 }

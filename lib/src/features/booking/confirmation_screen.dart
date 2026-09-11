@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/ticket_card.dart';
 import '../auth/auth_controller.dart';
 import '../payment/payment_controller.dart';
 import '../payment/payment_service.dart';
@@ -48,57 +49,28 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
 
     final payment = ref.watch(paymentControllerProvider(booking.reference));
 
-    final leg = booking.legs.isEmpty ? null : booking.legs.first;
-
     return PopScope(
       canPop: false,
       child: Scaffold(
-        appBar: AppBar(automaticallyImplyLeading: false, title: const Text('Booking received')),
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: Text(payment.isPaid ? 'Paid and booked' : 'Booking received'),
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(18),
+            child: Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 14), child: StepIndicator(step: 3)),
+          ),
+        ),
         body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: AppTheme.brand, borderRadius: BorderRadius.circular(16)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(payment.isPaid ? Icons.verified : Icons.check_circle_outline, size: 36, color: AppTheme.midnight),
-                  const SizedBox(height: 10),
-                  Text(payment.isPaid ? 'Paid and booked' : 'Thanks — we have your booking', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.midnight)),
-                  const SizedBox(height: 4),
-                  Text('Reference ${booking.reference}', style: const TextStyle(color: AppTheme.midnight, fontWeight: FontWeight.w600)),
-                  if (booking.customerEmail != null) ...[
-                    const SizedBox(height: 4),
-                    Text('Confirmation sent to ${booking.customerEmail}', style: const TextStyle(color: AppTheme.midnight, fontSize: 13)),
-                  ],
-                ],
-              ),
+            TicketCard(
+              booking: booking,
+              headline: payment.isPaid ? 'Paid and booked' : 'Thanks — we have your booking',
+              paidOverride: payment.isPaid,
             ),
             const SizedBox(height: 20),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    if (leg != null) DetailRow('Pickup', '${leg.pickupAddress}\n${leg.pickupAt == null ? '' : Formatting.dateAndTime(leg.pickupAt!)}'),
-                    if (leg != null) DetailRow('Destination', leg.dropoffAddress),
-                    if (booking.isReturn && booking.legs.length > 1)
-                      DetailRow('Return', booking.legs[1].pickupAt == null ? '' : Formatting.dateAndTime(booking.legs[1].pickupAt!)),
-                    DetailRow('Vehicle', booking.vehicle ?? ''),
-                    DetailRow('Total', Formatting.money(booking.totalAmount, booking.currency), emphasise: true),
-                    DetailRow('Payment', payment.isPaid ? 'Paid' : booking.paymentStatusLabel),
-                  ],
-                ),
-              ),
-            ),
+            _NextSteps(booking: booking, paid: payment.isPaid, signedIn: signedIn),
             if (payment.error != null) ...[const SizedBox(height: 12), ErrorNotice(payment.error!)],
-            const SizedBox(height: 16),
-            if (!signedIn)
-              Text(
-                'Sign in with your mobile number to see this booking in the app at any time. Your confirmation email has everything you need either way.',
-                style: TextStyle(color: context.colors.inkMuted, fontSize: 13),
-              ),
           ],
         ),
         bottomNavigationBar: BottomAction(
@@ -124,6 +96,51 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// What happens now, in the order it happens.
+class _NextSteps extends StatelessWidget {
+  const _NextSteps({required this.booking, required this.paid, required this.signedIn});
+
+  final Booking booking;
+  final bool paid;
+  final bool signedIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final steps = <(IconData, String)>[
+      if (booking.customerEmail != null) (Icons.mail_outline, 'Confirmation sent to ${booking.customerEmail}'),
+      if (!paid && booking.canPay) (Icons.credit_card, 'Pay now to secure the booking, or later from My trips'),
+      if (!paid && !booking.canPay) (Icons.support_agent, 'Our team will confirm your booking shortly'),
+      (Icons.directions_car_outlined, 'Your driver\'s details arrive the day before travel'),
+      if (!signedIn) (Icons.phone_iphone, 'Sign in with your mobile number to see this trip in the app any time'),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('What happens next', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 10),
+          for (final (icon, text) in steps)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, size: 18, color: AppTheme.brandDark),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(text, style: TextStyle(color: colors.ink, fontSize: 14, height: 1.35))),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

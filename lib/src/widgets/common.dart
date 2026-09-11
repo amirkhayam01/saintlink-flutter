@@ -179,3 +179,64 @@ void showMessage(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
 }
+
+/// "Step 2 of 3" as a row of bars: filled for done and current, faint for
+/// what is left. Keeps the customer oriented through vehicle → details → done.
+class StepIndicator extends StatelessWidget {
+  const StepIndicator({super.key, required this.step, this.of = 3});
+
+  final int step;
+  final int of;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (var i = 1; i <= of; i++) ...[
+          Expanded(
+            child: Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: i <= step ? AppTheme.brand : context.colors.inkFaint,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          if (i < of) const SizedBox(width: 6),
+        ],
+      ],
+    );
+  }
+}
+
+/// Pickup and destination on one line with an arrow, for headers where the
+/// full route card would take too much room.
+class RouteSummary extends StatelessWidget {
+  const RouteSummary({super.key, required this.from, required this.to, this.subtitle});
+
+  final String from;
+  final String to;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Flexible(child: Text(from, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Icon(Icons.arrow_forward, size: 14, color: colors.inkMuted)),
+            Flexible(child: Text(to, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
+          ],
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 2),
+          Text(subtitle!, style: TextStyle(color: colors.inkMuted, fontSize: 12)),
+        ],
+      ],
+    );
+  }
+}

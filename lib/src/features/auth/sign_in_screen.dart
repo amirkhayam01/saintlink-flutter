@@ -54,7 +54,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
 
     try {
-      final sent = await ref.read(authRepositoryProvider).requestCode(_phone.text);
+      final sent = await ref.read(authRepositoryProvider).requestCode(_phoneForServer);
       if (!mounted) return;
       setState(() {
         _sent = sent;
@@ -84,7 +84,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
     try {
       final customer = await ref.read(authRepositoryProvider).verifyCode(
-            phone: _phone.text,
+            phone: _phoneForServer,
             code: _code.text.trim(),
             name: _name.text,
             deviceName: Theme.of(context).platform == TargetPlatform.iOS ? 'iPhone' : 'Android phone',
@@ -101,53 +101,93 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
+  /// What the server is sent. The field shows a +44 prefix, so a customer who
+  /// types "7700 900123" without the leading zero still means a UK mobile.
+  String get _phoneForServer {
+    final raw = _phone.text.trim();
+    if (raw.startsWith('+') || raw.startsWith('0')) return raw;
+
+    return '+44$raw';
+  }
+
   @override
   Widget build(BuildContext context) {
     final awaitingCode = _sent != null;
+    final colors = context.colors;
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sign in'),
-        leading: awaitingCode
-            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() { _sent = null; _error = null; _code.clear(); }))
-            : null,
+        backgroundColor: colors.surface,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: awaitingCode
+              ? () => setState(() {
+                    _sent = null;
+                    _error = null;
+                    _code.clear();
+                  })
+              : () => context.pop(),
+        ),
       ),
+      backgroundColor: colors.surface,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
         children: [
+          Image.asset(dark ? 'assets/brand/logo-dark.png' : 'assets/brand/logo-light.png', height: 34, alignment: Alignment.centerLeft),
+          const SizedBox(height: 28),
           if (!awaitingCode) ...[
-            const SectionTitle('Your mobile number', subtitle: 'We will text you a code. No password to remember.'),
-            const SizedBox(height: 20),
+            Text('Sign in with your mobile', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 8),
+            Text('We will text you a six-digit code. No password, nothing to remember.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.inkMuted)),
+            const SizedBox(height: 28),
             TextField(
               controller: _phone,
               keyboardType: TextInputType.phone,
               autofocus: true,
+              autofillHints: const [AutofillHints.telephoneNumber],
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Mobile number', hintText: '07700 900123', prefixIcon: Icon(Icons.phone_iphone)),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+              decoration: InputDecoration(
+                hintText: '7700 900123',
+                hintStyle: TextStyle(color: colors.inkMuted.withValues(alpha: 0.6), fontWeight: FontWeight.w500),
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 10, 0),
+                  child: Text('+44', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                ),
+                prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+              ),
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Your name (first time only)', prefixIcon: Icon(Icons.person_outline)),
+              autofillHints: const [AutofillHints.name],
+              decoration: const InputDecoration(hintText: 'Your name (first time only)', prefixIcon: Icon(Icons.person_outline, size: 20)),
             ),
           ] else ...[
-            SectionTitle('Enter the code', subtitle: 'Sent to ${_sent!.maskedPhone}. It expires in a few minutes.'),
-            const SizedBox(height: 20),
-            TextField(
+            Text('Enter the code', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 8),
+            Text.rich(
+              TextSpan(
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.inkMuted),
+                children: [
+                  const TextSpan(text: 'Sent to '),
+                  TextSpan(text: _sent!.maskedPhone, style: TextStyle(color: colors.ink, fontWeight: FontWeight.w600)),
+                  const TextSpan(text: '. It expires in a few minutes.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+            _OtpBoxes(
               controller: _code,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              autofillHints: const [AutofillHints.oneTimeCode],
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
-              style: const TextStyle(fontSize: 28, letterSpacing: 12, fontWeight: FontWeight.w700),
-              textAlign: TextAlign.center,
-              decoration: const InputDecoration(hintText: '······'),
-              onChanged: (value) {
-                if (value.length == 6 && !_busy) _verify();
+              enabled: !_busy,
+              onCompleted: () {
+                if (!_busy) _verify();
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             Center(
               child: TextButton(
                 onPressed: _resendIn > 0 || _busy ? null : _requestCode,
@@ -155,11 +195,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ),
             ),
           ],
-          if (_error != null) ...[const SizedBox(height: 12), ErrorNotice(_error!)],
-          const SizedBox(height: 24),
-          Text(
-            'Your number is only used to sign you in and to reach you about your bookings.',
-            style: TextStyle(color: context.colors.inkMuted, fontSize: 13),
+          if (_error != null) ...[const SizedBox(height: 16), ErrorNotice(_error!)],
+          const SizedBox(height: 28),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lock_outline, size: 16, color: colors.inkMuted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Your number is only used to sign you in and to reach you about your bookings.',
+                  style: TextStyle(color: colors.inkMuted, fontSize: 13, height: 1.4),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -167,11 +216,100 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         child: FilledButton(
           onPressed: _busy
               ? null
-              : (awaitingCode ? (_code.text.length == 6 ? _verify : null) : (_phone.text.trim().length >= 10 ? _requestCode : null)),
-          child: _busy
-              ? const ButtonSpinner()
-              : Text(awaitingCode ? 'Sign in' : 'Send code'),
+              : (awaitingCode ? (_code.text.length == 6 ? _verify : null) : (_phone.text.replaceAll(RegExp(r'\D'), '').length >= 10 ? _requestCode : null)),
+          child: _busy ? const ButtonSpinner() : Text(awaitingCode ? 'Sign in' : 'Send code'),
         ),
+      ),
+    );
+  }
+}
+
+/// Six digit boxes over one invisible text field, so the keyboard, paste and
+/// SMS autofill all keep working while the code reads like a code.
+class _OtpBoxes extends StatefulWidget {
+  const _OtpBoxes({required this.controller, required this.enabled, required this.onCompleted});
+
+  final TextEditingController controller;
+  final bool enabled;
+  final VoidCallback onCompleted;
+
+  @override
+  State<_OtpBoxes> createState() => _OtpBoxesState();
+}
+
+class _OtpBoxesState extends State<_OtpBoxes> {
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_changed);
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _changed() {
+    setState(() {});
+    if (widget.controller.text.length == 6) widget.onCompleted();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final text = widget.controller.text;
+    final focused = _focus.hasFocus;
+
+    return GestureDetector(
+      onTap: () => _focus.requestFocus(),
+      child: Stack(
+        children: [
+          Row(
+            children: [
+              for (var i = 0; i < 6; i++) ...[
+                Expanded(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    height: 60,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: colors.card,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: focused && i == text.length.clamp(0, 5) && text.length < 6 ? AppTheme.brand : colors.inkFaint,
+                        width: focused && i == text.length.clamp(0, 5) && text.length < 6 ? 2 : 1,
+                      ),
+                    ),
+                    child: Text(i < text.length ? text[i] : '', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                if (i < 5) const SizedBox(width: 8),
+              ],
+            ],
+          ),
+          // The real field: zero-size but focusable, so it owns the keyboard.
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0,
+              child: TextField(
+                controller: widget.controller,
+                focusNode: _focus,
+                enabled: widget.enabled,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                autofillHints: const [AutofillHints.oneTimeCode],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                showCursor: false,
+                enableInteractiveSelection: false,
+                decoration: const InputDecoration(border: InputBorder.none),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

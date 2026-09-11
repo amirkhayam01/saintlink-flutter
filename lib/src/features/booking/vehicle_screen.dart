@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/vehicle_image.dart';
 import 'booking_flow_controller.dart';
 import '../../domain/quote.dart';
 import '../../domain/vehicle_category.dart';
@@ -45,6 +46,7 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
     final state = ref.watch(bookingFlowProvider);
     final controller = ref.read(bookingFlowProvider.notifier);
     final quote = state.quote;
+    final journey = state.journey;
 
     if (quote == null) {
       return const Scaffold(body: Center(child: Text('No quote yet.')));
@@ -53,33 +55,67 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
     final expired = quote.hasExpired;
     final vehicles = state.availableVehicles;
 
+    // The cheapest vehicle that fits is worth pointing out; nothing else here
+    // is a recommendation we could stand behind without data.
+    String? bestValue;
+    double? bestPrice;
+    for (final v in vehicles) {
+      final price = journey.isReturn ? quote.fareFor(v.slug)?.returnTotal : quote.fareFor(v.slug)?.single;
+      if (price != null && v.fits(passengers: journey.passengerCount, luggage: journey.luggageCount) && (bestPrice == null || price < bestPrice)) {
+        bestPrice = price;
+        bestValue = v.slug;
+      }
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Choose your vehicle')),
+      appBar: AppBar(
+        title: const Text('Choose your vehicle'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(64),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const StepIndicator(step: 1),
+                const SizedBox(height: 12),
+                RouteSummary(
+                  from: journey.pickup.address,
+                  to: journey.dropoff.address,
+                  subtitle: journey.pickupDate == null || journey.pickupTime == null
+                      ? null
+                      : '${Formatting.date(journey.pickupDate!)} · ${MaterialLocalizations.of(context).formatTimeOfDay(journey.pickupTime!, alwaysUse24HourFormat: true)}${journey.isReturn ? ' · return' : ''}',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: Column(
         children: [
-          _QuoteBanner(quote: quote, isReturn: state.journey.isReturn),
+          _QuoteBanner(quote: quote, isReturn: journey.isReturn),
           Expanded(
             child: expired
                 ? _Expired(onRefresh: () async {
                     if (await controller.requestQuote()) setState(() {});
                   })
                 : ListView.separated(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                     itemCount: vehicles.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final vehicle = vehicles[index];
                       final fare = quote.fareFor(vehicle.slug)!;
-                      final fits = vehicle.fits(passengers: state.journey.passengerCount, luggage: state.journey.luggageCount);
-                      final price = state.journey.isReturn ? fare.returnTotal : fare.single;
-                      final selected = state.journey.vehicleCategorySlug == vehicle.slug;
+                      final fits = vehicle.fits(passengers: journey.passengerCount, luggage: journey.luggageCount);
+                      final price = journey.isReturn ? fare.returnTotal : fare.single;
 
                       return _VehicleCard(
                         vehicle: vehicle,
                         price: price,
                         fits: fits && price != null,
-                        selected: selected,
-                        isReturn: state.journey.isReturn,
+                        selected: journey.vehicleCategorySlug == vehicle.slug,
+                        isReturn: journey.isReturn,
+                        tag: vehicle.slug == bestValue ? 'Best value' : null,
                         onTap: () => controller.selectVehicle(vehicle.slug),
                       );
                     },
@@ -92,7 +128,7 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
           onPressed: !expired && state.selectedVehicle != null && state.totalDue != null
               ? () => context.push('/book/details')
               : null,
-          child: Text(state.totalDue == null ? 'Select a vehicle' : 'Continue · ${Formatting.money(state.totalDue!)}'),
+          child: Text(state.totalDue == null ? 'Select a vehicle' : 'Continue with ${state.selectedVehicle!.name} · ${Formatting.money(state.totalDue!)}'),
         ),
       ),
     );
@@ -112,6 +148,7 @@ class _QuoteBanner extends StatelessWidget {
       if (quote.estimatedDurationMinutes != null) 'about ${Formatting.duration(quote.estimatedDurationMinutes!)}',
       if (isReturn) 'each way',
     ];
+    final urgent = quote.remaining.inMinutes < 5;
 
     return Container(
       width: double.infinity,
@@ -119,17 +156,30 @@ class _QuoteBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
+          const Icon(Icons.route_outlined, size: 16, color: Colors.white54),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               parts.isEmpty ? 'Fixed price — no meter, no surprises' : parts.join(' · '),
               style: const TextStyle(color: Colors.white70, fontSize: 13),
             ),
           ),
-          Icon(Icons.timer_outlined, size: 16, color: quote.remaining.inMinutes < 5 ? AppTheme.brand : Colors.white54),
-          const SizedBox(width: 4),
-          Text(
-            'Price held ${Formatting.countdown(quote.remaining)}',
-            style: TextStyle(color: quote.remaining.inMinutes < 5 ? AppTheme.brand : Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: urgent ? AppTheme.brand : Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.timer_outlined, size: 14, color: urgent ? AppTheme.midnight : Colors.white),
+                const SizedBox(width: 5),
+                Text(
+                  'Held ${Formatting.countdown(quote.remaining)}',
+                  style: TextStyle(color: urgent ? AppTheme.midnight : Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -145,6 +195,7 @@ class _VehicleCard extends StatelessWidget {
     required this.selected,
     required this.isReturn,
     required this.onTap,
+    this.tag,
   });
 
   final VehicleCategory vehicle;
@@ -152,64 +203,88 @@ class _VehicleCard extends StatelessWidget {
   final bool fits;
   final bool selected;
   final bool isReturn;
+  final String? tag;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: selected ? AppTheme.midnight : context.colors.inkFaint, width: selected ? 2 : 1),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: fits ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(color: selected ? AppTheme.brand : context.colors.surface, borderRadius: BorderRadius.circular(12)),
-                child: Icon(_iconFor(vehicle.slug), color: context.colors.ink),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(vehicle.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                    const SizedBox(height: 2),
-                    Text(
-                      vehicle.capacitySummary ?? '${vehicle.passengerCapacity} passengers · ${vehicle.luggageCapacity} large cases',
-                      style: TextStyle(color: context.colors.inkMuted, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+    final colors = context.colors;
+
+    return Opacity(
+      opacity: fits ? 1 : 0.55,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        decoration: BoxDecoration(
+          color: colors.card,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: selected ? AppTheme.brand : colors.inkFaint, width: selected ? 2 : 1),
+          boxShadow: selected ? colors.floatingShadow : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: fits ? onTap : null,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
                 children: [
-                  Text(price == null ? '—' : Formatting.money(price!), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-                  if (isReturn && price != null) Text('return', style: TextStyle(color: context.colors.inkMuted, fontSize: 12)),
-                  if (!fits) const Text('Too small', style: TextStyle(color: AppTheme.danger, fontSize: 12)),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(width: 104, height: 72, child: VehicleImage(vehicle.slug)),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (tag != null && fits)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(color: AppTheme.brand, borderRadius: BorderRadius.circular(6)),
+                              child: Text(tag!.toUpperCase(), style: const TextStyle(color: AppTheme.midnight, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                            ),
+                          ),
+                        Text(vehicle.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.person_outline, size: 15, color: colors.inkMuted),
+                            Text(' ${vehicle.passengerCapacity}', style: TextStyle(color: colors.inkMuted, fontSize: 13)),
+                            const SizedBox(width: 10),
+                            Icon(Icons.luggage_outlined, size: 15, color: colors.inkMuted),
+                            Text(' ${vehicle.luggageCapacity}', style: TextStyle(color: colors.inkMuted, fontSize: 13)),
+                            if (vehicle.handLuggageCapacity > 0) ...[
+                              const SizedBox(width: 10),
+                              Icon(Icons.shopping_bag_outlined, size: 15, color: colors.inkMuted),
+                              Text(' ${vehicle.handLuggageCapacity}', style: TextStyle(color: colors.inkMuted, fontSize: 13)),
+                            ],
+                          ],
+                        ),
+                        if (!fits) ...[
+                          const SizedBox(height: 4),
+                          Text('Not enough room for your party', style: TextStyle(color: colors.inkMuted, fontSize: 12)),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(price == null ? '—' : Formatting.money(price!), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: -0.3)),
+                      Text(isReturn ? 'return' : 'fixed', style: TextStyle(color: colors.inkMuted, fontSize: 11)),
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
-  }
-
-  IconData _iconFor(String slug) {
-    if (slug.contains('minibus') || slug.contains('seater')) return Icons.airport_shuttle_outlined;
-    if (slug.contains('mpv') || slug.contains('estate')) return Icons.directions_car_filled_outlined;
-    if (slug.contains('executive') || slug.contains('luxury')) return Icons.star_outline;
-
-    return Icons.directions_car_outlined;
   }
 }
 

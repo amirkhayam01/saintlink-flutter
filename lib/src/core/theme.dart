@@ -108,6 +108,16 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(foregroundColor: colors.ink, textStyle: buttonText.copyWith(fontSize: 14)),
       ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: brand,
+        foregroundColor: midnight,
+        elevation: 3,
+        focusElevation: 3,
+        hoverElevation: 3,
+        highlightElevation: 3,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        extendedTextStyle: buttonText.copyWith(fontSize: 15),
+      ),
       dividerTheme: DividerThemeData(color: colors.inkFaint, space: 1, thickness: 1),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
