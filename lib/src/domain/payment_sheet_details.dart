@@ -7,7 +7,12 @@ part 'payment_sheet_details.g.dart';
 /// `POST /bookings/{reference}/payment-intent`.
 @freezed
 abstract class PaymentSheetDetails with _$PaymentSheetDetails {
+  const PaymentSheetDetails._();
+
   const factory PaymentSheetDetails({
+    /// `stripe` for a real card, `fake` while the backend runs
+    /// `PAYMENTS_DRIVER=fake` — the app then shows a labelled test sheet.
+    required String provider,
     required String clientSecret,
     required String publishableKey,
     required String merchantName,
@@ -16,4 +21,6 @@ abstract class PaymentSheetDetails with _$PaymentSheetDetails {
   }) = _PaymentSheetDetails;
 
   factory PaymentSheetDetails.fromJson(Map<String, dynamic> json) => _$PaymentSheetDetailsFromJson(json);
+
+  bool get isTest => provider == 'fake';
 }

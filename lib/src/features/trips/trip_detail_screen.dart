@@ -9,6 +9,7 @@ import '../../widgets/common.dart';
 import '../../domain/booking.dart';
 import '../payment/payment_controller.dart';
 import '../payment/payment_service.dart';
+import '../payment/test_payment_sheet.dart';
 import 'trips_controller.dart';
 
 class TripDetailScreen extends ConsumerStatefulWidget {
@@ -24,7 +25,9 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   bool _busy = false;
 
   Future<void> _pay(Booking booking) async {
-    final outcome = await ref.read(paymentControllerProvider(booking.reference).notifier).pay();
+    final outcome = await ref.read(paymentControllerProvider(booking.reference).notifier).pay(
+          presentTestSheet: (details) => showTestPaymentSheet(context, details),
+        );
     if (!mounted) return;
 
     switch (outcome) {

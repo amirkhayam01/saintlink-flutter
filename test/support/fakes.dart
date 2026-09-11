@@ -130,8 +130,18 @@ class FakeBookingRepository implements BookingRepository {
   Future<Booking> requestCancellation({required String reference, required String reason, String scope = 'booking', int? bookingLegId}) async =>
       nextBooking!;
 
+  PaymentSheetDetails? sheet;
+  final confirmedTestPayments = <String>[];
+
   @override
-  Future<PaymentSheetDetails> paymentIntent(String reference) async => throw UnimplementedError();
+  Future<PaymentSheetDetails> paymentIntent(String reference) async => sheet!;
+
+  @override
+  Future<Booking> confirmTestPayment(String reference) async {
+    confirmedTestPayments.add(reference);
+
+    return nextBooking!.copyWith(paymentStatus: 'paid', canPay: false);
+  }
 }
 
 class FakeAuthRepository implements AuthRepository {
@@ -187,7 +197,7 @@ class FakePaymentService implements PaymentService {
   final paidReferences = <String>[];
 
   @override
-  Future<PaymentOutcome> payForBooking(String reference) async {
+  Future<PaymentOutcome> payForBooking(String reference, {required PresentTestSheet presentTestSheet}) async {
     if (error != null) throw error!;
     paidReferences.add(reference);
 

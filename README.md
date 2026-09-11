@@ -27,9 +27,27 @@ In the Laravel `.env`:
 
 ```
 SMS_PROVIDER=log          # sign-in codes are written to storage/logs/laravel.log
-PAYMENTS_ENABLED=true     # optional; needs STRIPE_SECRET_KEY + STRIPE_PUBLISHABLE_KEY
+OTP_STATIC_CODE=123456    # optional: every sign-in accepts this code (testing only)
+PAYMENTS_ENABLED=true     # optional; with the stripe driver needs STRIPE_SECRET_KEY + STRIPE_PUBLISHABLE_KEY
+PAYMENTS_DRIVER=fake      # optional: in-app payments succeed without Stripe, on a labelled test sheet
 GOOGLE_PLACES_API_KEY=    # optional; without it the app still books from typed addresses
 ```
+
+## Test mode before SMS and Stripe are live
+
+Both switches are backend `.env` settings, so the same app build works for
+testing today and for real customers later:
+
+- `OTP_STATIC_CODE=123456` — the server issues that code to every sign-in
+  instead of a random one. It is still hashed, still expires and still counts
+  attempts. **Remove it the moment a real SMS provider is configured**: with it
+  set, anyone who knows a customer's number can sign in as them.
+- `PAYMENTS_DRIVER=fake` (with `PAYMENTS_ENABLED=true`) — `payment-intent`
+  answers with `provider: fake`, the app shows a bottom sheet titled "Test
+  payment" with a warning banner instead of Stripe's sheet, and tapping Pay
+  calls `payment-intent/confirm-test`, which marks the booking paid through
+  the same code the Stripe webhook uses. With the stripe driver that endpoint
+  returns 422, so it cannot be abused once payments are real.
 
 Then `php artisan migrate` (two new tables: `customer_otp_codes`,
 `personal_access_tokens`; two new columns on `customers`) and

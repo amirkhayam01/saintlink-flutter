@@ -29,7 +29,7 @@ void main() {
     await container.read(tripDetailProvider('SL-TEST').future);
     bookings.nextBooking = bookingWith(canPay: false);
 
-    final outcome = await container.read(provider.notifier).pay();
+    final outcome = await container.read(provider.notifier).pay(presentTestSheet: (_) async => true);
 
     expect(outcome, PaymentOutcome.paid);
     expect(container.read(provider).isPaid, isTrue);
@@ -43,7 +43,7 @@ void main() {
     final container = containerWith(FakePaymentService(PaymentOutcome.cancelled));
     final provider = paymentControllerProvider('SL-TEST');
 
-    expect(await container.read(provider.notifier).pay(), PaymentOutcome.cancelled);
+    expect(await container.read(provider.notifier).pay(presentTestSheet: (_) async => true), PaymentOutcome.cancelled);
     expect(container.read(provider), const PaymentState());
   });
 
@@ -51,7 +51,7 @@ void main() {
     final container = containerWith(FakePaymentService(PaymentOutcome.paid, error: const ApiException('Online payment is temporarily unavailable.', statusCode: 503)));
     final provider = paymentControllerProvider('SL-TEST');
 
-    expect(await container.read(provider.notifier).pay(), PaymentOutcome.failed);
+    expect(await container.read(provider.notifier).pay(presentTestSheet: (_) async => true), PaymentOutcome.failed);
     expect(container.read(provider).error, 'Online payment is temporarily unavailable.');
     expect(container.read(provider).isPaying, isFalse);
   });
@@ -59,7 +59,7 @@ void main() {
   test('each booking has its own payment state', () async {
     final container = containerWith(FakePaymentService(PaymentOutcome.paid));
 
-    await container.read(paymentControllerProvider('SL-A').notifier).pay();
+    await container.read(paymentControllerProvider('SL-A').notifier).pay(presentTestSheet: (_) async => true);
 
     expect(container.read(paymentControllerProvider('SL-A')).isPaid, isTrue);
     expect(container.read(paymentControllerProvider('SL-B')).isPaid, isFalse);

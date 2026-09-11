@@ -87,4 +87,12 @@ class BookingRepository {
 
     return PaymentSheetDetails.fromJson(response);
   }
+
+  /// Settles a test payment. Only the fake driver accepts this; with Stripe
+  /// the server answers 422 and the webhook remains the only way to be paid.
+  Future<Booking> confirmTestPayment(String reference) async {
+    final response = await _api.post('/bookings/$reference/payment-intent/confirm-test');
+
+    return Booking.fromJson(response['booking'] as Map<String, dynamic>);
+  }
 }

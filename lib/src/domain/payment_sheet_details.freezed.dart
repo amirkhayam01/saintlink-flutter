@@ -16,7 +16,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PaymentSheetDetails {
 
- String get clientSecret; String get publishableKey; String get merchantName; double get amount; String get currency;
+/// `stripe` for a real card, `fake` while the backend runs
+/// `PAYMENTS_DRIVER=fake` — the app then shows a labelled test sheet.
+ String get provider; String get clientSecret; String get publishableKey; String get merchantName; double get amount; String get currency;
 /// Create a copy of PaymentSheetDetails
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +32,20 @@ $PaymentSheetDetailsCopyWith<PaymentSheetDetails> get copyWith => _$PaymentSheet
 @override
 bool operator ==(Object other) {
   final _this = this as PaymentSheetDetails;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSheetDetails&&(identical(other.clientSecret, _this.clientSecret) || other.clientSecret == _this.clientSecret)&&(identical(other.publishableKey, _this.publishableKey) || other.publishableKey == _this.publishableKey)&&(identical(other.merchantName, _this.merchantName) || other.merchantName == _this.merchantName)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.currency, _this.currency) || other.currency == _this.currency));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentSheetDetails&&(identical(other.provider, _this.provider) || other.provider == _this.provider)&&(identical(other.clientSecret, _this.clientSecret) || other.clientSecret == _this.clientSecret)&&(identical(other.publishableKey, _this.publishableKey) || other.publishableKey == _this.publishableKey)&&(identical(other.merchantName, _this.merchantName) || other.merchantName == _this.merchantName)&&(identical(other.amount, _this.amount) || other.amount == _this.amount)&&(identical(other.currency, _this.currency) || other.currency == _this.currency));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PaymentSheetDetails;
-  return Object.hash(runtimeType,_this.clientSecret,_this.publishableKey,_this.merchantName,_this.amount,_this.currency);
+  return Object.hash(runtimeType,_this.provider,_this.clientSecret,_this.publishableKey,_this.merchantName,_this.amount,_this.currency);
 }
 
 @override
 String toString() {
   final _this = this as PaymentSheetDetails;
-  return 'PaymentSheetDetails(clientSecret: ${_this.clientSecret}, publishableKey: ${_this.publishableKey}, merchantName: ${_this.merchantName}, amount: ${_this.amount}, currency: ${_this.currency})';
+  return 'PaymentSheetDetails(provider: ${_this.provider}, clientSecret: ${_this.clientSecret}, publishableKey: ${_this.publishableKey}, merchantName: ${_this.merchantName}, amount: ${_this.amount}, currency: ${_this.currency})';
 }
 
 
@@ -54,7 +56,7 @@ abstract mixin class $PaymentSheetDetailsCopyWith<$Res>  {
   factory $PaymentSheetDetailsCopyWith(PaymentSheetDetails value, $Res Function(PaymentSheetDetails) _then) = _$PaymentSheetDetailsCopyWithImpl;
 @useResult
 $Res call({
- String clientSecret, String publishableKey, String merchantName, double amount, String currency
+ String provider, String clientSecret, String publishableKey, String merchantName, double amount, String currency
 });
 
 
@@ -71,9 +73,10 @@ class _$PaymentSheetDetailsCopyWithImpl<$Res>
 
 /// Create a copy of PaymentSheetDetails
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? clientSecret = null,Object? publishableKey = null,Object? merchantName = null,Object? amount = null,Object? currency = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? provider = null,Object? clientSecret = null,Object? publishableKey = null,Object? merchantName = null,Object? amount = null,Object? currency = null,}) {
   return _then(PaymentSheetDetails(
-clientSecret: null == clientSecret ? _self.clientSecret : clientSecret // ignore: cast_nullable_to_non_nullable
+provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,clientSecret: null == clientSecret ? _self.clientSecret : clientSecret // ignore: cast_nullable_to_non_nullable
 as String,publishableKey: null == publishableKey ? _self.publishableKey : publishableKey // ignore: cast_nullable_to_non_nullable
 as String,merchantName: null == merchantName ? _self.merchantName : merchantName // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
@@ -163,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String clientSecret,  String publishableKey,  String merchantName,  double amount,  String currency)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String provider,  String clientSecret,  String publishableKey,  String merchantName,  double amount,  String currency)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PaymentSheetDetails() when $default != null:
-return $default(_that.clientSecret,_that.publishableKey,_that.merchantName,_that.amount,_that.currency);case _:
+return $default(_that.provider,_that.clientSecret,_that.publishableKey,_that.merchantName,_that.amount,_that.currency);case _:
   return orElse();
 
 }
@@ -184,10 +187,10 @@ return $default(_that.clientSecret,_that.publishableKey,_that.merchantName,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String clientSecret,  String publishableKey,  String merchantName,  double amount,  String currency)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String provider,  String clientSecret,  String publishableKey,  String merchantName,  double amount,  String currency)  $default,) {final _that = this;
 switch (_that) {
 case _PaymentSheetDetails():
-return $default(_that.clientSecret,_that.publishableKey,_that.merchantName,_that.amount,_that.currency);case _:
+return $default(_that.provider,_that.clientSecret,_that.publishableKey,_that.merchantName,_that.amount,_that.currency);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +207,10 @@ return $default(_that.clientSecret,_that.publishableKey,_that.merchantName,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String clientSecret,  String publishableKey,  String merchantName,  double amount,  String currency)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String provider,  String clientSecret,  String publishableKey,  String merchantName,  double amount,  String currency)?  $default,) {final _that = this;
 switch (_that) {
 case _PaymentSheetDetails() when $default != null:
-return $default(_that.clientSecret,_that.publishableKey,_that.merchantName,_that.amount,_that.currency);case _:
+return $default(_that.provider,_that.clientSecret,_that.publishableKey,_that.merchantName,_that.amount,_that.currency);case _:
   return null;
 
 }
@@ -218,10 +221,13 @@ return $default(_that.clientSecret,_that.publishableKey,_that.merchantName,_that
 /// @nodoc
 @JsonSerializable()
 
-class _PaymentSheetDetails implements PaymentSheetDetails {
-  const _PaymentSheetDetails({required this.clientSecret, required this.publishableKey, required this.merchantName, required this.amount, required this.currency});
+class _PaymentSheetDetails extends PaymentSheetDetails {
+  const _PaymentSheetDetails({required this.provider, required this.clientSecret, required this.publishableKey, required this.merchantName, required this.amount, required this.currency}): super._();
   factory _PaymentSheetDetails.fromJson(Map<String, dynamic> json) => _$PaymentSheetDetailsFromJson(json);
 
+/// `stripe` for a real card, `fake` while the backend runs
+/// `PAYMENTS_DRIVER=fake` — the app then shows a labelled test sheet.
+@override final  String provider;
 @override final  String clientSecret;
 @override final  String publishableKey;
 @override final  String merchantName;
@@ -241,18 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSheetDetails&&(identical(other.clientSecret, clientSecret) || other.clientSecret == clientSecret)&&(identical(other.publishableKey, publishableKey) || other.publishableKey == publishableKey)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.currency, currency) || other.currency == currency));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentSheetDetails&&(identical(other.provider, provider) || other.provider == provider)&&(identical(other.clientSecret, clientSecret) || other.clientSecret == clientSecret)&&(identical(other.publishableKey, publishableKey) || other.publishableKey == publishableKey)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.currency, currency) || other.currency == currency));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,clientSecret,publishableKey,merchantName,amount,currency);
+    return Object.hash(runtimeType,provider,clientSecret,publishableKey,merchantName,amount,currency);
 }
 
 @override
 String toString() {
-    return 'PaymentSheetDetails(clientSecret: $clientSecret, publishableKey: $publishableKey, merchantName: $merchantName, amount: $amount, currency: $currency)';
+    return 'PaymentSheetDetails(provider: $provider, clientSecret: $clientSecret, publishableKey: $publishableKey, merchantName: $merchantName, amount: $amount, currency: $currency)';
 }
 
 
@@ -263,7 +269,7 @@ abstract mixin class _$PaymentSheetDetailsCopyWith<$Res> implements $PaymentShee
   factory _$PaymentSheetDetailsCopyWith(_PaymentSheetDetails value, $Res Function(_PaymentSheetDetails) _then) = __$PaymentSheetDetailsCopyWithImpl;
 @override @useResult
 $Res call({
- String clientSecret, String publishableKey, String merchantName, double amount, String currency
+ String provider, String clientSecret, String publishableKey, String merchantName, double amount, String currency
 });
 
 
@@ -280,9 +286,10 @@ class __$PaymentSheetDetailsCopyWithImpl<$Res>
 
 /// Create a copy of PaymentSheetDetails
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? clientSecret = null,Object? publishableKey = null,Object? merchantName = null,Object? amount = null,Object? currency = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? provider = null,Object? clientSecret = null,Object? publishableKey = null,Object? merchantName = null,Object? amount = null,Object? currency = null,}) {
   return _then(_PaymentSheetDetails(
-clientSecret: null == clientSecret ? _self.clientSecret : clientSecret // ignore: cast_nullable_to_non_nullable
+provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,clientSecret: null == clientSecret ? _self.clientSecret : clientSecret // ignore: cast_nullable_to_non_nullable
 as String,publishableKey: null == publishableKey ? _self.publishableKey : publishableKey // ignore: cast_nullable_to_non_nullable
 as String,merchantName: null == merchantName ? _self.merchantName : merchantName // ignore: cast_nullable_to_non_nullable
 as String,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable

@@ -42,11 +42,11 @@ class PaymentController extends Notifier<PaymentState> {
   @override
   PaymentState build() => const PaymentState();
 
-  Future<PaymentOutcome> pay() async {
+  Future<PaymentOutcome> pay({required PresentTestSheet presentTestSheet}) async {
     state = const PaymentState(status: PaymentStatus.paying);
 
     try {
-      final outcome = await ref.read(paymentServiceProvider).payForBooking(reference);
+      final outcome = await ref.read(paymentServiceProvider).payForBooking(reference, presentTestSheet: presentTestSheet);
 
       switch (outcome) {
         case PaymentOutcome.paid:

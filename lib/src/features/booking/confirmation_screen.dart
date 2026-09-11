@@ -8,6 +8,7 @@ import '../../widgets/common.dart';
 import '../auth/auth_controller.dart';
 import '../payment/payment_controller.dart';
 import '../payment/payment_service.dart';
+import '../payment/test_payment_sheet.dart';
 import '../../domain/booking.dart';
 import 'booking_flow_controller.dart';
 
@@ -27,7 +28,9 @@ class ConfirmationScreen extends ConsumerStatefulWidget {
 
 class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
   Future<void> _pay(Booking booking) async {
-    final outcome = await ref.read(paymentControllerProvider(booking.reference).notifier).pay();
+    final outcome = await ref.read(paymentControllerProvider(booking.reference).notifier).pay(
+          presentTestSheet: (details) => showTestPaymentSheet(context, details),
+        );
 
     if (outcome == PaymentOutcome.cancelled && mounted) {
       showMessage(context, 'Payment cancelled. Your booking is saved — you can pay from My trips.');
