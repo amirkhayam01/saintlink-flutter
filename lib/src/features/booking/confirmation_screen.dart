@@ -8,7 +8,7 @@ import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../auth/auth_controller.dart';
 import '../payment/payment_service.dart';
-import '../trips/booking_models.dart';
+import '../../domain/booking.dart';
 import 'booking_flow_controller.dart';
 
 /// The booking exists. Now take payment, if payments are on.

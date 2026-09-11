@@ -10,7 +10,7 @@ import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import 'auth_controller.dart';
-import 'customer.dart';
+import '../../domain/customer.dart';
 
 /// Sign in with a mobile number and a texted code.
 ///

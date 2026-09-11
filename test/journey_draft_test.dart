@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:saints_link/src/domain/place.dart';
+import 'package:saints_link/src/domain/quote.dart';
 import 'package:saints_link/src/features/booking/journey_draft.dart';
-import 'package:saints_link/src/features/booking/models.dart';
 
 /*
  * The server fingerprints the journey fields when it prices a quote and refuses

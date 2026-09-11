@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
-import 'customer.dart';
+import '../../domain/customer.dart';
 
 /// Who is signed in, if anyone.
 @immutable

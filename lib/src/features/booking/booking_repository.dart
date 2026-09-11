@@ -1,7 +1,9 @@
 import '../../core/api_client.dart';
-import '../trips/booking_models.dart';
+import '../../domain/booking.dart';
+import '../../domain/payment_sheet_details.dart';
+import '../../domain/quote.dart';
+import '../../domain/vehicle_category.dart';
 import 'journey_draft.dart';
-import 'models.dart';
 
 class BookingRepository {
   BookingRepository(this._api);

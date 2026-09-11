@@ -1,6 +1,6 @@
 import '../../core/api_client.dart';
 import '../../core/token_store.dart';
-import 'customer.dart';
+import '../../domain/customer.dart';
 
 class AuthRepository {
   AuthRepository({required ApiClient api, required TokenStore tokens})

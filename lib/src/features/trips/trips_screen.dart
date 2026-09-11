@@ -6,7 +6,7 @@ import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../auth/auth_controller.dart';
-import 'booking_models.dart';
+import '../../domain/booking.dart';
 import 'trips_controller.dart';
 
 class TripsScreen extends ConsumerWidget {

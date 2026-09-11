@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 import '../../core/theme.dart';
-import '../booking/journey_draft.dart';
-import '../booking/models.dart';
+import '../../domain/place.dart';
 
 /// A field that opens a full-screen address search.
 ///

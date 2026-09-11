@@ -8,7 +8,8 @@ import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import 'booking_flow_controller.dart';
-import 'models.dart';
+import '../../domain/quote.dart';
+import '../../domain/vehicle_category.dart';
 
 /// Step two: pick a vehicle at a price that is already final.
 ///

@@ -1,11 +1,14 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
-import '../trips/booking_models.dart';
+import '../../domain/booking.dart';
+import '../../domain/quote.dart';
+import '../../domain/vehicle_category.dart';
 import 'journey_draft.dart';
-import 'models.dart';
+
+part 'booking_flow_controller.freezed.dart';
 
 /// Everything the booking screens share, from the first address to the
 /// confirmed booking.
@@ -13,31 +16,23 @@ import 'models.dart';
 /// One object rather than per-screen state so that going back a step never
 /// loses what was typed, and so that the quote and the journey it was priced
 /// for can never drift apart — see [JourneyDraft] for why that matters.
-@immutable
-class BookingFlowState {
-  const BookingFlowState({
-    this.journey = const JourneyDraft(),
-    this.quote,
-    this.vehicles = const [],
-    this.isQuoting = false,
-    this.quoteError,
-    this.isBooking = false,
-    this.bookingError,
-    this.fieldErrors = const {},
-    this.booking,
-  });
+@freezed
+abstract class BookingFlowState with _$BookingFlowState {
+  const BookingFlowState._();
 
-  final JourneyDraft journey;
-  final Quote? quote;
-  final List<VehicleCategory> vehicles;
-  final bool isQuoting;
-  final String? quoteError;
-  final bool isBooking;
-  final String? bookingError;
-  final Map<String, List<String>> fieldErrors;
+  const factory BookingFlowState({
+    @Default(JourneyDraft()) JourneyDraft journey,
+    Quote? quote,
+    @Default([]) List<VehicleCategory> vehicles,
+    @Default(false) bool isQuoting,
+    String? quoteError,
+    @Default(false) bool isBooking,
+    String? bookingError,
+    @Default({}) Map<String, List<String>> fieldErrors,
 
-  /// Set once the booking has been created; the confirmation screen reads it.
-  final Booking? booking;
+    /// Set once the booking has been created; the confirmation screen reads it.
+    Booking? booking,
+  }) = _BookingFlowState;
 
   /// Vehicles the customer can actually pick: in the quote, with a price.
   List<VehicleCategory> get availableVehicles =>
@@ -68,32 +63,6 @@ class BookingFlowState {
     return journey.isReturn ? fare.returnTotal : fare.single;
   }
 
-  BookingFlowState copyWith({
-    JourneyDraft? journey,
-    Quote? quote,
-    bool clearQuote = false,
-    List<VehicleCategory>? vehicles,
-    bool? isQuoting,
-    String? quoteError,
-    bool clearQuoteError = false,
-    bool? isBooking,
-    String? bookingError,
-    bool clearBookingError = false,
-    Map<String, List<String>>? fieldErrors,
-    Booking? booking,
-  }) {
-    return BookingFlowState(
-      journey: journey ?? this.journey,
-      quote: clearQuote ? null : (quote ?? this.quote),
-      vehicles: vehicles ?? this.vehicles,
-      isQuoting: isQuoting ?? this.isQuoting,
-      quoteError: clearQuoteError ? null : (quoteError ?? this.quoteError),
-      isBooking: isBooking ?? this.isBooking,
-      bookingError: clearBookingError ? null : (bookingError ?? this.bookingError),
-      fieldErrors: fieldErrors ?? this.fieldErrors,
-      booking: booking ?? this.booking,
-    );
-  }
 }
 
 class BookingFlowController extends Notifier<BookingFlowState> {
@@ -121,9 +90,9 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   void updateJourney(JourneyDraft Function(JourneyDraft) update) {
     state = state.copyWith(
       journey: update(state.journey),
-      clearQuote: true,
-      clearQuoteError: true,
-      clearBookingError: true,
+      quote: null,
+      quoteError: null,
+      bookingError: null,
       fieldErrors: const {},
     );
   }
@@ -131,7 +100,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
   Future<bool> requestQuote() async {
     if (!state.journey.isQuotable) return false;
 
-    state = state.copyWith(isQuoting: true, clearQuoteError: true, clearQuote: true);
+    state = state.copyWith(isQuoting: true, quoteError: null, quote: null);
 
     try {
       final quote = await ref.read(bookingRepositoryProvider).requestQuote(state.journey);
@@ -176,7 +145,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       return null;
     }
 
-    state = state.copyWith(isBooking: true, clearBookingError: true, fieldErrors: const {});
+    state = state.copyWith(isBooking: true, bookingError: null, fieldErrors: const {});
 
     try {
       final booking = await ref.read(bookingRepositoryProvider).createBooking(

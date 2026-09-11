@@ -1,6 +1,5 @@
 import '../../core/api_client.dart';
-import '../booking/journey_draft.dart';
-import '../booking/models.dart';
+import '../../domain/place.dart';
 
 /// Address search, proxied through Saints Link.
 ///
@@ -29,12 +28,7 @@ class PlacesRepository {
     try {
       final response = await _api.get('/places/details', query: {'place_id': suggestion.placeId});
 
-      return PlaceSelection(
-        address: response['address'] as String,
-        placeId: response['place_id'] as String,
-        latitude: (response['latitude'] as num).toDouble(),
-        longitude: (response['longitude'] as num).toDouble(),
-      );
+      return PlaceSelection.fromJson(response);
     } catch (_) {
       return PlaceSelection(address: suggestion.description, placeId: suggestion.placeId);
     }

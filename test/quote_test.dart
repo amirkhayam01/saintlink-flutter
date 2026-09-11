@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:saints_link/src/features/booking/models.dart';
+import 'package:saints_link/src/domain/quote.dart';
 
 import 'fixtures/fixtures.dart';
 

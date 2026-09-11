@@ -7,7 +7,7 @@ import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../payment/payment_service.dart';
-import 'booking_models.dart';
+import '../../domain/booking.dart';
 import 'trips_controller.dart';
 
 class TripDetailScreen extends ConsumerStatefulWidget {
