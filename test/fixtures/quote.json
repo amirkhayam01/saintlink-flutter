@@ -1,0 +1,28 @@
+{
+    "quote_token": "ad23a4f2-c4e1-4e00-b861-7dac80234b47",
+    "expires_at": "2026-09-11T22:59:07+01:00",
+    "fares": {
+        "saloon-car": {
+            "single": 125,
+            "return": 250
+        },
+        "estate-car": {
+            "single": 135,
+            "return": 270
+        },
+        "executive-saloon": {
+            "single": 155,
+            "return": 310
+        },
+        "mpv-6": {
+            "single": 145,
+            "return": 290
+        },
+        "minibus-8": {
+            "single": 165,
+            "return": 330
+        }
+    },
+    "distance_miles": 68.9,
+    "estimated_duration_minutes": 117
+}

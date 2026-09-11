@@ -1,0 +1,90 @@
+{
+    "data": [
+        {
+            "name": "Saloon Car",
+            "slug": "saloon-car",
+            "description": "Saloon Car for pre-booked local, airport, port and long-distance journeys.",
+            "shortDescription": "Saloon Car with a professional licensed driver.",
+            "capacitySummary": "Up to 4 passengers, 2 large cases and 2 hand luggage items.",
+            "passengerCapacity": 4,
+            "luggageCapacity": 2,
+            "mediumLuggageCapacity": 0,
+            "handLuggageCapacity": 2,
+            "sortOrder": 10,
+            "image": "/images/vehicles/saloon-car-v1.webp",
+            "serviceLevel": "standard",
+            "amenities": [
+                "climate_control"
+            ]
+        },
+        {
+            "name": "Estate Car",
+            "slug": "estate-car",
+            "description": "Estate Car for pre-booked local, airport, port and long-distance journeys.",
+            "shortDescription": "Estate Car with a professional licensed driver.",
+            "capacitySummary": "Up to 4 passengers, 2 large cases and 2 medium cases.",
+            "passengerCapacity": 4,
+            "luggageCapacity": 2,
+            "mediumLuggageCapacity": 2,
+            "handLuggageCapacity": 0,
+            "sortOrder": 20,
+            "image": "/images/vehicles/estate-car-v1.webp",
+            "serviceLevel": "standard",
+            "amenities": [
+                "climate_control"
+            ]
+        },
+        {
+            "name": "Executive Saloon",
+            "slug": "executive-saloon",
+            "description": "Executive Saloon for pre-booked local, airport, port and long-distance journeys.",
+            "shortDescription": "Executive Saloon with a professional licensed driver.",
+            "capacitySummary": "Up to 4 passengers, 2 large cases and 2 hand luggage items.",
+            "passengerCapacity": 4,
+            "luggageCapacity": 2,
+            "mediumLuggageCapacity": 0,
+            "handLuggageCapacity": 2,
+            "sortOrder": 30,
+            "image": "/images/vehicles/executive-saloon-v1.webp",
+            "serviceLevel": "executive",
+            "amenities": [
+                "climate_control",
+                "bottled_water"
+            ]
+        },
+        {
+            "name": "6-Seater MPV",
+            "slug": "mpv-6",
+            "description": "6-Seater MPV for pre-booked local, airport, port and long-distance journeys.",
+            "shortDescription": "6-Seater MPV with a professional licensed driver.",
+            "capacitySummary": "Up to 6 passengers, 4 large cases and 2 hand luggage items.",
+            "passengerCapacity": 6,
+            "luggageCapacity": 4,
+            "mediumLuggageCapacity": 0,
+            "handLuggageCapacity": 2,
+            "sortOrder": 40,
+            "image": "/images/vehicles/mpv-6-v1.webp",
+            "serviceLevel": "group",
+            "amenities": [
+                "climate_control"
+            ]
+        },
+        {
+            "name": "8-Seater Minibus",
+            "slug": "minibus-8",
+            "description": "8-Seater Minibus for pre-booked local, airport, port and long-distance journeys.",
+            "shortDescription": "8-Seater Minibus with a professional licensed driver.",
+            "capacitySummary": "Up to 8 passengers, 8 large cases and 4 hand luggage items.",
+            "passengerCapacity": 8,
+            "luggageCapacity": 8,
+            "mediumLuggageCapacity": 0,
+            "handLuggageCapacity": 4,
+            "sortOrder": 50,
+            "image": "/images/vehicles/minibus-8-v1.webp",
+            "serviceLevel": "group",
+            "amenities": [
+                "climate_control"
+            ]
+        }
+    ]
+}
