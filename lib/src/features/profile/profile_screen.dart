@@ -69,21 +69,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           children: [
-            const SectionTitle('Mobile number', subtitle: 'This is how you sign in. To change it, sign out and sign in with the new number.'),
-            const SizedBox(height: 12),
-            TextFormField(
-              initialValue: customer.maskedPhone,
-              enabled: false,
-              decoration: const InputDecoration(labelText: 'Mobile number'),
-            ),
-            const SizedBox(height: 24),
+            _IdentityCard(customer: customer),
+            const SizedBox(height: 28),
             const SectionTitle('Name and email', subtitle: 'Used on your bookings and confirmation emails.'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             TextFormField(
               controller: _firstName,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: 'First name', errorText: state.fieldErrors['first_name']?.first),
+              decoration: InputDecoration(hintText: 'First name', prefixIcon: const Icon(Icons.person_outline, size: 20), errorText: state.fieldErrors['first_name']?.first),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Please enter your first name' : null,
             ),
             const SizedBox(height: 12),
@@ -91,7 +85,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               controller: _lastName,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: 'Last name', errorText: state.fieldErrors['last_name']?.first),
+              decoration: InputDecoration(hintText: 'Last name', prefixIcon: const Icon(Icons.badge_outlined, size: 20), errorText: state.fieldErrors['last_name']?.first),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -99,7 +93,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.done,
               autocorrect: false,
-              decoration: InputDecoration(labelText: 'Email', helperText: 'Optional — for booking confirmations', errorText: state.fieldErrors['email']?.first),
+              decoration: InputDecoration(hintText: 'Email (optional)', prefixIcon: const Icon(Icons.mail_outline, size: 20), helperText: 'For booking confirmations and receipts', errorText: state.fieldErrors['email']?.first),
               validator: (v) {
                 final text = (v ?? '').trim();
                 if (text.isEmpty) return null;
@@ -127,6 +121,51 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ? const ButtonSpinner()
               : const Text('Save changes'),
         ),
+      ),
+    );
+  }
+}
+
+/// Who is signed in: initials, name, and the number that is their identity.
+class _IdentityCard extends StatelessWidget {
+  const _IdentityCard({required this.customer});
+
+  final Customer customer;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = [customer.firstName, customer.lastName ?? '']
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0].toUpperCase())
+        .take(2)
+        .join();
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(color: AppTheme.midnight, borderRadius: BorderRadius.circular(20)),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: AppTheme.brand, borderRadius: BorderRadius.circular(16)),
+            child: Text(initials.isEmpty ? '?' : initials, style: const TextStyle(color: AppTheme.midnight, fontSize: 20, fontWeight: FontWeight.w800)),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(customer.name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(customer.maskedPhone, style: const TextStyle(color: Color(0xFFA1A1AA), fontSize: 13)),
+                const SizedBox(height: 6),
+                const Text('Your number is how you sign in. To change it, sign out and sign in with the new one.', style: TextStyle(color: Color(0xFF71717A), fontSize: 11, height: 1.3)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

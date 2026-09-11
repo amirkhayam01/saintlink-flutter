@@ -6,6 +6,7 @@ import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/route_timeline.dart';
+import '../../widgets/skeleton.dart';
 import '../auth/auth_controller.dart';
 import '../../domain/booking.dart';
 import 'trips_controller.dart';
@@ -44,7 +45,7 @@ class TripsScreen extends ConsumerWidget {
           bottom: const TabBar(tabs: [Tab(text: 'Upcoming'), Tab(text: 'Past')]),
         ),
         body: trips.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const TripListSkeleton(),
           error: (error, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),

@@ -15,6 +15,9 @@ import 'package:saints_link/src/features/booking/confirmation_screen.dart';
 import 'package:saints_link/src/features/booking/vehicle_screen.dart';
 import 'package:saints_link/src/features/trips/trip_detail_screen.dart';
 import 'package:saints_link/src/features/trips/trips_screen.dart';
+import 'package:saints_link/src/features/places/address_search_field.dart';
+import 'package:saints_link/src/features/profile/profile_screen.dart';
+import 'package:saints_link/src/features/auth/auth_controller.dart';
 import 'package:saints_link/src/domain/booking.dart';
 
 import '../support/fakes.dart';
@@ -135,6 +138,11 @@ void main() {
       }));
   testWidgets('trips', (t) => shot(t, 'trips', const TripsScreen(), prime: (c) async {
         bookings.pages = [[sample('SL-8K2M'), sample('SL-7QPA', days: 12, paid: false), sample('SL-2BXA', days: -20)]];
+      }));
+  testWidgets('address search', (t) => shot(t, 'address_search', const AddressSearchScreen(title: 'Pickup', initial: PlaceSelection.empty)));
+  testWidgets('profile', (t) => shot(t, 'profile', const ProfileScreen(), prime: (c) async {
+        c.read(authControllerProvider);
+        await Future<void>.microtask(() {});
       }));
   testWidgets('trip detail', (t) => shot(t, 'trip_detail', const TripDetailScreen(reference: 'SL-8K2M'), prime: (c) async {
         bookings.nextBooking = sample('SL-8K2M');

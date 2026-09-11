@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 /// The app's colours, taken from the website's design tokens rather than
@@ -54,6 +55,17 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: colors.surface,
       extensions: [colors],
+      // A forward fade-and-slide on Android and the native push on iOS; the
+      // default zoom reads as a system dialog rather than a step in a flow.
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+        },
+      ),
     );
 
     return base.copyWith(
