@@ -34,10 +34,13 @@ class AppTheme {
      */
     final primaryButton = isDark ? brand : midnight;
     final onPrimaryButton = isDark ? midnight : Colors.white;
+    const buttonText = TextStyle(fontFamily: 'Figtree', fontSize: 16, fontWeight: FontWeight.w600);
 
     final base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      // The website's typeface, bundled so the app and the site read as one.
+      fontFamily: 'Figtree',
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: primaryButton,
@@ -54,12 +57,14 @@ class AppTheme {
     );
 
     return base.copyWith(
+      textTheme: _textTheme(base.textTheme.apply(bodyColor: colors.ink, displayColor: colors.ink), colors),
       appBarTheme: AppBarTheme(
         backgroundColor: colors.card,
         foregroundColor: colors.ink,
         elevation: 0,
         scrolledUnderElevation: 1,
         centerTitle: false,
+        titleTextStyle: base.textTheme.titleLarge!.copyWith(fontSize: 18, fontWeight: FontWeight.w700, color: colors.ink),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -69,7 +74,7 @@ class AppTheme {
           disabledForegroundColor: colors.inkMuted,
           minimumSize: const Size.fromHeight(52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: buttonText,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -78,7 +83,7 @@ class AppTheme {
           minimumSize: const Size.fromHeight(52),
           side: BorderSide(color: colors.inkFaint),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: buttonText,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -100,6 +105,9 @@ class AppTheme {
           side: BorderSide(color: colors.inkFaint),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: colors.ink, textStyle: buttonText.copyWith(fontSize: 14)),
+      ),
       dividerTheme: DividerThemeData(color: colors.inkFaint, space: 1, thickness: 1),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -109,6 +117,16 @@ class AppTheme {
       ),
     );
   }
+
+  /// Derived with copyWith so every style keeps the family and falls back the
+  /// same way; a bare TextStyle here would silently drop back to Roboto.
+  static TextTheme _textTheme(TextTheme t, AppColors colors) => t.copyWith(
+        headlineMedium: t.headlineMedium!.copyWith(fontSize: 28, fontWeight: FontWeight.w800, height: 1.15, letterSpacing: -0.5),
+        titleLarge: t.titleLarge!.copyWith(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.2),
+        titleMedium: t.titleMedium!.copyWith(fontSize: 16, fontWeight: FontWeight.w600),
+        bodyMedium: t.bodyMedium!.copyWith(fontSize: 15, height: 1.4),
+        bodySmall: t.bodySmall!.copyWith(fontSize: 13, height: 1.4, color: colors.inkMuted),
+      );
 
   static OutlineInputBorder _inputBorder(Color color, {double width = 1}) {
     return OutlineInputBorder(
@@ -182,6 +200,12 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color errorSurface;
   final Color errorBorder;
   final Color errorText;
+
+  /// The one shadow the app uses, on cards that float over the hero or the
+  /// ground. Softer and larger than Material's default elevation.
+  List<BoxShadow> get floatingShadow => [
+        BoxShadow(color: Colors.black.withValues(alpha: surface.computeLuminance() > 0.5 ? 0.10 : 0.5), blurRadius: 28, offset: const Offset(0, 12)),
+      ];
 
   @override
   AppColors copyWith({

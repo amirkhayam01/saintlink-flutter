@@ -29,7 +29,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('See prices'), findsOneWidget);
-        expect(find.text('Add a stop on the way'), findsOneWidget);
+        expect(find.text('Add a stop'), findsOneWidget);
       });
 
       testWidgets('sign-in screen', (tester) async {
