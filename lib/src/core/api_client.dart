@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import 'api_exception.dart';
 import 'env.dart';
+import 'error_reporter.dart';
 import 'token_store.dart';
 
 /// The single way this app talks to Saints Link.
@@ -9,8 +10,9 @@ import 'token_store.dart';
 /// Every response shape and every failure mode is normalised here, so screens
 /// deal in models and [ApiException] rather than in status codes and raw maps.
 class ApiClient {
-  ApiClient({required TokenStore tokens, Dio? dio})
+  ApiClient({required TokenStore tokens, required ErrorReporter errors, Dio? dio})
       : _tokens = tokens, // ignore: prefer_initializing_formals
+        _errors = errors, // ignore: prefer_initializing_formals
         _dio = dio ?? Dio() {
     _dio.options
       ..baseUrl = Env.apiBaseUrl
@@ -23,9 +25,11 @@ class ApiClient {
        * as an HTML login redirect, which the app cannot read at all.
        */
       ..headers['X-Requested-With'] = 'XMLHttpRequest'
-      // 4xx are answers, not transport failures: they carry the message the
-      // customer needs to see, so they are handled rather than thrown by Dio.
-      ..validateStatus = (status) => status != null && status < 500;
+      // Any HTTP status is an answer, not a transport failure. A 422 carries
+      // the validation message; a 503 from the payment route carries "your
+      // booking is saved, try again shortly". Both are written for the
+      // customer to read, so neither is thrown away for a generic one.
+      ..validateStatus = (status) => status != null;
 
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -42,6 +46,7 @@ class ApiClient {
 
   final Dio _dio;
   final TokenStore _tokens;
+  final ErrorReporter _errors;
 
   Future<Map<String, dynamic>> get(String path, {Map<String, dynamic>? query}) =>
       _send(() => _dio.get<dynamic>(path, queryParameters: query));
@@ -57,14 +62,27 @@ class ApiClient {
 
     try {
       response = await request();
-    } on DioException catch (error) {
+    } on DioException catch (error, stack) {
+      // Every status passes validateStatus, so anything caught here is the
+      // network itself — never something the customer did.
+      await _errors.report(error, stack, context: _describe(error.requestOptions));
+
       throw ApiException(_transportMessage(error));
     }
 
     final body = response.data;
     final map = body is Map<String, dynamic> ? body : <String, dynamic>{};
+    final status = response.statusCode!;
 
-    if (response.statusCode != null && response.statusCode! >= 400) {
+    if (status >= 500) {
+      await _errors.report(
+        'HTTP $status: ${map['message'] ?? body}',
+        StackTrace.current,
+        context: _describe(response.requestOptions),
+      );
+    }
+
+    if (status >= 400) {
       throw ApiException(
         (map['message'] as String?) ?? 'Something went wrong. Please try again.',
         statusCode: response.statusCode,
@@ -74,6 +92,8 @@ class ApiClient {
 
     return map;
   }
+
+  String _describe(RequestOptions request) => 'api ${request.method} ${request.path}';
 
   /// Validation errors arrive as `{"field": ["message", ...]}`.
   Map<String, List<String>> _fieldErrors(Object? errors) {

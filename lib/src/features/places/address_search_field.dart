@@ -157,9 +157,9 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
             ),
           ),
           if (_searchUnavailable)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Text('Suggestions are unavailable right now. You can still continue with the address as typed.', style: TextStyle(color: AppTheme.inkMuted, fontSize: 13)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              child: Text('Suggestions are unavailable right now. You can still continue with the address as typed.', style: TextStyle(color: context.colors.inkMuted, fontSize: 13)),
             ),
           Expanded(
             child: ListView(
@@ -172,7 +172,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
                   ),
                 if (typed.length >= 3)
                   ListTile(
-                    leading: const Icon(Icons.keyboard_outlined, color: AppTheme.inkMuted),
+                    leading: Icon(Icons.keyboard_outlined, color: context.colors.inkMuted),
                     title: Text('Use "$typed"'),
                     subtitle: const Text('As typed, without a map location', style: TextStyle(fontSize: 12)),
                     onTap: _useTypedText,

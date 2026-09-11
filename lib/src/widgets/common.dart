@@ -17,7 +17,7 @@ class SectionTitle extends StatelessWidget {
         Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         if (subtitle != null) ...[
           const SizedBox(height: 4),
-          Text(subtitle!, style: const TextStyle(color: AppTheme.inkMuted)),
+          Text(subtitle!, style: TextStyle(color: context.colors.inkMuted)),
         ],
       ],
     );
@@ -37,15 +37,15 @@ class ErrorNotice extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
+        color: context.colors.errorSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        border: Border.all(color: context.colors.errorBorder),
       ),
       child: Row(
         children: [
           const Icon(Icons.error_outline, color: AppTheme.danger),
           const SizedBox(width: 10),
-          Expanded(child: Text(message, style: const TextStyle(color: Color(0xFF991B1B)))),
+          Expanded(child: Text(message, style: TextStyle(color: context.colors.errorText))),
           if (onRetry != null)
             TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
@@ -69,7 +69,7 @@ class DetailRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 120, child: Text(label, style: const TextStyle(color: AppTheme.inkMuted))),
+          SizedBox(width: 120, child: Text(label, style: TextStyle(color: context.colors.inkMuted))),
           Expanded(
             child: Text(
               value,
@@ -115,9 +115,9 @@ class BottomAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + MediaQuery.paddingOf(context).bottom),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppTheme.inkFaint)),
+      decoration: BoxDecoration(
+        color: context.colors.card,
+        border: Border(top: BorderSide(color: context.colors.inkFaint)),
       ),
       child: child,
     );
@@ -156,6 +156,20 @@ class CountStepper extends StatelessWidget {
           icon: const Icon(Icons.add),
         ),
       ],
+    );
+  }
+}
+
+/// The spinner a primary button shows in place of its label while it works.
+class ButtonSpinner extends StatelessWidget {
+  const ButtonSpinner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CircularProgressIndicator(strokeWidth: 2.5, color: Theme.of(context).colorScheme.onPrimary),
     );
   }
 }

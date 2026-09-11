@@ -157,9 +157,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ],
           if (_error != null) ...[const SizedBox(height: 12), ErrorNotice(_error!)],
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Your number is only used to sign you in and to reach you about your bookings.',
-            style: TextStyle(color: AppTheme.inkMuted, fontSize: 13),
+            style: TextStyle(color: context.colors.inkMuted, fontSize: 13),
           ),
         ],
       ),
@@ -169,7 +169,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ? null
               : (awaitingCode ? (_code.text.length == 6 ? _verify : null) : (_phone.text.trim().length >= 10 ? _requestCode : null)),
           child: _busy
-              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+              ? const ButtonSpinner()
               : Text(awaitingCode ? 'Sign in' : 'Send code'),
         ),
       ),

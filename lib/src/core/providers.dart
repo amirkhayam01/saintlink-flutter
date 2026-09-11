@@ -5,6 +5,7 @@ import '../features/auth/auth_repository.dart';
 import '../features/booking/booking_repository.dart';
 import '../features/places/places_repository.dart';
 import 'api_client.dart';
+import 'error_reporter.dart';
 import 'token_store.dart';
 
 final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
@@ -17,8 +18,14 @@ final tokenStoreProvider = Provider<TokenStore>((ref) {
   return TokenStore(ref.watch(secureStorageProvider));
 });
 
+/// Override in `main.dart` to send reports somewhere other than the console.
+final errorReporterProvider = Provider<ErrorReporter>((ref) => ConsoleErrorReporter());
+
 final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient(tokens: ref.watch(tokenStoreProvider));
+  return ApiClient(
+    tokens: ref.watch(tokenStoreProvider),
+    errors: ref.watch(errorReporterProvider),
+  );
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

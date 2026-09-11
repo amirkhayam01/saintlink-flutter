@@ -159,7 +159,7 @@ class _VehicleCard extends StatelessWidget {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: selected ? AppTheme.midnight : AppTheme.inkFaint, width: selected ? 2 : 1),
+        side: BorderSide(color: selected ? AppTheme.midnight : context.colors.inkFaint, width: selected ? 2 : 1),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -171,8 +171,8 @@ class _VehicleCard extends StatelessWidget {
               Container(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(color: selected ? AppTheme.brand : AppTheme.surface, borderRadius: BorderRadius.circular(12)),
-                child: Icon(_iconFor(vehicle.slug), color: AppTheme.ink),
+                decoration: BoxDecoration(color: selected ? AppTheme.brand : context.colors.surface, borderRadius: BorderRadius.circular(12)),
+                child: Icon(_iconFor(vehicle.slug), color: context.colors.ink),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -183,7 +183,7 @@ class _VehicleCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       vehicle.capacitySummary ?? '${vehicle.passengerCapacity} passengers · ${vehicle.luggageCapacity} large cases',
-                      style: const TextStyle(color: AppTheme.inkMuted, fontSize: 13),
+                      style: TextStyle(color: context.colors.inkMuted, fontSize: 13),
                     ),
                   ],
                 ),
@@ -193,7 +193,7 @@ class _VehicleCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(price == null ? '—' : Formatting.money(price!), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-                  if (isReturn && price != null) const Text('return', style: TextStyle(color: AppTheme.inkMuted, fontSize: 12)),
+                  if (isReturn && price != null) Text('return', style: TextStyle(color: context.colors.inkMuted, fontSize: 12)),
                   if (!fits) const Text('Too small', style: TextStyle(color: AppTheme.danger, fontSize: 12)),
                 ],
               ),
@@ -226,11 +226,11 @@ class _Expired extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.timer_off_outlined, size: 48, color: AppTheme.inkMuted),
+            Icon(Icons.timer_off_outlined, size: 48, color: context.colors.inkMuted),
             const SizedBox(height: 12),
             const Text('Your quote has expired', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
             const SizedBox(height: 6),
-            const Text('Prices are held for 30 minutes. Refresh to get a current price for the same journey.', textAlign: TextAlign.center, style: TextStyle(color: AppTheme.inkMuted)),
+            Text('Prices are held for 30 minutes. Refresh to get a current price for the same journey.', textAlign: TextAlign.center, style: TextStyle(color: context.colors.inkMuted)),
             const SizedBox(height: 20),
             FilledButton(onPressed: onRefresh, child: const Text('Refresh price')),
           ],

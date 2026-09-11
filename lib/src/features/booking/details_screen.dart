@@ -91,7 +91,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                     const SizedBox(height: 8),
                     if (journey.pickupDate != null && journey.pickupTime != null)
                       Text('${Formatting.date(journey.pickupDate!)} at ${journey.pickupTime!.format(context)}${journey.isReturn ? ' · return ${Formatting.date(journey.returnDate!)} at ${journey.returnTime!.format(context)}' : ''}',
-                          style: const TextStyle(color: AppTheme.inkMuted, fontSize: 13)),
+                          style: TextStyle(color: context.colors.inkMuted, fontSize: 13)),
                     const Divider(height: 20),
                     Row(
                       children: [
@@ -168,7 +168,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
         child: FilledButton(
           onPressed: _termsAccepted && !state.isBooking ? _submit : null,
           child: state.isBooking
-              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+              ? const ButtonSpinner()
               : Text(total == null ? 'Confirm booking' : 'Confirm booking · ${Formatting.money(total)}'),
         ),
       ),
@@ -189,7 +189,7 @@ class _RouteLine extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: AppTheme.inkMuted),
+          Icon(icon, size: 18, color: context.colors.inkMuted),
           const SizedBox(width: 8),
           Expanded(child: Text(text)),
         ],

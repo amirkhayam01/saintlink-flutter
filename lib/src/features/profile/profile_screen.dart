@@ -112,7 +112,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               title: const Text('Offers and news'),
-              subtitle: const Text('Occasional emails from Saints Link. You can turn this off at any time.', style: TextStyle(color: AppTheme.inkMuted, fontSize: 13)),
+              subtitle: Text('Occasional emails from Saints Link. You can turn this off at any time.', style: TextStyle(color: context.colors.inkMuted, fontSize: 13)),
               value: _marketingConsent,
               onChanged: (v) => setState(() => _marketingConsent = v),
             ),
@@ -124,7 +124,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: FilledButton(
           onPressed: state.isSaving ? null : _save,
           child: state.isSaving
-              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+              ? const ButtonSpinner()
               : const Text('Save changes'),
         ),
       ),

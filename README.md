@@ -42,7 +42,8 @@ To sign in locally, request a code in the app and read it from the log:
 
 ```
 lib/src/
-  core/        env, ApiClient (Dio), ApiException, TokenStore, theme, formatting
+  core/        env, ApiClient (Dio), ApiException, TokenStore, ErrorReporter, theme (light + dark), formatting
+  domain/      freezed API models; every server date parsed to local time
   features/
     auth/      phone + OTP sign-in, AuthController (session restore)
     booking/   JourneyDraft, BookingFlowController, journey → vehicle → details → confirmed
@@ -68,6 +69,14 @@ Apple Pay needs the merchant id `merchant.uk.co.saintslink` registered in the
 Apple Developer account and the Xcode capability enabled; Google Pay needs the
 `com.google.android.gms.wallet.api.enabled` meta-data added to the manifest
 once the Google Pay business profile is approved.
+
+## Error reporting
+
+`ErrorReporter` is a seam, not a service. `ConsoleErrorReporter` is the
+default; to ship crash reporting, construct the real one in `main.dart`, call
+`installGlobalHandlers()` on it and override `errorReporterProvider`. 5xx and
+network failures are reported from `ApiClient`; 4xx never are — those are the
+customer's to fix.
 
 ## Not yet built
 

@@ -81,7 +81,7 @@ class _TripList extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: bookings.isEmpty
-          ? ListView(children: [Padding(padding: const EdgeInsets.all(40), child: Text(empty, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.inkMuted)))])
+          ? ListView(children: [Padding(padding: EdgeInsets.all(40), child: Text(empty, textAlign: TextAlign.center, style: TextStyle(color: context.colors.inkMuted)))])
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
               itemCount: bookings.length,
@@ -118,7 +118,7 @@ class _TripCard extends StatelessWidget {
               Text(booking.pickupAddress ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
               Row(
                 children: [
-                  const Icon(Icons.arrow_downward, size: 14, color: AppTheme.inkMuted),
+                  Icon(Icons.arrow_downward, size: 14, color: context.colors.inkMuted),
                   const SizedBox(width: 4),
                   Expanded(child: Text(booking.dropoffAddress ?? '', maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ],
@@ -126,7 +126,7 @@ class _TripCard extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: Text('${booking.vehicle ?? ''}${booking.isReturn ? ' · return' : ''}', style: const TextStyle(color: AppTheme.inkMuted, fontSize: 13))),
+                  Expanded(child: Text('${booking.vehicle ?? ''}${booking.isReturn ? ' · return' : ''}', style: TextStyle(color: context.colors.inkMuted, fontSize: 13))),
                   Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w700)),
                   if (booking.canPay) ...[
                     const SizedBox(width: 8),

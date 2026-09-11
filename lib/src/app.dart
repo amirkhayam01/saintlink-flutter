@@ -13,6 +13,8 @@ class SaintsLinkApp extends ConsumerWidget {
       title: 'Saints Link',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
       routerConfig: ref.watch(routerProvider),
     );
   }

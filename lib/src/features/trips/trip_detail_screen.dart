@@ -106,7 +106,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                       for (final item in booking.fareItems)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: Row(children: [Expanded(child: Text(item.label, style: const TextStyle(color: AppTheme.inkMuted))), Text(Formatting.money(item.amount, booking.currency))]),
+                          child: Row(children: [Expanded(child: Text(item.label, style: TextStyle(color: context.colors.inkMuted))), Text(Formatting.money(item.amount, booking.currency))]),
                         ),
                       const Divider(height: 18),
                       Row(children: [const Expanded(child: Text('Total', style: TextStyle(fontWeight: FontWeight.w700))), Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18))]),
@@ -173,7 +173,7 @@ class _LegCard extends StatelessWidget {
             if (showDirection) Text(leg.isReturnLeg ? 'Return journey' : 'Outward journey', style: const TextStyle(fontWeight: FontWeight.w700)),
             if (leg.pickupAt != null) ...[
               const SizedBox(height: 4),
-              Text(Formatting.fullDate(leg.pickupAt!), style: const TextStyle(color: AppTheme.inkMuted, fontSize: 13)),
+              Text(Formatting.fullDate(leg.pickupAt!), style: TextStyle(color: context.colors.inkMuted, fontSize: 13)),
               Text('Pickup at ${Formatting.time(leg.pickupAt!)}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
               if (leg.pickupWasAdjusted)
                 Text('Adjusted from ${Formatting.time(leg.requestedPickupAt!)} to match your flight', style: const TextStyle(color: AppTheme.brandDark, fontSize: 12)),
@@ -210,7 +210,7 @@ class _Stop extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, size: 18, color: AppTheme.inkMuted), const SizedBox(width: 8), Expanded(child: Text(text))]),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, size: 18, color: context.colors.inkMuted), SizedBox(width: 8), Expanded(child: Text(text))]),
       );
 }
 
@@ -221,7 +221,7 @@ class _Fact extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 15, color: AppTheme.inkMuted), const SizedBox(width: 4), Text(text, style: const TextStyle(fontSize: 13, color: AppTheme.inkMuted))]);
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 15, color: context.colors.inkMuted), SizedBox(width: 4), Text(text, style: TextStyle(fontSize: 13, color: context.colors.inkMuted))]);
 }
 
 class _CancelDialog extends StatefulWidget {
@@ -247,7 +247,7 @@ class _CancelDialogState extends State<_CancelDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Our team reviews every request and confirms any refund under the cancellation policy.', style: TextStyle(fontSize: 13, color: AppTheme.inkMuted)),
+          Text('Our team reviews every request and confirms any refund under the cancellation policy.', style: TextStyle(fontSize: 13, color: context.colors.inkMuted)),
           const SizedBox(height: 12),
           TextField(controller: _reason, maxLines: 3, maxLength: 1000, autofocus: true, decoration: const InputDecoration(labelText: 'Reason'), onChanged: (_) => setState(() {})),
         ],

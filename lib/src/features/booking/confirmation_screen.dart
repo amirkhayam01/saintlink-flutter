@@ -92,9 +92,9 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
             if (payment.error != null) ...[const SizedBox(height: 12), ErrorNotice(payment.error!)],
             const SizedBox(height: 16),
             if (!signedIn)
-              const Text(
+              Text(
                 'Sign in with your mobile number to see this booking in the app at any time. Your confirmation email has everything you need either way.',
-                style: TextStyle(color: AppTheme.inkMuted, fontSize: 13),
+                style: TextStyle(color: context.colors.inkMuted, fontSize: 13),
               ),
           ],
         ),
@@ -106,7 +106,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                 FilledButton(
                   onPressed: payment.isPaying ? null : () => _pay(booking),
                   child: payment.isPaying
-                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                      ? const ButtonSpinner()
                       : Text('Pay ${Formatting.money(booking.totalAmount, booking.currency)} now'),
                 ),
                 const SizedBox(height: 8),

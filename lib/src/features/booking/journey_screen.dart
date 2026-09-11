@@ -40,7 +40,7 @@ class JourneyScreen extends ConsumerWidget {
           if (Env.isDevelopmentBackend)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text('Connected to ${Env.apiBaseUrl}', style: const TextStyle(color: AppTheme.inkMuted, fontSize: 12)),
+              child: Text('Connected to ${Env.apiBaseUrl}', style: TextStyle(color: context.colors.inkMuted, fontSize: 12)),
             ),
           const SectionTitle('Where are you going?', subtitle: 'The price you see is the price you pay. No account needed to get a quote.'),
           const SizedBox(height: 16),
@@ -157,7 +157,7 @@ class JourneyScreen extends ConsumerWidget {
                 }
               : null,
           child: state.isQuoting
-              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+              ? const ButtonSpinner()
               : const Text('See prices'),
         ),
       ),
