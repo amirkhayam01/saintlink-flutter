@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saints_link/src/domain/quote.dart';
 
-import 'fixtures/fixtures.dart';
+import '../../fixtures/fixtures.dart';
 
 void main() {
   final quote = Quote.fromJson(loadFixture('quote'));

@@ -4,6 +4,7 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
+import '../booking/booking_repository.dart';
 
 /// The outcome of a payment attempt, as the screen needs to react to it.
 enum PaymentOutcome { paid, cancelled, failed }
@@ -14,15 +15,15 @@ enum PaymentOutcome { paid, cancelled, failed }
 /// sheet completes it directly with Stripe; the server learns the outcome from
 /// Stripe's webhook, not from this app. That last point matters: the app's
 /// "paid" is optimistic, and the booking's real paid state is whatever the
-/// server says the next time it is fetched.
+/// server says the next time it is fetched — see [PaymentController].
 class PaymentService {
-  PaymentService(this._ref);
+  PaymentService(this._bookings);
 
-  final Ref _ref;
+  final BookingRepository _bookings;
   String? _configuredKey;
 
   Future<PaymentOutcome> payForBooking(String reference) async {
-    final details = await _ref.read(bookingRepositoryProvider).paymentIntent(reference);
+    final details = await _bookings.paymentIntent(reference);
 
     // The publishable key comes from the server so the app never has to be
     // rebuilt to move between Stripe test and live modes.
@@ -55,4 +56,6 @@ class PaymentService {
   }
 }
 
-final paymentServiceProvider = Provider<PaymentService>((ref) => PaymentService(ref));
+final paymentServiceProvider = Provider<PaymentService>((ref) {
+  return PaymentService(ref.watch(bookingRepositoryProvider));
+});

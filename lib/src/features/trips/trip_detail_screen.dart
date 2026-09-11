@@ -6,8 +6,9 @@ import '../../core/formatting.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
-import '../payment/payment_service.dart';
 import '../../domain/booking.dart';
+import '../payment/payment_controller.dart';
+import '../payment/payment_service.dart';
 import 'trips_controller.dart';
 
 class TripDetailScreen extends ConsumerStatefulWidget {
@@ -23,30 +24,16 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   bool _busy = false;
 
   Future<void> _pay(Booking booking) async {
-    setState(() => _busy = true);
+    final outcome = await ref.read(paymentControllerProvider(booking.reference).notifier).pay();
+    if (!mounted) return;
 
-    try {
-      final outcome = await ref.read(paymentServiceProvider).payForBooking(booking.reference);
-      if (!mounted) return;
-
-      if (outcome == PaymentOutcome.paid) {
+    switch (outcome) {
+      case PaymentOutcome.paid:
         showMessage(context, 'Payment received. Thank you.');
-        /*
-         * The server learns about the payment from Stripe's webhook, which can
-         * land a moment after the sheet closes. A short wait before refetching
-         * means the screen usually shows "Paid" first time rather than making
-         * the customer pull to refresh.
-         */
-        await Future<void>.delayed(const Duration(seconds: 2));
-        ref.invalidate(tripDetailProvider(widget.reference));
-        ref.invalidate(tripsProvider);
-      } else if (outcome == PaymentOutcome.cancelled) {
+      case PaymentOutcome.cancelled:
         showMessage(context, 'Payment cancelled. Your booking is still saved.');
-      }
-    } on ApiException catch (error) {
-      if (mounted) showMessage(context, error.message);
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      case PaymentOutcome.failed:
+        showMessage(context, ref.read(paymentControllerProvider(booking.reference)).error ?? 'Your payment could not be taken.');
     }
   }
 
@@ -72,6 +59,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final detail = ref.watch(tripDetailProvider(widget.reference));
+    final paying = ref.watch(paymentControllerProvider(widget.reference).select((s) => s.isPaying));
+    final busy = _busy || paying;
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.reference)),
@@ -149,11 +138,11 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (booking.canPay) FilledButton(onPressed: _busy ? null : () => _pay(booking), child: Text('Pay ${Formatting.money(booking.totalAmount, booking.currency)}')),
+                    if (booking.canPay) FilledButton(onPressed: busy ? null : () => _pay(booking), child: Text('Pay ${Formatting.money(booking.totalAmount, booking.currency)}')),
                     if (booking.canPay && booking.isCancellable) const SizedBox(height: 8),
                     if (booking.isCancellable)
                       OutlinedButton(
-                        onPressed: _busy ? null : () => _cancel(booking),
+                        onPressed: busy ? null : () => _cancel(booking),
                         style: OutlinedButton.styleFrom(foregroundColor: AppTheme.danger),
                         child: const Text('Request cancellation'),
                       ),

@@ -77,7 +77,11 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     if (state.vehicles.isNotEmpty) return;
 
     try {
-      state = state.copyWith(vehicles: await ref.read(bookingRepositoryProvider).vehicleCategories());
+      final vehicles = await ref.read(bookingRepositoryProvider).vehicleCategories();
+      // Read `state` only after the await: the receiver of `state.copyWith`
+      // would otherwise be captured before the request and overwrite a quote
+      // that arrived while the fleet was still loading.
+      state = state.copyWith(vehicles: vehicles);
     } on ApiException {
       // The fleet is decorative until a quote exists; the quote will surface
       // any real connectivity problem with a message the customer can act on.

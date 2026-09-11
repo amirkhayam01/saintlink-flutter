@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saints_link/src/domain/vehicle_category.dart';
 
-import 'fixtures/fixtures.dart';
+import '../../fixtures/fixtures.dart';
 
 void main() {
   final data = loadFixture('vehicle_categories')['data'] as List<dynamic>;

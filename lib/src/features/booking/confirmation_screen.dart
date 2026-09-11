@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/api_exception.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../auth/auth_controller.dart';
+import '../payment/payment_controller.dart';
 import '../payment/payment_service.dart';
 import '../../domain/booking.dart';
 import 'booking_flow_controller.dart';
@@ -26,33 +26,11 @@ class ConfirmationScreen extends ConsumerStatefulWidget {
 }
 
 class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
-  bool _paying = false;
-  bool _paid = false;
-  String? _error;
-
   Future<void> _pay(Booking booking) async {
-    setState(() {
-      _paying = true;
-      _error = null;
-    });
+    final outcome = await ref.read(paymentControllerProvider(booking.reference).notifier).pay();
 
-    try {
-      final outcome = await ref.read(paymentServiceProvider).payForBooking(booking.reference);
-
-      if (!mounted) return;
-
-      switch (outcome) {
-        case PaymentOutcome.paid:
-          setState(() => _paid = true);
-        case PaymentOutcome.cancelled:
-          showMessage(context, 'Payment cancelled. Your booking is saved — you can pay from My trips.');
-        case PaymentOutcome.failed:
-          setState(() => _error = 'Your payment could not be taken. Please try again.');
-      }
-    } on ApiException catch (error) {
-      if (mounted) setState(() => _error = error.message);
-    } finally {
-      if (mounted) setState(() => _paying = false);
+    if (outcome == PaymentOutcome.cancelled && mounted) {
+      showMessage(context, 'Payment cancelled. Your booking is saved — you can pay from My trips.');
     }
   }
 
@@ -64,6 +42,8 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
     if (booking == null) {
       return const Scaffold(body: Center(child: Text('No booking to show.')));
     }
+
+    final payment = ref.watch(paymentControllerProvider(booking.reference));
 
     final leg = booking.legs.isEmpty ? null : booking.legs.first;
 
@@ -80,9 +60,9 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(_paid ? Icons.verified : Icons.check_circle_outline, size: 36, color: AppTheme.midnight),
+                  Icon(payment.isPaid ? Icons.verified : Icons.check_circle_outline, size: 36, color: AppTheme.midnight),
                   const SizedBox(height: 10),
-                  Text(_paid ? 'Paid and booked' : 'Thanks — we have your booking', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.midnight)),
+                  Text(payment.isPaid ? 'Paid and booked' : 'Thanks — we have your booking', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.midnight)),
                   const SizedBox(height: 4),
                   Text('Reference ${booking.reference}', style: const TextStyle(color: AppTheme.midnight, fontWeight: FontWeight.w600)),
                   if (booking.customerEmail != null) ...[
@@ -104,12 +84,12 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                       DetailRow('Return', booking.legs[1].pickupAt == null ? '' : Formatting.dateAndTime(booking.legs[1].pickupAt!)),
                     DetailRow('Vehicle', booking.vehicle ?? ''),
                     DetailRow('Total', Formatting.money(booking.totalAmount, booking.currency), emphasise: true),
-                    DetailRow('Payment', _paid ? 'Paid' : booking.paymentStatusLabel),
+                    DetailRow('Payment', payment.isPaid ? 'Paid' : booking.paymentStatusLabel),
                   ],
                 ),
               ),
             ),
-            if (_error != null) ...[const SizedBox(height: 12), ErrorNotice(_error!)],
+            if (payment.error != null) ...[const SizedBox(height: 12), ErrorNotice(payment.error!)],
             const SizedBox(height: 16),
             if (!signedIn)
               const Text(
@@ -122,10 +102,10 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (booking.canPay && !_paid) ...[
+              if (booking.canPay && !payment.isPaid) ...[
                 FilledButton(
-                  onPressed: _paying ? null : () => _pay(booking),
-                  child: _paying
+                  onPressed: payment.isPaying ? null : () => _pay(booking),
+                  child: payment.isPaying
                       ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
                       : Text('Pay ${Formatting.money(booking.totalAmount, booking.currency)} now'),
                 ),
