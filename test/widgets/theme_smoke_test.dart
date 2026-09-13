@@ -6,6 +6,7 @@ import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/features/auth/auth_controller.dart';
 import 'package:saints_link/src/features/auth/sign_in_screen.dart';
 import 'package:saints_link/src/features/booking/journey_screen.dart';
+import 'package:saints_link/src/features/home/home_screen.dart';
 import 'package:saints_link/src/widgets/common.dart';
 
 import '../support/fakes.dart';
@@ -24,6 +25,22 @@ void main() {
 
   for (final (name, theme) in [('light', AppTheme.light()), ('dark', AppTheme.dark())]) {
     group(name, () {
+      testWidgets('home screen', (tester) async {
+        await tester.pumpWidget(app(const HomeScreen(), theme));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Where can we take you?'), findsOneWidget);
+        expect(find.text('Our Services'), findsOneWidget);
+        expect(find.textContaining('Good '), findsOneWidget);
+        expect(find.byIcon(Icons.menu_rounded), findsOneWidget);
+
+        // Open side drawer and verify theme switch is present inside
+        await tester.tap(find.byIcon(Icons.menu_rounded));
+        await tester.pumpAndSettle();
+        expect(find.byType(Drawer), findsOneWidget);
+        expect(find.byType(Switch), findsOneWidget);
+      });
+
       testWidgets('journey screen', (tester) async {
         await tester.pumpWidget(app(const JourneyScreen(), theme));
         await tester.pump();

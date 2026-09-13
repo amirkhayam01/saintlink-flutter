@@ -15,10 +15,12 @@ import 'package:saints_link/src/features/booking/confirmation_screen.dart';
 import 'package:saints_link/src/features/booking/vehicle_screen.dart';
 import 'package:saints_link/src/features/trips/trip_detail_screen.dart';
 import 'package:saints_link/src/features/trips/trips_screen.dart';
+import 'package:saints_link/src/features/home/home_screen.dart';
 import 'package:saints_link/src/features/places/address_search_field.dart';
 import 'package:saints_link/src/features/profile/profile_screen.dart';
 import 'package:saints_link/src/features/auth/auth_controller.dart';
 import 'package:saints_link/src/domain/booking.dart';
+import 'package:saints_link/src/widgets/app_shell.dart';
 
 import '../support/fakes.dart';
 
@@ -117,9 +119,33 @@ void main() {
     c.read(bookingFlowProvider.notifier).selectVehicle('executive-saloon');
   }
 
-  testWidgets('home', (t) => shot(t, 'home', const JourneyScreen()));
-  testWidgets('home dark', (t) => shot(t, 'home_dark', const JourneyScreen(), theme: AppTheme.dark(), tall: true));
   testWidgets('home full', (t) => shot(t, 'home_full', const JourneyScreen(), tall: true));
+  testWidgets('home', (t) => shot(
+        t,
+        'home',
+        Scaffold(
+          body: const HomeScreen(),
+          bottomNavigationBar: AppBottomNavBar(
+            currentIndex: 0,
+            onTap: (_) {},
+          ),
+        ),
+        tall: true,
+      ));
+  testWidgets('home dark', (t) => shot(
+        t,
+        'home_dark',
+        Scaffold(
+          body: const HomeScreen(),
+          bottomNavigationBar: AppBottomNavBar(
+            currentIndex: 0,
+            onTap: (_) {},
+          ),
+        ),
+        theme: AppTheme.dark(),
+        tall: true,
+      ));
+  testWidgets('journey', (t) => shot(t, 'journey', const JourneyScreen(), tall: true));
   testWidgets('home filled', (t) => shot(t, 'home_filled', const JourneyScreen(), prime: (c) async {
         c.read(bookingFlowProvider.notifier).updateJourney((_) => quotableJourney.copyWith(
               dropoff: const PlaceSelection(address: 'Heathrow Airport Terminal 5', placeId: 'h', latitude: 51.47, longitude: -0.49),

@@ -8,9 +8,13 @@ import 'features/booking/confirmation_screen.dart';
 import 'features/booking/details_screen.dart';
 import 'features/booking/journey_screen.dart';
 import 'features/booking/vehicle_screen.dart';
+import 'features/home/home_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/trips/trip_detail_screen.dart';
 import 'features/trips/trips_screen.dart';
+import 'widgets/app_shell.dart';
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
 /// Rebuilds the router's redirect when sign-in state changes, without
 /// recreating the router and losing the navigation stack.
@@ -25,6 +29,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(listenable.dispose);
 
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: listenable,
     redirect: (context, state) {
@@ -47,26 +52,73 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (_, _) => const JourneyScreen(),
-        routes: [
-          GoRoute(path: 'book/vehicle', builder: (_, _) => const VehicleScreen()),
-          GoRoute(path: 'book/details', builder: (_, _) => const DetailsScreen()),
-          GoRoute(path: 'book/confirmed', builder: (_, _) => const ConfirmationScreen()),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return AppShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/book',
+                builder: (_, _) => const JourneyScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'vehicle',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (_, _) => const VehicleScreen(),
+                  ),
+                  GoRoute(
+                    path: 'details',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (_, _) => const DetailsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'confirmed',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (_, _) => const ConfirmationScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/trips',
+                builder: (_, _) => const TripsScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':reference',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (_, state) => TripDetailScreen(reference: state.pathParameters['reference']!),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (_, _) => const ProfileScreen(),
+              ),
+            ],
+          ),
         ],
       ),
       GoRoute(
         path: '/sign-in',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (_, state) => SignInScreen(redirectTo: state.uri.queryParameters['redirect']),
-      ),
-      GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
-      GoRoute(
-        path: '/trips',
-        builder: (_, _) => const TripsScreen(),
-        routes: [
-          GoRoute(path: ':reference', builder: (_, state) => TripDetailScreen(reference: state.pathParameters['reference']!)),
-        ],
       ),
     ],
   );
