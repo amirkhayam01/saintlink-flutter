@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme.dart';
 import 'core/theme_controller.dart';
+import 'features/splash/splash_overlay.dart';
 import 'router.dart';
 
 class SaintsLinkApp extends ConsumerWidget {
@@ -19,6 +20,7 @@ class SaintsLinkApp extends ConsumerWidget {
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
       routerConfig: ref.watch(routerProvider),
+      builder: (_, child) => SplashOverlay(child: child ?? const SizedBox.shrink()),
     );
   }
 }

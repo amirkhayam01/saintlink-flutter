@@ -10,6 +10,8 @@ import 'features/booking/journey_screen.dart';
 import 'features/booking/vehicle_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/services/prices_screen.dart';
+import 'features/services/service_screen.dart';
 import 'features/trips/trip_detail_screen.dart';
 import 'features/trips/trips_screen.dart';
 import 'widgets/app_shell.dart';
@@ -62,6 +64,23 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/',
                 builder: (_, _) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'services/airport',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (_, _) => const ServiceScreen(kind: ServiceKind.airport),
+                  ),
+                  GoRoute(
+                    path: 'services/cruise',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (_, _) => const ServiceScreen(kind: ServiceKind.cruise),
+                  ),
+                  GoRoute(
+                    path: 'prices',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    builder: (_, _) => const PricesScreen(),
+                  ),
+                ],
               ),
             ],
           ),

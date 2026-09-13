@@ -18,6 +18,8 @@ import 'package:saints_link/src/features/trips/trips_screen.dart';
 import 'package:saints_link/src/features/home/home_screen.dart';
 import 'package:saints_link/src/features/places/address_search_field.dart';
 import 'package:saints_link/src/features/profile/profile_screen.dart';
+import 'package:saints_link/src/features/services/prices_screen.dart';
+import 'package:saints_link/src/features/services/service_screen.dart';
 import 'package:saints_link/src/features/auth/auth_controller.dart';
 import 'package:saints_link/src/domain/booking.dart';
 import 'package:saints_link/src/widgets/app_shell.dart';
@@ -157,6 +159,9 @@ void main() {
   testWidgets('vehicle', (t) => shot(t, 'vehicle', const VehicleScreen(), prime: primeQuote));
   testWidgets('details', (t) => shot(t, 'details', const DetailsScreen(), prime: primeQuote));
   testWidgets('sign in', (t) => shot(t, 'sign_in', const SignInScreen()));
+  testWidgets('airport', (t) => shot(t, 'airport', const ServiceScreen(kind: ServiceKind.airport), tall: true));
+  testWidgets('cruise', (t) => shot(t, 'cruise', const ServiceScreen(kind: ServiceKind.cruise), tall: true));
+  testWidgets('prices', (t) => shot(t, 'prices', const PricesScreen(), tall: true));
   testWidgets('confirmation', (t) => shot(t, 'confirmation', const ConfirmationScreen(), prime: (c) async {
         await primeQuote(c);
         bookings.nextBooking = sample('SL-8K2M', paid: false);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../widgets/common.dart';
 import '../../../widgets/tiles.dart';
@@ -11,10 +12,10 @@ class ServicesGrid extends StatelessWidget {
   final void Function(String serviceName, String? defaultDropoff) onSelectService;
 
   static const _services = [
-    (title: 'Airport transfers', caption: 'Meet & greet', icon: Icons.flight_takeoff_rounded, dest: 'London Heathrow Airport (LHR)'),
-    (title: 'Cruise terminals', caption: 'Door to ship', icon: Icons.directions_boat_filled_rounded, dest: 'Southampton Cruise Terminals'),
-    (title: 'Private hire', caption: 'Any journey', icon: Icons.directions_car_rounded, dest: null),
-    (title: 'Long distance', caption: 'London & beyond', icon: Icons.route_rounded, dest: 'Central London, UK'),
+    (title: 'Airport transfers', caption: 'Meet & greet', icon: Icons.flight_takeoff_rounded, route: '/services/airport', dest: null),
+    (title: 'Cruise terminals', caption: 'Door to ship', icon: Icons.directions_boat_filled_rounded, route: '/services/cruise', dest: null),
+    (title: 'Private hire', caption: 'Any journey', icon: Icons.directions_car_rounded, route: null, dest: null),
+    (title: 'Routes & prices', caption: 'Popular fixed fares', icon: Icons.sell_outlined, route: '/prices', dest: null),
   ];
 
   @override
@@ -37,7 +38,7 @@ class ServicesGrid extends StatelessWidget {
                 icon: s.icon,
                 title: s.title,
                 caption: s.caption,
-                onTap: () => onSelectService(s.title, s.dest),
+                onTap: () => s.route != null ? context.push(s.route!) : onSelectService(s.title, s.dest),
               ),
           ],
         ),
