@@ -21,6 +21,15 @@ class AppTheme {
   static const danger = Color(0xFFDC2626);
   static const success = Color(0xFF15803D);
 
+  /// Laid over hero photography so white text stays legible on any image:
+  /// clear at the top, midnight at the bottom where the title sits.
+  static const heroOverlay = LinearGradient(
+    colors: [Color(0x00020617), Color(0x33020617), Color(0xD9020617)],
+    stops: [0.0, 0.45, 1.0],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
   static ThemeData light() => _build(AppColors.light, Brightness.light);
 
   static ThemeData dark() => _build(AppColors.dark, Brightness.dark);
@@ -180,6 +189,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.errorSurface,
     required this.errorBorder,
     required this.errorText,
+    required this.tint,
   });
 
   static const light = AppColors(
@@ -191,6 +201,7 @@ class AppColors extends ThemeExtension<AppColors> {
     errorSurface: Color(0xFFFEF2F2),
     errorBorder: Color(0xFFFECACA),
     errorText: Color(0xFF991B1B),
+    tint: Color(0x1FFACC15),
   );
 
   static const dark = AppColors(
@@ -202,6 +213,7 @@ class AppColors extends ThemeExtension<AppColors> {
     errorSurface: Color(0xFF2A1215),
     errorBorder: Color(0xFF7F1D1D),
     errorText: Color(0xFFFCA5A5),
+    tint: Color(0x2EFACC15),
   );
 
   /// Body text.
@@ -223,6 +235,10 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color errorBorder;
   final Color errorText;
 
+  /// Brand gold washed to a surface: the ground behind icon tiles, selected
+  /// cards and pills. Slightly stronger on the dark ground so it still reads.
+  final Color tint;
+
   /// The one shadow the app uses, on cards that float over the hero or the
   /// ground. Softer and larger than Material's default elevation.
   List<BoxShadow> get floatingShadow => [
@@ -239,6 +255,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? errorSurface,
     Color? errorBorder,
     Color? errorText,
+    Color? tint,
   }) {
     return AppColors(
       ink: ink ?? this.ink,
@@ -249,6 +266,7 @@ class AppColors extends ThemeExtension<AppColors> {
       errorSurface: errorSurface ?? this.errorSurface,
       errorBorder: errorBorder ?? this.errorBorder,
       errorText: errorText ?? this.errorText,
+      tint: tint ?? this.tint,
     );
   }
 
@@ -265,6 +283,7 @@ class AppColors extends ThemeExtension<AppColors> {
       errorSurface: Color.lerp(errorSurface, other.errorSurface, t)!,
       errorBorder: Color.lerp(errorBorder, other.errorBorder, t)!,
       errorText: Color.lerp(errorText, other.errorText, t)!,
+      tint: Color.lerp(tint, other.tint, t)!,
     );
   }
 }
