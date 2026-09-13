@@ -9,6 +9,7 @@ import '../../core/links.dart';
 import '../../domain/vehicle_category.dart';
 import '../../widgets/common.dart';
 import '../../widgets/route_timeline.dart';
+import '../../widgets/tiles.dart';
 import '../../widgets/vehicle_image.dart';
 import 'journey_draft.dart';
 import '../auth/auth_controller.dart';
@@ -90,28 +91,31 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
             const SizedBox(height: 28),
             const SectionTitle('Lead passenger', subtitle: 'The person the driver will meet. It does not have to be you.'),
             const SizedBox(height: 14),
+            const FieldLabel('Full name'),
             TextFormField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(hintText: 'Full name', prefixIcon: const Icon(Icons.person_outline, size: 20), errorText: fieldError['customer_name']?.first),
+              decoration: InputDecoration(hintText: 'e.g. Ada Lovelace', prefixIcon: const Icon(Icons.person_outline, size: 20), errorText: fieldError['customer_name']?.first),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Please enter a name' : null,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            const FieldLabel('Mobile number'),
             TextFormField(
               controller: _phone,
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(hintText: 'Mobile number', prefixIcon: const Icon(Icons.phone_iphone, size: 20), helperText: 'Your driver will use this on the day', errorText: fieldError['customer_phone']?.first),
+              decoration: InputDecoration(hintText: '07700 900123', prefixIcon: const Icon(Icons.phone_iphone, size: 20), helperText: 'Your driver will use this on the day', errorText: fieldError['customer_phone']?.first),
               validator: (v) => (v ?? '').trim().length < 10 ? 'Please enter a valid mobile number' : null,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            const FieldLabel('Email', optional: true),
             TextFormField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               autocorrect: false,
-              decoration: InputDecoration(hintText: 'Email (optional)', prefixIcon: const Icon(Icons.mail_outline, size: 20), helperText: 'For your confirmation and receipt', errorText: fieldError['customer_email']?.first),
+              decoration: InputDecoration(hintText: 'you@example.com', prefixIcon: const Icon(Icons.mail_outline, size: 20), helperText: 'For your confirmation and receipt', errorText: fieldError['customer_email']?.first),
               validator: (v) {
                 final text = (v ?? '').trim();
                 if (text.isEmpty) return null;
@@ -119,14 +123,17 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                 return text.contains('@') && text.contains('.') ? null : 'Please enter a valid email address';
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
+            const SectionTitle('For your driver'),
+            const SizedBox(height: 14),
+            const FieldLabel('Notes', optional: true),
             TextFormField(
               controller: _notes,
               minLines: 2,
               maxLines: 4,
               maxLength: 2000,
               buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-              decoration: const InputDecoration(hintText: 'Notes for your driver (optional)', helperText: 'Child seat, meeting point, anything we should know', prefixIcon: Padding(padding: EdgeInsets.only(bottom: 22), child: Icon(Icons.chat_bubble_outline, size: 20))),
+              decoration: const InputDecoration(hintText: 'Child seat, meeting point, anything we should know', prefixIcon: Padding(padding: EdgeInsets.only(bottom: 22), child: Icon(Icons.chat_bubble_outline, size: 20))),
             ),
             if (state.bookingError != null) ...[
               const SizedBox(height: 16),
@@ -170,25 +177,29 @@ class _SummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (vehicle != null)
-            Row(
-              children: [
-                SizedBox(width: 104, height: 80, child: VehicleImage(vehicle!.slug)),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(vehicle!.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                      const SizedBox(height: 2),
-                      Text(journey.isReturn ? 'Return · same vehicle both ways' : 'One way', style: TextStyle(color: colors.inkMuted, fontSize: 12)),
-                    ],
+            Container(
+              color: AppTheme.midnight,
+              padding: const EdgeInsets.fromLTRB(12, 12, 18, 12),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(width: 92, height: 64, child: VehicleImage(vehicle!.slug)),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Text(total == null ? '' : Formatting.money(total!), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20, letterSpacing: -0.3)),
-                ),
-              ],
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(vehicle!.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
+                        const SizedBox(height: 2),
+                        Text(journey.isReturn ? 'Return · same vehicle both ways' : 'One way · fixed price', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Text(total == null ? '' : Formatting.money(total!), style: const TextStyle(color: AppTheme.brand, fontWeight: FontWeight.w800, fontSize: 22, letterSpacing: -0.3)),
+                ],
+              ),
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),

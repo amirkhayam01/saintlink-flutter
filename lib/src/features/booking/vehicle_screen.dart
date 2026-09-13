@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/tiles.dart';
 import '../../widgets/vehicle_image.dart';
 import 'booking_flow_controller.dart';
 import '../../domain/quote.dart';
@@ -61,7 +62,9 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
     double? bestPrice;
     for (final v in vehicles) {
       final price = journey.isReturn ? quote.fareFor(v.slug)?.returnTotal : quote.fareFor(v.slug)?.single;
-      if (price != null && v.fits(passengers: journey.passengerCount, luggage: journey.luggageCount) && (bestPrice == null || price < bestPrice)) {
+      if (price != null &&
+          v.fits(passengers: journey.passengerCount, luggage: journey.luggageCount) &&
+          (bestPrice == null || price < bestPrice)) {
         bestPrice = price;
         bestValue = v.slug;
       }
@@ -91,55 +94,60 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          _QuoteBanner(quote: quote, isReturn: journey.isReturn),
-          Expanded(
-            child: expired
-                ? _Expired(onRefresh: () async {
-                    if (await controller.requestQuote()) setState(() {});
-                  })
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                    itemCount: vehicles.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final vehicle = vehicles[index];
-                      final fare = quote.fareFor(vehicle.slug)!;
-                      final fits = vehicle.fits(passengers: journey.passengerCount, luggage: journey.luggageCount);
-                      final price = journey.isReturn ? fare.returnTotal : fare.single;
+      body: expired
+          ? _Expired(
+              onRefresh: () async {
+                if (await controller.requestQuote()) setState(() {});
+              },
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              itemCount: vehicles.length + 1,
+              separatorBuilder: (_, index) => SizedBox(height: index == 0 ? 20 : 12),
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _QuoteCallout(quote: quote, isReturn: journey.isReturn, fromPrice: bestPrice, selectedPrice: state.totalDue);
+                }
+                final vehicle = vehicles[index - 1];
+                final fare = quote.fareFor(vehicle.slug)!;
+                final fits = vehicle.fits(passengers: journey.passengerCount, luggage: journey.luggageCount);
+                final price = journey.isReturn ? fare.returnTotal : fare.single;
 
-                      return _VehicleCard(
-                        vehicle: vehicle,
-                        price: price,
-                        fits: fits && price != null,
-                        selected: journey.vehicleCategorySlug == vehicle.slug,
-                        isReturn: journey.isReturn,
-                        tag: vehicle.slug == bestValue ? 'Best value' : null,
-                        onTap: () => controller.selectVehicle(vehicle.slug),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+                return _VehicleCard(
+                  vehicle: vehicle,
+                  price: price,
+                  fits: fits && price != null,
+                  selected: journey.vehicleCategorySlug == vehicle.slug,
+                  isReturn: journey.isReturn,
+                  tag: vehicle.slug == bestValue ? 'Best value' : null,
+                  onTap: () => controller.selectVehicle(vehicle.slug),
+                );
+              },
+            ),
       bottomNavigationBar: BottomAction(
         child: FilledButton(
-          onPressed: !expired && state.selectedVehicle != null && state.totalDue != null
-              ? () => context.push('/book/details')
-              : null,
-          child: Text(state.totalDue == null ? 'Select a vehicle' : 'Continue with ${state.selectedVehicle!.name} · ${Formatting.money(state.totalDue!)}'),
+          onPressed: !expired && state.selectedVehicle != null && state.totalDue != null ? () => context.push('/book/details') : null,
+          child: Text(
+            state.totalDue == null
+                ? 'Select a vehicle'
+                : 'Continue with ${state.selectedVehicle!.name} · ${Formatting.money(state.totalDue!)}',
+          ),
         ),
       ),
     );
   }
 }
 
-class _QuoteBanner extends StatelessWidget {
-  const _QuoteBanner({required this.quote, required this.isReturn});
+/// The fixed-fare promise with the price in large type, and the countdown
+/// on the quote that holds it. The one place the customer sees "this is the
+/// number" before the form asks for their name.
+class _QuoteCallout extends StatelessWidget {
+  const _QuoteCallout({required this.quote, required this.isReturn, required this.fromPrice, required this.selectedPrice});
 
   final Quote quote;
   final bool isReturn;
+  final double? fromPrice;
+  final double? selectedPrice;
 
   @override
   Widget build(BuildContext context) {
@@ -149,40 +157,38 @@ class _QuoteBanner extends StatelessWidget {
       if (isReturn) 'each way',
     ];
     final urgent = quote.remaining.inMinutes < 5;
+    final price = selectedPrice ?? fromPrice;
 
-    return Container(
-      width: double.infinity,
-      color: AppTheme.midnight,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.route_outlined, size: 16, color: Colors.white54),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              parts.isEmpty ? 'Fixed price — no meter, no surprises' : parts.join(' · '),
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        CalloutCard(
+          eyebrow: selectedPrice != null ? (isReturn ? 'Fixed fare · return' : 'Fixed fare') : 'Fixed fares from',
+          headline: price == null ? 'Fixed price' : Formatting.money(price),
+          body: parts.isEmpty ? 'No meter, no surprises. Price agreed before travel.' : '${parts.join(' · ')}\nPrice agreed before travel.',
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(color: urgent ? AppTheme.brand : context.colors.tint, borderRadius: BorderRadius.circular(999)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.timer_outlined, size: 14, color: urgent ? AppTheme.midnight : AppTheme.brandDark),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Price held ${Formatting.countdown(quote.remaining)}',
+                    style: TextStyle(color: urgent ? AppTheme.midnight : AppTheme.brandDark, fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: urgent ? AppTheme.brand : Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.timer_outlined, size: 14, color: urgent ? AppTheme.midnight : Colors.white),
-                const SizedBox(width: 5),
-                Text(
-                  'Held ${Formatting.countdown(quote.remaining)}',
-                  style: TextStyle(color: urgent ? AppTheme.midnight : Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -215,7 +221,7 @@ class _VehicleCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: colors.card,
+          color: selected ? colors.tint : colors.card,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: selected ? AppTheme.brand : colors.inkFaint, width: selected ? 2 : 1),
           boxShadow: selected ? colors.floatingShadow : null,
@@ -244,10 +250,23 @@ class _VehicleCard extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(color: AppTheme.brand, borderRadius: BorderRadius.circular(6)),
-                              child: Text(tag!.toUpperCase(), style: const TextStyle(color: AppTheme.midnight, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                              child: Text(
+                                tag!.toUpperCase(),
+                                style: const TextStyle(
+                                  color: AppTheme.midnight,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
                             ),
                           ),
-                        Text(vehicle.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                        Text(
+                          vehicle.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                        ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
@@ -274,7 +293,10 @@ class _VehicleCard extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(price == null ? '—' : Formatting.money(price!), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: -0.3)),
+                      Text(
+                        price == null ? '—' : Formatting.money(price!),
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: -0.3),
+                      ),
                       Text(isReturn ? 'return' : 'fixed', style: TextStyle(color: colors.inkMuted, fontSize: 11)),
                     ],
                   ),
@@ -305,7 +327,11 @@ class _Expired extends StatelessWidget {
             const SizedBox(height: 12),
             const Text('Your quote has expired', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
             const SizedBox(height: 6),
-            Text('Prices are held for 30 minutes. Refresh to get a current price for the same journey.', textAlign: TextAlign.center, style: TextStyle(color: context.colors.inkMuted)),
+            Text(
+              'Prices are held for 30 minutes. Refresh to get a current price for the same journey.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: context.colors.inkMuted),
+            ),
             const SizedBox(height: 20),
             FilledButton(onPressed: onRefresh, child: const Text('Refresh price')),
           ],

@@ -382,3 +382,33 @@ class BadgeRow extends StatelessWidget {
     );
   }
 }
+
+/// The small uppercase caption above a text field, so a form reads as a list
+/// of named answers rather than a stack of grey hints.
+class FieldLabel extends StatelessWidget {
+  const FieldLabel(this.text, {super.key, this.optional = false});
+
+  final String text;
+  final bool optional;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 6),
+      child: Row(
+        children: [
+          Text(
+            text.toUpperCase(),
+            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: colors.inkMuted),
+          ),
+          if (optional) ...[
+            const SizedBox(width: 6),
+            Text('optional', style: TextStyle(fontSize: 10.5, color: colors.inkMuted)),
+          ],
+        ],
+      ),
+    );
+  }
+}
