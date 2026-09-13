@@ -5,28 +5,24 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../core/theme_controller.dart';
 import '../../domain/place.dart';
+import '../../widgets/hero_banner.dart';
 import '../auth/auth_controller.dart';
 import '../booking/booking_flow_controller.dart';
+import '../booking/journey_draft.dart';
+import 'widgets/fleet_showcase_section.dart';
 import 'widgets/home_top_bar.dart';
-import 'widgets/app_drawer.dart';
-import 'widgets/upcoming_trip_banner.dart';
+import 'widgets/popular_fares_section.dart';
 import 'widgets/search_launcher.dart';
 import 'widgets/services_grid.dart';
-import 'widgets/popular_fares_section.dart';
-import 'widgets/fleet_showcase_section.dart';
 import 'widgets/trust_strip.dart';
+import 'widgets/upcoming_trip_banner.dart';
 
-/// Redesigned production-grade Home Screen for Saints Link.
+/// The landing screen: a launcher, not a form.
 ///
-/// Executive chauffeur mobile experience defaulting to light mode.
-/// Top bar with side drawer trigger, authentic brand logo, light/dark theme switch,
-/// and profile or sign-in chip.
-/// Side navigation drawer with full branding, account summary, navigation links,
-/// and theme switcher.
-/// Personalized greeting header ("Good morning, {name}").
-/// Seamless upcoming trip status card or Southampton concierge welcome banner.
-/// Instant search launcher with popular hub shortcuts.
-/// Executive services grid, popular fixed fares, and fleet showcase.
+/// Photo hero with the greeting, then a sheet that rides up over it carrying
+/// the "where to" bar, the customer's next trip if they have one, the four
+/// service tiles, the trust promises, popular fixed fares and the fleet. The
+/// booking form itself lives on /book; every tile here just presets it.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -44,119 +40,92 @@ class HomeScreen extends ConsumerWidget {
     final bookingState = ref.watch(bookingFlowProvider);
     final bookingController = ref.read(bookingFlowProvider.notifier);
     final firstName = auth.customer?.firstName;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    void presetAndBook(JourneyDraft Function(JourneyDraft) update) {
+      bookingController.updateJourney(update);
+      context.go('/book');
+    }
 
     return Scaffold(
       backgroundColor: colors.surface,
-      drawer: const AppDrawer(),
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: HomeTopBar(
-                auth: auth,
-                onToggleTheme: () => ref.read(themeModeProvider.notifier).toggleTheme(),
-                onProfile: () => context.push('/profile'),
-                onSignIn: () => context.push('/sign-in'),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$greetingText${firstName != null && firstName.isNotEmpty ? ', $firstName' : ''}',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: colors.ink,
-                        letterSpacing: -0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Where would you like to travel today?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colors.inkMuted,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: HeroBanner(
+              image: const AssetImage('assets/brand/hero.webp'),
+              height: 300,
+              bottomInset: OverlapSheet.overlap,
+              title: '$greetingText${firstName != null && firstName.isNotEmpty ? ', $firstName' : ''}',
+              subtitle: 'Fixed prices, licensed drivers, and a car that is there when your flight is.',
+              leading: Image.asset('assets/brand/logo-dark.png', height: 30),
+              actions: [
+                HeroIconButton(
+                  icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  semanticLabel: 'Switch theme',
+                  onPressed: () => ref.read(themeModeProvider.notifier).toggleTheme(),
                 ),
-              ),
+                const SizedBox(width: 8),
+                HomeAccountChip(
+                  auth: auth,
+                  onProfile: () => context.go('/profile'),
+                  onSignIn: () => context.push('/sign-in'),
+                ),
+              ],
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: UpcomingTripBanner(auth: auth),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 14)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: SearchLauncher(
-                  onTap: () => context.go('/book'),
-                  onSelectHub: (name, address) {
-                    bookingController.updateJourney((j) => j.copyWith(
+          ),
+          SliverToBoxAdapter(
+            child: OverlapSheet(
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SearchLauncher(
+                    onTap: () => context.go('/book'),
+                    onSelectHub: (name, address) => presetAndBook(
+                      (j) => j.copyWith(
+                        pickup: j.pickup.isEmpty ? const PlaceSelection(address: 'Southampton, UK') : j.pickup,
+                        dropoff: PlaceSelection(address: address),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  UpcomingTripBanner(auth: auth),
+                  ServicesGrid(
+                    onSelectService: (serviceName, defaultDropoff) {
+                      if (defaultDropoff == null) return context.go('/book');
+                      presetAndBook(
+                        (j) => j.copyWith(
                           pickup: j.pickup.isEmpty ? const PlaceSelection(address: 'Southampton, UK') : j.pickup,
-                          dropoff: PlaceSelection(address: address),
-                        ));
-                    context.go('/book');
-                  },
-                ),
+                          dropoff: PlaceSelection(address: defaultDropoff),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  const TrustStrip(),
+                ],
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: ServicesGrid(
-                  onSelectService: (serviceName, defaultDropoff) {
-                    if (defaultDropoff != null) {
-                      bookingController.updateJourney((j) => j.copyWith(
-                            pickup: j.pickup.isEmpty ? const PlaceSelection(address: 'Southampton, UK') : j.pickup,
-                            dropoff: PlaceSelection(address: defaultDropoff),
-                          ));
-                    }
-                    context.go('/book');
-                  },
-                ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
+          SliverToBoxAdapter(
+            child: PopularFaresSection(
+              onSelectFare: (from, to) => presetAndBook(
+                (j) => j.copyWith(pickup: PlaceSelection(address: from), dropoff: PlaceSelection(address: to)),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 28)),
-            SliverToBoxAdapter(
-              child: PopularFaresSection(
-                onSelectFare: (from, to) {
-                  bookingController.updateJourney((j) => j.copyWith(
-                        pickup: PlaceSelection(address: from),
-                        dropoff: PlaceSelection(address: to),
-                      ));
-                  context.go('/book');
-                },
-              ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 28)),
+          SliverToBoxAdapter(
+            child: FleetShowcaseSection(
+              vehicles: bookingState.vehicles,
+              onSelectVehicle: (v) => presetAndBook((j) => j.copyWith(vehicleCategorySlug: v.slug)),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 28)),
-            SliverToBoxAdapter(
-              child: FleetShowcaseSection(
-                vehicles: bookingState.vehicles,
-                onSelectVehicle: (v) {
-                  bookingController.updateJourney((j) => j.copyWith(
-                        vehicleCategorySlug: v.slug,
-                      ));
-                  context.go('/book');
-                },
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 28)),
-            const SliverToBoxAdapter(child: TrustStrip()),
-            const SliverToBoxAdapter(child: SizedBox(height: 36)),
-          ],
-        ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 36)),
+        ],
       ),
     );
   }
