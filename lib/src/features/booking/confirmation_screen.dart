@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -54,7 +55,6 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: Text(payment.isPaid ? 'Paid and booked' : 'Booking received'),
           bottom: const PreferredSize(
             preferredSize: Size.fromHeight(18),
             child: Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 14), child: StepIndicator(step: 3)),
@@ -63,6 +63,8 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           children: [
+            _ConfirmedHero(booking: booking, paid: payment.isPaid),
+            const SizedBox(height: 22),
             TicketCard(
               booking: booking,
               headline: payment.isPaid ? 'Paid and booked' : 'Thanks — we have your booking',
@@ -93,10 +95,90 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                 },
                 child: Text(signedIn ? 'View my trips' : 'Done'),
               ),
+              if (signedIn)
+                TextButton(
+                  onPressed: () {
+                    ref.read(bookingFlowProvider.notifier).reset();
+                    context.go('/');
+                  },
+                  child: const Text('Back to home'),
+                ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The moment of relief: a green check, the words, and the reference ready
+/// to copy for whoever else needs it.
+class _ConfirmedHero extends StatelessWidget {
+  const _ConfirmedHero({required this.booking, required this.paid});
+
+  final Booking booking;
+  final bool paid;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Column(
+      children: [
+        Container(
+          width: 84,
+          height: 84,
+          decoration: BoxDecoration(
+            color: AppTheme.success.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: const BoxDecoration(color: AppTheme.success, shape: BoxShape.circle),
+              child: const Icon(Icons.check_rounded, color: Colors.white, size: 36),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          paid ? 'Paid and booked!' : 'Booking confirmed!',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          paid ? 'Your transfer is paid for and in the diary.' : 'Your transfer is booked. Here is everything you need.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: colors.inkMuted, fontSize: 14),
+        ),
+        const SizedBox(height: 14),
+        Material(
+          color: colors.card,
+          borderRadius: BorderRadius.circular(999),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () async {
+              await Clipboard.setData(ClipboardData(text: booking.reference));
+              if (context.mounted) showMessage(context, 'Reference ${booking.reference} copied');
+            },
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(14, 8, 12, 8),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(999), border: Border.all(color: colors.inkFaint)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Ref ', style: TextStyle(color: colors.inkMuted, fontSize: 13)),
+                  Text(booking.reference, style: TextStyle(color: colors.ink, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                  const SizedBox(width: 8),
+                  Icon(Icons.copy_rounded, size: 16, color: colors.inkMuted),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

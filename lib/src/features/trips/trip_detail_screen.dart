@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_exception.dart';
@@ -67,7 +68,19 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     final busy = _busy || paying;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your trip')),
+      appBar: AppBar(
+        title: const Text('Your trip'),
+        actions: [
+          IconButton(
+            tooltip: 'Copy reference',
+            icon: const Icon(Icons.copy_rounded, size: 20),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: widget.reference));
+              if (context.mounted) showMessage(context, 'Reference ${widget.reference} copied');
+            },
+          ),
+        ],
+      ),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Padding(padding: const EdgeInsets.all(24), child: ErrorNotice(error.toString(), onRetry: () => ref.invalidate(tripDetailProvider(widget.reference))))),

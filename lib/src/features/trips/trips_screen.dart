@@ -7,81 +7,92 @@ import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/route_timeline.dart';
 import '../../widgets/skeleton.dart';
-import '../auth/auth_controller.dart';
+import '../../widgets/tiles.dart';
 import '../../domain/booking.dart';
 import 'trips_controller.dart';
 
-class TripsScreen extends ConsumerWidget {
+class TripsScreen extends ConsumerStatefulWidget {
   const TripsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
+  ConsumerState<TripsScreen> createState() => _TripsScreenState();
+}
+
+class _TripsScreenState extends ConsumerState<TripsScreen> {
+  var _tab = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final trips = ref.watch(tripsProvider);
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('My trips'),
-          actions: [
-            PopupMenuButton<String>(
-              onSelected: (value) async {
-                switch (value) {
-                  case 'profile':
-                    context.push('/profile');
-                  case 'signout':
-                    await ref.read(authControllerProvider.notifier).signOut();
-                    if (context.mounted) context.go('/');
-                }
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(enabled: false, child: Text(auth.customer?.name ?? '', style: const TextStyle(fontWeight: FontWeight.w600))),
-                const PopupMenuItem(value: 'profile', child: Text('Your details')),
-                const PopupMenuItem(value: 'signout', child: Text('Sign out')),
-              ],
-            ),
-          ],
-          bottom: const TabBar(tabs: [Tab(text: 'Upcoming'), Tab(text: 'Past')]),
-        ),
-        body: trips.when(
-          loading: () => const TripListSkeleton(),
-          error: (error, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: ErrorNotice(error.toString(), onRetry: () => ref.invalidate(tripsProvider)),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My trips'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(58),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+            child: SegmentedTabs(
+              labels: const ['Upcoming', 'Past'],
+              index: _tab,
+              onChanged: (i) => setState(() => _tab = i),
             ),
           ),
-          data: (state) => TabBarView(
-            children: [
-              _TripList(state.upcoming, state: state, empty: 'No upcoming trips. Book one and it will appear here.'),
-              _TripList(state.past, state: state, empty: 'No past trips yet.'),
-            ],
+        ),
+      ),
+      body: trips.when(
+        loading: () => const TripListSkeleton(),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ErrorNotice(error.toString(), onRetry: () => ref.invalidate(tripsProvider)),
           ),
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => context.go('/'),
-          icon: const Icon(Icons.add),
-          label: const Text('Book a transfer'),
+        data: (state) => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: _tab == 0
+              ? _TripList(state.upcoming, key: const ValueKey('upcoming'), state: state, emptyTitle: 'No upcoming trips', emptyBody: 'Book a transfer and it will appear here, ready for the day.')
+              : _TripList(state.past, key: const ValueKey('past'), state: state, emptyTitle: 'No past trips yet', emptyBody: 'Completed journeys stay here for your records.'),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.go('/book'),
+        icon: const Icon(Icons.add),
+        label: const Text('Book a transfer'),
       ),
     );
   }
 }
 
 class _TripList extends ConsumerWidget {
-  const _TripList(this.bookings, {required this.state, required this.empty});
+  const _TripList(this.bookings, {super.key, required this.state, required this.emptyTitle, required this.emptyBody});
 
   final List<Booking> bookings;
   final TripsState state;
-  final String empty;
+  final String emptyTitle;
+  final String emptyBody;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return RefreshIndicator(
       onRefresh: () => ref.refresh(tripsProvider.future),
       child: bookings.isEmpty && !state.hasMore
-          ? ListView(children: [Padding(padding: const EdgeInsets.all(40), child: Text(empty, textAlign: TextAlign.center, style: TextStyle(color: context.colors.inkMuted)))])
+          ? ListView(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(40, 64, 40, 40),
+                  child: Column(
+                    children: [
+                      const IconDisc(Icons.receipt_long_outlined, size: 72),
+                      const SizedBox(height: 18),
+                      Text(emptyTitle, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 6),
+                      Text(emptyBody, textAlign: TextAlign.center, style: TextStyle(color: context.colors.inkMuted, height: 1.4)),
+                    ],
+                  ),
+                ),
+              ],
+            )
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
               // One extra row at the end for the pager while there are pages left.
@@ -195,8 +206,15 @@ class _TripCard extends StatelessWidget {
                           Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                         ],
                       ),
+                      const SizedBox(height: 4),
+                      Text('Ref ${booking.reference}', style: TextStyle(color: colors.inkMuted, fontSize: 11, letterSpacing: 0.3)),
                     ],
                   ),
+                ),
+                const SizedBox(width: 4),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(Icons.chevron_right, color: colors.inkMuted, size: 20),
                 ),
               ],
             ),
