@@ -146,7 +146,7 @@ void main() {
         tall: true,
       ));
   testWidgets('journey', (t) => shot(t, 'journey', const JourneyScreen(), tall: true));
-  testWidgets('home filled', (t) => shot(t, 'home_filled', const JourneyScreen(), prime: (c) async {
+  testWidgets('journey filled', (t) => shot(t, 'journey_filled', const JourneyScreen(), prime: (c) async {
         c.read(bookingFlowProvider.notifier).updateJourney((_) => quotableJourney.copyWith(
               dropoff: const PlaceSelection(address: 'Heathrow Airport Terminal 5', placeId: 'h', latitude: 51.47, longitude: -0.49),
               isReturn: true,

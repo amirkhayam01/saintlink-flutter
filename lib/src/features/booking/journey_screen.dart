@@ -6,15 +6,13 @@ import '../../core/env.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../domain/place.dart';
-import '../../domain/vehicle_category.dart';
 import '../../widgets/common.dart';
-import '../../widgets/vehicle_image.dart';
-import '../auth/auth_controller.dart';
+import '../../widgets/tiles.dart';
 import '../places/address_search_field.dart';
 import 'booking_flow_controller.dart';
 import 'journey_draft.dart';
 
-/// Home: the brand, then the booking card, then the reasons to trust it.
+/// The booking form: where, when, who — then "See prices".
 ///
 /// The form mirrors the website's search widget field for field, because the
 /// server validates both against the same rules — a journey the site would
@@ -27,200 +25,59 @@ class JourneyScreen extends ConsumerWidget {
     final state = ref.watch(bookingFlowProvider);
     final controller = ref.read(bookingFlowProvider.notifier);
     final journey = state.journey;
-    final auth = ref.watch(authControllerProvider);
-
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Stack(
-              children: [
-                _Hero(
-                  signedIn: auth.isSignedIn,
-                  firstName: auth.customer?.firstName,
-                  onTrips: () => context.push('/trips'),
-                  onSignIn: () => context.push('/sign-in'),
-                ),
-                // The card starts inside the hero and runs past it, which is
-                // what makes the page read as one piece rather than a banner
-                // stuck above a form.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 300, 16, 0),
-                  child: _BookingCard(journey: journey, state: state, controller: controller),
-                ),
-              ],
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 28)),
-          const SliverToBoxAdapter(child: _TrustRow()),
-          const SliverToBoxAdapter(child: SizedBox(height: 28)),
-          SliverToBoxAdapter(child: _FleetStrip(vehicles: state.vehicles)),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
-              child: Column(
-                children: [
-                  Text('Southampton, Hampshire and every UK airport and port.', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
-                  if (Env.isDevelopmentBackend) ...[
-                    const SizedBox(height: 8),
-                    Text('Connected to ${Env.apiBaseUrl}', style: TextStyle(color: context.colors.inkMuted, fontSize: 11)),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Hero extends StatelessWidget {
-  const _Hero({required this.signedIn, required this.firstName, required this.onTrips, required this.onSignIn});
-
-  final bool signedIn;
-  final String? firstName;
-  final VoidCallback onTrips;
-  final VoidCallback onSignIn;
-
-  @override
-  Widget build(BuildContext context) {
-    final top = MediaQuery.paddingOf(context).top;
-
-    return SizedBox(
-      height: 400,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset('assets/brand/hero.webp', fit: BoxFit.cover, alignment: const Alignment(0.3, 0)),
-          // Dark at the top for the logo, darker at the bottom so the card's
-          // shadow and the headline sit on midnight rather than on the photo.
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0x99020617), Color(0x33020617), Color(0xE6020617), AppTheme.midnight],
-                stops: [0, 0.35, 0.8, 1],
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, top + 12, 12, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Image.asset('assets/brand/logo-dark.png', height: 30),
-                    const Spacer(),
-                    if (signedIn)
-                      _HeroChip(icon: Icons.receipt_long_outlined, label: 'My trips', onTap: onTrips)
-                    else
-                      _HeroChip(icon: Icons.person_outline, label: 'Sign in', onTap: onSignIn),
-                  ],
-                ),
-                const Spacer(),
-                Text(
-                  signedIn && firstName != null ? 'Welcome back, $firstName.' : 'Southampton transfers,\nhandled with care.',
-                  style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800, height: 1.1, letterSpacing: -0.6),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Fixed prices, licensed drivers, and a car that is there when your flight is.',
-                  style: TextStyle(color: Color(0xFFD4D4D8), fontSize: 14, height: 1.4),
-                ),
-                const SizedBox(height: 120),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroChip extends StatelessWidget {
-  const _HeroChip({required this.icon, required this.label, required this.onTap});
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: Colors.white),
-              const SizedBox(width: 6),
-              Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BookingCard extends StatelessWidget {
-  const _BookingCard({required this.journey, required this.state, required this.controller});
-
-  final JourneyDraft journey;
-  final BookingFlowState state;
-  final BookingFlowController controller;
-
-  @override
-  Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Container(
-      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(24), boxShadow: colors.floatingShadow),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Book a transfer'),
+        actions: [
+          if (!journey.pickup.isEmpty || !journey.dropoff.isEmpty || journey.pickupDate != null)
+            TextButton(
+              onPressed: controller.reset,
+              child: Text('Clear', style: TextStyle(color: colors.inkMuted)),
+            ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
         children: [
+          Text('Where to?', style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
           _RouteEditor(journey: journey, controller: controller),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+          Text('When?', style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
           _DateTimeRow(
             date: journey.pickupDate,
             time: journey.pickupTime,
             onDate: (d) => controller.updateJourney((j) => j.copyWith(pickupDate: d)),
             onTime: (t) => controller.updateJourney((j) => j.copyWith(pickupTime: t)),
           ),
-          const SizedBox(height: 12),
-          _ToggleRow(
-            icon: Icons.swap_vert,
-            label: 'Return journey',
-            value: journey.isReturn,
-            onChanged: (on) => controller.updateJourney((j) => on ? j.copyWith(isReturn: true) : j.withoutReturn()),
-          ),
-          if (journey.isReturn) ...[
-            const SizedBox(height: 12),
-            _DateTimeRow(
-              date: journey.returnDate,
-              time: journey.returnTime,
-              firstDate: journey.pickupDate,
-              onDate: (d) => controller.updateJourney((j) => j.copyWith(returnDate: d)),
-              onTime: (t) => controller.updateJourney((j) => j.copyWith(returnTime: t)),
+          const SizedBox(height: 10),
+          if (journey.isReturn)
+            _ReturnCard(journey: journey, controller: controller)
+          else
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => controller.updateJourney((j) => j.copyWith(isReturn: true)),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add return journey'),
+                style: TextButton.styleFrom(foregroundColor: AppTheme.brandDark),
+              ),
             ),
-          ],
-          const SizedBox(height: 12),
-          _Tile(
+          const SizedBox(height: 20),
+          Text('Who?', style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
+          FieldTile(
             icon: Icons.people_outline,
-            label: _travellersLabel(journey),
+            label: 'Passengers & luggage',
+            value: _travellersLabel(journey),
+            placeholder: '',
             onTap: () => _showTravellers(context, controller),
-            trailing: Icon(Icons.expand_more, color: colors.inkMuted),
           ),
           if (journey.touchesAirport) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             _FlightFields(
               flightNumber: journey.outboundFlightNumber,
               terminal: journey.outboundTerminal,
@@ -228,19 +85,30 @@ class _BookingCard extends StatelessWidget {
               onTerminal: (v) => controller.updateJourney((j) => j.copyWith(outboundTerminal: v)),
             ),
           ],
-          if (state.quoteError != null) ...[const SizedBox(height: 12), ErrorNotice(state.quoteError!)],
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: journey.isQuotable && !state.isQuoting
-                ? () async {
-                    if (await controller.requestQuote() && context.mounted) context.push('/book/vehicle');
-                  }
-                : null,
-            child: state.isQuoting ? const ButtonSpinner() : const Text('See prices'),
-          ),
-          const SizedBox(height: 10),
-          Text('Fixed price. No account needed for a quote.', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+          if (state.quoteError != null) ...[const SizedBox(height: 16), ErrorNotice(state.quoteError!)],
+          if (Env.isDevelopmentBackend) ...[
+            const SizedBox(height: 24),
+            Text('Connected to ${Env.apiBaseUrl}', textAlign: TextAlign.center, style: TextStyle(color: colors.inkMuted, fontSize: 11)),
+          ],
         ],
+      ),
+      bottomNavigationBar: BottomAction(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton(
+              onPressed: journey.isQuotable && !state.isQuoting
+                  ? () async {
+                      if (await controller.requestQuote() && context.mounted) context.push('/book/vehicle');
+                    }
+                  : null,
+              child: state.isQuoting ? const ButtonSpinner() : const Text('See prices'),
+            ),
+            const SizedBox(height: 8),
+            Text('Fixed price. No account needed for a quote.', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
       ),
     );
   }
@@ -283,6 +151,59 @@ class _BookingCard extends StatelessWidget {
   }
 }
 
+/// The return leg, inset in a tinted card with its own date and time and a
+/// way to take it off again.
+class _ReturnCard extends StatelessWidget {
+  const _ReturnCard({required this.journey, required this.controller});
+
+  final JourneyDraft journey;
+  final BookingFlowController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 8, 14),
+      decoration: BoxDecoration(
+        color: colors.tint,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.swap_vert, size: 18, color: AppTheme.brandDark),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Return journey', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: colors.ink))),
+              IconButton(
+                onPressed: () => controller.updateJourney((j) => j.withoutReturn()),
+                icon: Icon(Icons.close, size: 18, color: colors.inkMuted),
+                tooltip: 'Remove return',
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: _DateTimeRow(
+              date: journey.returnDate,
+              time: journey.returnTime,
+              firstDate: journey.pickupDate,
+              dateLabel: 'Date',
+              timeLabel: 'Time',
+              onDate: (d) => controller.updateJourney((j) => j.copyWith(returnDate: d)),
+              onTime: (t) => controller.updateJourney((j) => j.copyWith(returnTime: t)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Pickup, stops and destination as one connected route.
 class _RouteEditor extends StatelessWidget {
   const _RouteEditor({required this.journey, required this.controller});
@@ -317,7 +238,7 @@ class _RouteEditor extends StatelessWidget {
     ];
 
     return Container(
-      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: colors.inkFaint)),
+      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: colors.inkFaint)),
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++) ...[
@@ -412,69 +333,22 @@ class _MarkerDot extends StatelessWidget {
   }
 }
 
-/// A filled, tappable row inside the booking card.
-class _Tile extends StatelessWidget {
-  const _Tile({required this.icon, required this.label, required this.onTap, this.trailing, this.muted = false});
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Widget? trailing;
-  final bool muted;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Material(
-      color: colors.surface,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: colors.inkFaint)),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: colors.inkMuted),
-              const SizedBox(width: 12),
-              Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, fontWeight: muted ? FontWeight.w400 : FontWeight.w600, color: muted ? colors.inkMuted : colors.ink))),
-              ?trailing,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ToggleRow extends StatelessWidget {
-  const _ToggleRow({required this.icon, required this.label, required this.value, required this.onChanged});
-
-  final IconData icon;
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Tile(
-      icon: icon,
-      label: label,
-      onTap: () => onChanged(!value),
-      trailing: Switch.adaptive(value: value, onChanged: onChanged, activeTrackColor: AppTheme.brand, activeThumbColor: AppTheme.midnight),
-    );
-  }
-}
-
 class _DateTimeRow extends StatelessWidget {
-  const _DateTimeRow({required this.date, required this.time, required this.onDate, required this.onTime, this.firstDate});
+  const _DateTimeRow({
+    required this.date,
+    required this.time,
+    required this.onDate,
+    required this.onTime,
+    this.firstDate,
+    this.dateLabel = 'Pickup date',
+    this.timeLabel = 'Pickup time',
+  });
 
   final DateTime? date;
   final TimeOfDay? time;
   final DateTime? firstDate;
+  final String dateLabel;
+  final String timeLabel;
   final ValueChanged<DateTime> onDate;
   final ValueChanged<TimeOfDay> onTime;
 
@@ -487,10 +361,12 @@ class _DateTimeRow extends StatelessWidget {
       children: [
         Expanded(
           flex: 3,
-          child: _Tile(
+          child: FieldTile(
+            dense: true,
             icon: Icons.calendar_today_outlined,
-            label: date == null ? 'Date' : Formatting.date(date!),
-            muted: date == null,
+            label: dateLabel,
+            value: date == null ? null : Formatting.date(date!),
+            placeholder: 'Choose a date',
             onTap: () async {
               final picked = await showDatePicker(
                 context: context,
@@ -502,13 +378,15 @@ class _DateTimeRow extends StatelessWidget {
             },
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           flex: 2,
-          child: _Tile(
+          child: FieldTile(
+            dense: true,
             icon: Icons.schedule_outlined,
-            label: time == null ? 'Time' : MaterialLocalizations.of(context).formatTimeOfDay(time!, alwaysUse24HourFormat: true),
-            muted: time == null,
+            label: timeLabel,
+            value: time == null ? null : MaterialLocalizations.of(context).formatTimeOfDay(time!, alwaysUse24HourFormat: true),
+            placeholder: 'Time',
             onTap: () async {
               final picked = await showTimePicker(
                 context: context,
@@ -565,109 +443,6 @@ class _FlightFields extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-}
-
-class _TrustRow extends StatelessWidget {
-  const _TrustRow();
-
-  @override
-  Widget build(BuildContext context) {
-    const items = [
-      (Icons.verified_outlined, 'Fixed price', 'Quoted up front,\nnothing added'),
-      (Icons.flight_land, 'Flight tracked', 'We move the pickup\nif your flight does'),
-      (Icons.badge_outlined, 'Licensed drivers', 'Meet & greet at\nairports and ports'),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          for (final (icon, title, body) in items)
-            Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(color: AppTheme.brand.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(14)),
-                    child: Icon(icon, color: AppTheme.brandDark, size: 22),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                  const SizedBox(height: 2),
-                  Text(body, textAlign: TextAlign.center, style: TextStyle(color: context.colors.inkMuted, fontSize: 12, height: 1.3)),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FleetStrip extends StatelessWidget {
-  const _FleetStrip({required this.vehicles});
-
-  final List<VehicleCategory> vehicles;
-
-  @override
-  Widget build(BuildContext context) {
-    if (vehicles.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text('Our fleet', style: Theme.of(context).textTheme.titleLarge),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          height: 196,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            scrollDirection: Axis.horizontal,
-            itemCount: vehicles.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final v = vehicles[index];
-
-              return Container(
-                width: 220,
-                decoration: BoxDecoration(color: context.colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: context.colors.inkFaint)),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 118, width: double.infinity, child: VehicleImage(v.slug)),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(v.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(Icons.person_outline, size: 15, color: context.colors.inkMuted),
-                              Text(' ${v.passengerCapacity}', style: Theme.of(context).textTheme.bodySmall),
-                              const SizedBox(width: 10),
-                              Icon(Icons.luggage_outlined, size: 15, color: context.colors.inkMuted),
-                              Text(' ${v.luggageCapacity}', style: Theme.of(context).textTheme.bodySmall),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
         ),
       ],
     );
