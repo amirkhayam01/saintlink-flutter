@@ -30,7 +30,17 @@ class Env {
 
   static const String supportPhone = String.fromEnvironment(
     'SUPPORT_PHONE',
-    defaultValue: '',
+    defaultValue: '+44 7721 300053',
+  );
+
+  static const String supportEmail = String.fromEnvironment(
+    'SUPPORT_EMAIL',
+    defaultValue: 'info@saintslink.co.uk',
+  );
+
+  static const String websiteUrl = String.fromEnvironment(
+    'WEBSITE_URL',
+    defaultValue: 'https://saintslink.co.uk',
   );
 
   /// True when the app is pointed at something other than the live site, which

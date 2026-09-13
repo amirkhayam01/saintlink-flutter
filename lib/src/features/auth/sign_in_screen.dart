@@ -9,6 +9,7 @@ import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/tiles.dart';
 import 'auth_controller.dart';
 import '../../domain/customer.dart';
 
@@ -83,7 +84,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
 
     try {
-      final customer = await ref.read(authRepositoryProvider).verifyCode(
+      final customer = await ref
+          .read(authRepositoryProvider)
+          .verifyCode(
             phone: _phoneForServer,
             code: _code.text.trim(),
             name: _name.text,
@@ -123,90 +126,105 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: awaitingCode
               ? () => setState(() {
-                    _sent = null;
-                    _error = null;
-                    _code.clear();
-                  })
+                  _sent = null;
+                  _error = null;
+                  _code.clear();
+                })
               : () => context.pop(),
         ),
       ),
       backgroundColor: colors.surface,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      body: Stack(
         children: [
-          Image.asset(dark ? 'assets/brand/logo-dark.png' : 'assets/brand/logo-light.png', height: 34, alignment: Alignment.centerLeft),
-          const SizedBox(height: 28),
-          if (!awaitingCode) ...[
-            Text('Sign in with your mobile', style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text('We will text you a six-digit code. No password, nothing to remember.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.inkMuted)),
-            const SizedBox(height: 28),
-            TextField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              autofocus: true,
-              autofillHints: const [AutofillHints.telephoneNumber],
-              textInputAction: TextInputAction.next,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-              decoration: InputDecoration(
-                hintText: '7700 900123',
-                hintStyle: TextStyle(color: colors.inkMuted.withValues(alpha: 0.6), fontWeight: FontWeight.w500),
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 10, 0),
-                  child: Text('+44', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                ),
-                prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _name,
-              textCapitalization: TextCapitalization.words,
-              autofillHints: const [AutofillHints.name],
-              decoration: const InputDecoration(hintText: 'Your name (first time only)', prefixIcon: Icon(Icons.person_outline, size: 20)),
-            ),
-          ] else ...[
-            Text('Enter the code', style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text.rich(
-              TextSpan(
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.inkMuted),
-                children: [
-                  const TextSpan(text: 'Sent to '),
-                  TextSpan(text: _sent!.maskedPhone, style: TextStyle(color: colors.ink, fontWeight: FontWeight.w600)),
-                  const TextSpan(text: '. It expires in a few minutes.'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-            _OtpBoxes(
-              controller: _code,
-              enabled: !_busy,
-              onCompleted: () {
-                if (!_busy) _verify();
-              },
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: TextButton(
-                onPressed: _resendIn > 0 || _busy ? null : _requestCode,
-                child: Text(_resendIn > 0 ? 'Resend code in ${_resendIn}s' : 'Resend code'),
-              ),
-            ),
-          ],
-          if (_error != null) ...[const SizedBox(height: 16), ErrorNotice(_error!)],
-          const SizedBox(height: 28),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Two soft gold glows, so the page is not a plain grey form.
+          const Positioned(top: -140, left: -100, child: _Glow(320)),
+          const Positioned(bottom: -120, right: -120, child: _Glow(280)),
+          ListView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             children: [
-              Icon(Icons.lock_outline, size: 16, color: colors.inkMuted),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Your number is only used to sign you in and to reach you about your bookings.',
-                  style: TextStyle(color: colors.inkMuted, fontSize: 13, height: 1.4),
+              Center(child: Image.asset(dark ? 'assets/brand/logo-dark.png' : 'assets/brand/logo-light.png', height: 40)),
+              const SizedBox(height: 32),
+              if (!awaitingCode) ...[
+                Text('Sign in with your mobile', style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 8),
+                Text(
+                  'We will text you a six-digit code. No password, nothing to remember.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.inkMuted),
                 ),
+                const SizedBox(height: 28),
+                const FieldLabel('Mobile number'),
+                TextField(
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  autofocus: true,
+                  autofillHints: const [AutofillHints.telephoneNumber],
+                  textInputAction: TextInputAction.next,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                  decoration: InputDecoration(
+                    hintText: '7700 900123',
+                    hintStyle: TextStyle(color: colors.inkMuted.withValues(alpha: 0.6), fontWeight: FontWeight.w500),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 0, 10, 0),
+                      child: Text('+44', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                    ),
+                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 14),
+                const FieldLabel('Your name', optional: true),
+                TextField(
+                  controller: _name,
+                  textCapitalization: TextCapitalization.words,
+                  autofillHints: const [AutofillHints.name],
+                  decoration: const InputDecoration(hintText: 'Only needed the first time', prefixIcon: Icon(Icons.person_outline, size: 20)),
+                ),
+              ] else ...[
+                Text('Enter the code', style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 8),
+                Text.rich(
+                  TextSpan(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.inkMuted),
+                    children: [
+                      const TextSpan(text: 'Sent to '),
+                      TextSpan(
+                        text: _sent!.maskedPhone,
+                        style: TextStyle(color: colors.ink, fontWeight: FontWeight.w600),
+                      ),
+                      const TextSpan(text: '. It expires in a few minutes.'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+                _OtpBoxes(
+                  controller: _code,
+                  enabled: !_busy,
+                  onCompleted: () {
+                    if (!_busy) _verify();
+                  },
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: TextButton(
+                    onPressed: _resendIn > 0 || _busy ? null : _requestCode,
+                    child: Text(_resendIn > 0 ? 'Resend code in ${_resendIn}s' : 'Resend code'),
+                  ),
+                ),
+              ],
+              if (_error != null) ...[const SizedBox(height: 16), ErrorNotice(_error!)],
+              const SizedBox(height: 28),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.lock_outline, size: 16, color: colors.inkMuted),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Your number is only used to sign you in and to reach you about your bookings.',
+                      style: TextStyle(color: colors.inkMuted, fontSize: 13, height: 1.4),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -218,6 +236,26 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ? null
               : (awaitingCode ? (_code.text.length == 6 ? _verify : null) : (_phone.text.replaceAll(RegExp(r'\D'), '').length >= 10 ? _requestCode : null)),
           child: _busy ? const ButtonSpinner() : Text(awaitingCode ? 'Sign in' : 'Send code'),
+        ),
+      ),
+    );
+  }
+}
+
+class _Glow extends StatelessWidget {
+  const _Glow(this.size);
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [AppTheme.brand.withValues(alpha: 0.22), AppTheme.brand.withValues(alpha: 0)]),
         ),
       ),
     );

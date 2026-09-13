@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/env.dart';
+import '../../core/links.dart';
 import '../../core/theme.dart';
+import '../../core/theme_controller.dart';
 import '../../domain/customer.dart';
 import '../../widgets/common.dart';
+import '../../widgets/tiles.dart';
 import '../auth/auth_controller.dart';
 import 'profile_controller.dart';
 
@@ -73,27 +77,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 28),
             const SectionTitle('Name and email', subtitle: 'Used on your bookings and confirmation emails.'),
             const SizedBox(height: 14),
+            const FieldLabel('First name'),
             TextFormField(
               controller: _firstName,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(hintText: 'First name', prefixIcon: const Icon(Icons.person_outline, size: 20), errorText: state.fieldErrors['first_name']?.first),
+              decoration: InputDecoration(hintText: 'e.g. Ada', prefixIcon: const Icon(Icons.person_outline, size: 20), errorText: state.fieldErrors['first_name']?.first),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Please enter your first name' : null,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            const FieldLabel('Last name'),
             TextFormField(
               controller: _lastName,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(hintText: 'Last name', prefixIcon: const Icon(Icons.badge_outlined, size: 20), errorText: state.fieldErrors['last_name']?.first),
+              decoration: InputDecoration(hintText: 'e.g. Lovelace', prefixIcon: const Icon(Icons.badge_outlined, size: 20), errorText: state.fieldErrors['last_name']?.first),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            const FieldLabel('Email', optional: true),
             TextFormField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.done,
               autocorrect: false,
-              decoration: InputDecoration(hintText: 'Email (optional)', prefixIcon: const Icon(Icons.mail_outline, size: 20), helperText: 'For booking confirmations and receipts', errorText: state.fieldErrors['email']?.first),
+              decoration: InputDecoration(hintText: 'you@example.com', prefixIcon: const Icon(Icons.mail_outline, size: 20), helperText: 'For booking confirmations and receipts', errorText: state.fieldErrors['email']?.first),
               validator: (v) {
                 final text = (v ?? '').trim();
                 if (text.isEmpty) return null;
@@ -111,6 +118,49 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onChanged: (v) => setState(() => _marketingConsent = v),
             ),
             if (state.error != null) ...[const SizedBox(height: 12), ErrorNotice(state.error!)],
+            const SizedBox(height: 28),
+            const SectionTitle('Appearance'),
+            const SizedBox(height: 10),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              secondary: const IconDisc(Icons.dark_mode_outlined, size: 40),
+              title: const Text('Dark mode'),
+              value: Theme.of(context).brightness == Brightness.dark,
+              onChanged: (_) => ref.read(themeModeProvider.notifier).toggleTheme(),
+            ),
+            const SizedBox(height: 28),
+            const SectionTitle('Need a hand?', subtitle: 'Our office is in Southampton and answers the phone.'),
+            const SizedBox(height: 14),
+            ContactTile(
+              icon: Icons.call_outlined,
+              title: 'Call us',
+              subtitle: Env.supportPhone,
+              onTap: () => openLink(context, 'tel:${Env.supportPhone.replaceAll(' ', '')}'),
+            ),
+            const SizedBox(height: 10),
+            ContactTile(
+              icon: Icons.mail_outline,
+              title: 'Email us',
+              subtitle: Env.supportEmail,
+              onTap: () => openLink(context, 'mailto:${Env.supportEmail}'),
+            ),
+            const SizedBox(height: 10),
+            ContactTile(
+              icon: Icons.language,
+              title: 'Website',
+              subtitle: Env.websiteUrl.replaceFirst('https://', ''),
+              trailingIcon: Icons.open_in_new,
+              onTap: () => openLink(context, Env.websiteUrl),
+            ),
+            const SizedBox(height: 28),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await ref.read(authControllerProvider.notifier).signOut();
+                if (context.mounted) context.go('/');
+              },
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text('Sign out'),
+            ),
           ],
         ),
       ),
