@@ -162,6 +162,10 @@ void main() {
   testWidgets('airport', (t) => shot(t, 'airport', const ServiceScreen(kind: ServiceKind.airport), tall: true));
   testWidgets('cruise', (t) => shot(t, 'cruise', const ServiceScreen(kind: ServiceKind.cruise), tall: true));
   testWidgets('prices', (t) => shot(t, 'prices', const PricesScreen(), tall: true));
+  testWidgets('journey dark', (t) => shot(t, 'journey_dark', const JourneyScreen(), theme: AppTheme.dark(), prime: primeQuote));
+  testWidgets('vehicle dark', (t) => shot(t, 'vehicle_dark', const VehicleScreen(), theme: AppTheme.dark(), prime: primeQuote));
+  testWidgets('airport dark', (t) => shot(t, 'airport_dark', const ServiceScreen(kind: ServiceKind.airport), theme: AppTheme.dark()));
+  testWidgets('prices dark', (t) => shot(t, 'prices_dark', const PricesScreen(), theme: AppTheme.dark()));
   testWidgets('confirmation', (t) => shot(t, 'confirmation', const ConfirmationScreen(), prime: (c) async {
         await primeQuote(c);
         bookings.nextBooking = sample('SL-8K2M', paid: false);

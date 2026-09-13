@@ -15,6 +15,8 @@ class IconDisc extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: size,
       height: size,
@@ -22,7 +24,8 @@ class IconDisc extends StatelessWidget {
         color: filled ? AppTheme.brand : context.colors.tint,
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, size: size * 0.5, color: filled ? AppTheme.midnight : AppTheme.brandDark),
+      // The darker gold keeps contrast on white; on midnight it just goes dull.
+      child: Icon(icon, size: size * 0.5, color: filled ? AppTheme.midnight : (isDark ? AppTheme.brand : AppTheme.brandDark)),
     );
   }
 }

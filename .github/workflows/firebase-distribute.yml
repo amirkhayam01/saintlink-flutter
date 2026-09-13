@@ -1,0 +1,50 @@
+name: Build and Distribute APK
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-distribute:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Setup signing
+        shell: bash
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > upload-keystore.jks
+
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=../../upload-keystore.jks
+          EOF
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Distribute APK
+        run: |
+          firebase appdistribution:distribute \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --app "${{ secrets.FIREBASE_ANDROID_APP_ID }}" \
+            --release-notes "New Saints Link app build" \
+            --testers "${{ secrets.FIREBASE_TESTER_EMAIL }}"
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

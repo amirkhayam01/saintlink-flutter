@@ -1,5 +1,9 @@
 # Screen redesign plan — Saints Link customer app
 
+> Status: Phases 0–4 implemented (September 2026). Kept as the record of what
+> was taken from the prototype and why. Not done: the driver card on trip
+> detail (no driver fields on the booking model yet) and live trip tracking.
+
 Goal: keep the brand (gold `#FACC15` / midnight `#020617` / zinc neutrals, Figtree,
 light + dark) and the architecture (Riverpod, go_router, freezed), but rebuild the
 screen layouts using the visual ideas prototyped in `hampshirecab_App`.

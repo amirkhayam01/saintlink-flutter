@@ -7,7 +7,6 @@ rule and policy comes from `/api/v1`, which runs the same services the site does
 ## Run
 
 ```bash
-cd mobile
 flutter pub get
 # Android emulator reaching a local `php artisan serve`:
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
@@ -60,17 +59,26 @@ To sign in locally, request a code in the app and read it from the log:
 
 ```
 lib/src/
-  core/        env, ApiClient (Dio), ApiException, TokenStore, ErrorReporter, theme (light + dark), formatting
+  core/        env, ApiClient (Dio), ApiException, TokenStore, ErrorReporter, theme (light + dark), formatting, content (static page copy)
   domain/      freezed API models; every server date parsed to local time
   features/
+    home/      launcher: photo hero, service tiles, popular fares, fleet
     auth/      phone + OTP sign-in, AuthController (session restore)
     booking/   JourneyDraft, BookingFlowController, journey → vehicle → details → confirmed
     places/    address search proxied via the server (no Google key in the app)
     payment/   Stripe PaymentSheet wrapper
     trips/     my bookings, detail, pay, request cancellation
-  profile/   your details (name, email, marketing consent); phone is identity, not editable
-  router.dart  go_router; /trips and /profile require sign-in, booking does not
+    profile/   your details, support contacts, appearance, sign out
+    services/  airport and cruise landing pages, routes & prices (static content)
+    splash/    launch overlay, above the router
+  widgets/     design kit: hero_banner + overlap sheet, tiles (service, field, contact, badges, callout, segmented tabs), ticket_card, route_timeline, skeleton
+  router.dart  go_router with a four-tab shell; /trips and /profile require sign-in, booking does not
 ```
+
+Screens are rendered to `test/screenshots/out/` with
+`SCREENSHOTS=1 flutter test test/screenshots --update-goldens` so a design
+change can be reviewed without a device. `docs/design-plan.md` records the
+redesign and what was taken from the earlier prototype.
 
 ## The one invariant
 
