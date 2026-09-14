@@ -1,0 +1,3 @@
+git add .
+git commit -m "build: add Android gradle.properties with custom JVM arguments and disabled incremental compilation"  
+git push origin talha
