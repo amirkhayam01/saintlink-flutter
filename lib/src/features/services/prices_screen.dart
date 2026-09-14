@@ -44,52 +44,52 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
-            child: HeroBanner(
-              image: const AssetImage('assets/brand/hero-harbor.webp'),
-              height: 220,
-              bottomInset: OverlapSheet.overlap,
-              title: 'Routes & prices',
-              subtitle: 'Popular journeys and what they start from.',
-              showBack: true,
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: OverlapSheet(
-              padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SegmentedTabs(
-                    labels: [for (final g in groups) g.label],
-                    index: _group,
-                    onChanged: (i) => setState(() => _group = i),
-                  ),
-                  const SizedBox(height: 20),
-                  const CalloutCard(
-                    eyebrow: 'Fixed price, every time',
-                    headline: 'No meter',
-                    body: 'Saloon car, one way. The exact price for your date and vehicle is shown before you book.',
-                    icon: Icons.verified_outlined,
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      children: [
-                        for (var i = 0; i < routes.length; i++) ...[
-                          if (i > 0) Divider(color: colors.inkFaint, height: 1, indent: 16, endIndent: 16),
-                          _RouteRow(route: routes[i], onTap: () => book(routes[i])),
-                        ],
-                      ],
+            child: HeroPage(
+              hero: HeroBanner(
+                image: const AssetImage('assets/brand/hero-harbor.webp'),
+                height: 220,
+                bottomInset: OverlapSheet.overlap,
+                title: 'Routes & prices',
+                subtitle: 'Popular journeys and what they start from.',
+                showBack: true,
+              ),
+              sheet: OverlapSheet(
+                padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SegmentedTabs(
+                      labels: [for (final g in groups) g.label],
+                      index: _group,
+                      onChanged: (i) => setState(() => _group = i),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Prices are a guide for a saloon car. Larger vehicles, return journeys and out-of-hours travel are priced on your quote.',
-                    style: TextStyle(fontSize: 12, color: colors.inkMuted, height: 1.4),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    const CalloutCard(
+                      eyebrow: 'Fixed price, every time',
+                      headline: 'No meter',
+                      body: 'Saloon car, one way. The exact price for your date and vehicle is shown before you book.',
+                      icon: Icons.verified_outlined,
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < routes.length; i++) ...[
+                            if (i > 0) Divider(color: colors.inkFaint, height: 1, indent: 16, endIndent: 16),
+                            _RouteRow(route: routes[i], onTap: () => book(routes[i])),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Prices are a guide for a saloon car. Larger vehicles, return journeys and out-of-hours travel are priced on your quote.',
+                      style: TextStyle(fontSize: 12, color: colors.inkMuted, height: 1.4),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -43,7 +43,8 @@ abstract class JourneyDraft with _$JourneyDraft {
   bool get isQuotable =>
       !pickup.isEmpty &&
       !dropoff.isEmpty &&
-      pickup.address.trim().toLowerCase() != dropoff.address.trim().toLowerCase() &&
+      pickup.address.trim().toLowerCase() !=
+          dropoff.address.trim().toLowerCase() &&
       pickupDate != null &&
       pickupTime != null &&
       (!isReturn || (returnDate != null && returnTime != null));
@@ -72,11 +73,13 @@ abstract class JourneyDraft with _$JourneyDraft {
       if (dropoff.longitude != null) 'dropoff_lng': dropoff.longitude,
       'via_addresses': _filledVia.map((stop) => stop.address.trim()).toList(),
       'via_waypoints': _filledVia
-          .map((stop) => <String, dynamic>{
-                'place_id': stop.placeId,
-                'lat': stop.latitude,
-                'lng': stop.longitude,
-              })
+          .map(
+            (stop) => <String, dynamic>{
+              'place_id': stop.placeId,
+              'lat': stop.latitude,
+              'lng': stop.longitude,
+            },
+          )
           .toList(),
       'pickup_date': _formatDate(pickupDate!),
       'pickup_time': _formatTime(pickupTime!),
@@ -85,9 +88,12 @@ abstract class JourneyDraft with _$JourneyDraft {
       if (isReturn) 'return_time': _formatTime(returnTime!),
       'passenger_count': passengerCount,
       'luggage_count': luggageCount,
-      if (_isFilled(outboundFlightNumber)) 'outbound_flight_number': outboundFlightNumber!.trim(),
-      if (_isFilled(outboundTerminal)) 'outbound_terminal': outboundTerminal!.trim(),
-      if (_isFilled(returnFlightNumber)) 'return_flight_number': returnFlightNumber!.trim(),
+      if (_isFilled(outboundFlightNumber))
+        'outbound_flight_number': outboundFlightNumber!.trim(),
+      if (_isFilled(outboundTerminal))
+        'outbound_terminal': outboundTerminal!.trim(),
+      if (_isFilled(returnFlightNumber))
+        'return_flight_number': returnFlightNumber!.trim(),
       if (_isFilled(returnTerminal)) 'return_terminal': returnTerminal!.trim(),
     };
   }
@@ -116,8 +122,10 @@ abstract class JourneyDraft with _$JourneyDraft {
       'vehicle_category': vehicleCategorySlug,
       'customer_name': customerName.trim(),
       'customer_phone': customerPhone.trim(),
-      if (_isFilled(customerEmail)) 'customer_email': customerEmail!.trim().toLowerCase(),
-      if (_isFilled(specialInstructions)) 'special_instructions': specialInstructions!.trim(),
+      if (_isFilled(customerEmail))
+        'customer_email': customerEmail!.trim().toLowerCase(),
+      if (_isFilled(specialInstructions))
+        'special_instructions': specialInstructions!.trim(),
       'terms_accepted': true,
     };
   }
@@ -131,22 +139,28 @@ abstract class JourneyDraft with _$JourneyDraft {
   /// from the payload, so an unfilled one never reaches the server.
   JourneyDraft addViaStop() => copyWith(via: [...via, PlaceSelection.empty]);
 
-  JourneyDraft setViaStop(int index, PlaceSelection place) =>
-      copyWith(via: [for (var i = 0; i < via.length; i++) i == index ? place : via[i]]);
+  JourneyDraft setViaStop(int index, PlaceSelection place) => copyWith(
+    via: [for (var i = 0; i < via.length; i++) i == index ? place : via[i]],
+  );
 
-  JourneyDraft removeViaStop(int index) =>
-      copyWith(via: [for (var i = 0; i < via.length; i++) if (i != index) via[i]]);
+  JourneyDraft removeViaStop(int index) => copyWith(
+    via: [
+      for (var i = 0; i < via.length; i++)
+        if (i != index) via[i],
+    ],
+  );
 
   /// A return journey that is switched off keeps no stale dates behind it.
   JourneyDraft withoutReturn() => copyWith(
-        isReturn: false,
-        returnDate: null,
-        returnTime: null,
-        returnFlightNumber: null,
-        returnTerminal: null,
-      );
+    isReturn: false,
+    returnDate: null,
+    returnTime: null,
+    returnFlightNumber: null,
+    returnTerminal: null,
+  );
 
-  static bool _isFilled(String? value) => value != null && value.trim().isNotEmpty;
+  static bool _isFilled(String? value) =>
+      value != null && value.trim().isNotEmpty;
 
   /// Formatted by hand, not with intl: the server parses these in Europe/London
   /// and expects a plain calendar date and wall-clock time, so a locale-aware

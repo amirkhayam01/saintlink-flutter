@@ -7,7 +7,12 @@ import '../../auth/auth_controller.dart';
 /// initial and first name when signed in, a gold "Sign in" pill otherwise.
 /// Translucent so it sits on the photo like [HeroIconButton] does.
 class HomeAccountChip extends StatelessWidget {
-  const HomeAccountChip({super.key, required this.auth, required this.onProfile, required this.onSignIn});
+  const HomeAccountChip({
+    super.key,
+    required this.auth,
+    required this.onProfile,
+    required this.onSignIn,
+  });
 
   final AuthState auth;
   final VoidCallback onProfile;
@@ -26,7 +31,14 @@ class HomeAccountChip extends StatelessWidget {
           onTap: onSignIn,
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Text('Sign in', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.midnight)),
+            child: Text(
+              'Sign in',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.midnight,
+              ),
+            ),
           ),
         ),
       );
@@ -47,14 +59,31 @@ class HomeAccountChip extends StatelessWidget {
                 radius: 14,
                 backgroundColor: AppTheme.brand,
                 child: Text(
-                  (firstName != null && firstName.isNotEmpty) ? firstName[0].toUpperCase() : 'U',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.midnight),
+                  (firstName != null && firstName.isNotEmpty)
+                      ? firstName[0].toUpperCase()
+                      : 'U',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.midnight,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                firstName ?? 'Profile',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width * 0.2,
+                ),
+                child: Text(
+                  firstName ?? 'Profile',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ],
           ),

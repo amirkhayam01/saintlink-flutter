@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'features/auth/auth_controller.dart';
 import 'features/auth/sign_in_screen.dart';
+import 'features/booking/booking_flow_controller.dart';
 import 'features/booking/confirmation_screen.dart';
 import 'features/booking/details_screen.dart';
 import 'features/booking/journey_screen.dart';
@@ -30,13 +31,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   final listenable = _AuthListenable(ref);
   ref.onDispose(listenable.dispose);
 
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: listenable,
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
-      final needsSignIn = state.matchedLocation.startsWith('/trips') || state.matchedLocation.startsWith('/profile');
+      final needsSignIn =
+          state.matchedLocation.startsWith('/trips') ||
+          state.matchedLocation.startsWith('/profile');
 
       // Until the stored session has been checked, nobody is sent anywhere:
       // bouncing a signed-in customer to the sign-in screen for half a second
@@ -44,7 +47,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (auth.isRestoring) return null;
 
       if (needsSignIn && !auth.isSignedIn) {
-        return Uri(path: '/sign-in', queryParameters: {'redirect': state.matchedLocation}).toString();
+        return Uri(
+          path: '/sign-in',
+          queryParameters: {'redirect': state.matchedLocation},
+        ).toString();
       }
 
       if (state.matchedLocation == '/sign-in' && auth.isSignedIn) {
@@ -68,12 +74,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'services/airport',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, _) => const ServiceScreen(kind: ServiceKind.airport),
+                    builder: (_, _) =>
+                        const ServiceScreen(kind: ServiceKind.airport),
                   ),
                   GoRoute(
                     path: 'services/cruise',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, _) => const ServiceScreen(kind: ServiceKind.cruise),
+                    builder: (_, _) =>
+                        const ServiceScreen(kind: ServiceKind.cruise),
                   ),
                   GoRoute(
                     path: 'prices',
@@ -118,7 +126,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: ':reference',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, state) => TripDetailScreen(reference: state.pathParameters['reference']!),
+                    builder: (_, state) => TripDetailScreen(
+                      reference: state.pathParameters['reference']!,
+                    ),
                   ),
                 ],
               ),
@@ -137,8 +147,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/sign-in',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) => SignInScreen(redirectTo: state.uri.queryParameters['redirect']),
+        builder: (_, state) =>
+            SignInScreen(redirectTo: state.uri.queryParameters['redirect']),
       ),
     ],
   );
+  var previousPath = router.routeInformationProvider.value.uri.path;
+  void resetBookingOnHome() {
+    final path = router.routeInformationProvider.value.uri.path;
+    if (path == '/' && previousPath != '/') {
+      ref.read(bookingFlowProvider.notifier).reset();
+    }
+    previousPath = path;
+  }
+
+  router.routeInformationProvider.addListener(resetBookingOnHome);
+  ref.onDispose(() {
+    router.routeInformationProvider.removeListener(resetBookingOnHome);
+    router.dispose();
+  });
+  return router;
 });

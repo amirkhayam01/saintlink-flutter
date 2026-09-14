@@ -94,10 +94,10 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: AppTheme.brand.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(color: context.colors.tint, borderRadius: BorderRadius.circular(14)),
                   child: Row(
                     children: [
-                      const Icon(Icons.hourglass_top, size: 18, color: AppTheme.brandDark),
+                      Icon(Icons.hourglass_top, size: 18, color: context.colors.accent),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -186,7 +186,7 @@ class _LegCard extends StatelessWidget {
             if (leg.pickupWasAdjusted)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text('Moved from ${Formatting.time(leg.requestedPickupAt!)} to match your flight', style: const TextStyle(color: AppTheme.brandDark, fontSize: 12)),
+                child: Text('Moved from ${Formatting.time(leg.requestedPickupAt!)} to match your flight', style: TextStyle(color: context.colors.accent, fontSize: 12)),
               ),
             const SizedBox(height: 8),
           ],

@@ -1,8 +1,26 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Only the website's PUBLIC browser key is reused by the embedded web map.
+// Server Places credentials are never read or bundled. Local properties or
+// CI environment variables can supply the key when the sibling site is absent.
+val mapsLocalProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val websiteBrowserKey = rootProject.file("../../saintslink/.env")
+    .takeIf { it.exists() }
+    ?.readLines()
+    ?.firstOrNull { it.startsWith("VITE_GOOGLE_MAPS_API_KEY=") }
+    ?.substringAfter("=")?.trim()?.trim('"', '\'')
+    .orEmpty()
+val mapsBrowserKey = mapsLocalProperties.getProperty("googleMapsBrowserKey")
+    ?: System.getenv("GOOGLE_MAPS_BROWSER_KEY") ?: websiteBrowserKey
 
 android {
     namespace = "uk.co.saintslink.saints_link"
@@ -17,6 +35,7 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "uk.co.saintslink.app"
+        manifestPlaceholders["mapsBrowserKey"] = mapsBrowserKey
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // flutter_stripe needs 21+; the payment sheet itself is built against 23.

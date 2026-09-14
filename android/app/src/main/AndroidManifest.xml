@@ -4,6 +4,8 @@
         android:label="Saints Link"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <meta-data android:name="uk.co.saintslink.MAPS_BROWSER_KEY"
+            android:value="${mapsBrowserKey}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

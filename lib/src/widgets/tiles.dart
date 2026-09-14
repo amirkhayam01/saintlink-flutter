@@ -15,22 +15,25 @@ class IconDisc extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.colors;
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: filled ? AppTheme.brand : context.colors.tint,
+        color: filled ? AppTheme.brand : colors.tint,
         shape: BoxShape.circle,
       ),
-      // The darker gold keeps contrast on white; on midnight it just goes dull.
-      child: Icon(icon, size: size * 0.5, color: filled ? AppTheme.midnight : (isDark ? AppTheme.brand : AppTheme.brandDark)),
+      child: Icon(
+        icon,
+        size: size * 0.5,
+        color: filled ? AppTheme.midnight : colors.accent,
+      ),
     );
   }
 }
 
-/// A square tile for the services grid: icon disc, title, one-line caption.
+/// A service card with space for a two-line title and caption.
 class ServiceTile extends StatelessWidget {
   const ServiceTile({
     super.key,
@@ -56,30 +59,39 @@ class ServiceTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: colors.inkFaint),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              IconDisc(icon, size: 44),
-              const SizedBox(height: 14),
+              IconDisc(icon, size: 32),
+              const SizedBox(height: 10),
               Text(
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: colors.ink, height: 1.2),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: colors.ink,
+                  height: 1.2,
+                ),
               ),
               if (caption != null) ...[
                 const SizedBox(height: 3),
                 Text(
                   caption!,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: colors.inkMuted),
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.2,
+                    color: colors.inkMuted,
+                  ),
                 ),
               ],
             ],
@@ -136,11 +148,17 @@ class FieldTile extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(14, 12, dense ? 12 : 10, 12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: hasError ? AppTheme.danger : colors.inkFaint),
+                border: Border.all(
+                  color: hasError ? AppTheme.danger : colors.inkFaint,
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(icon, size: 20, color: hasValue ? AppTheme.brandDark : colors.inkMuted),
+                  Icon(
+                    icon,
+                    size: 20,
+                    color: hasValue ? colors.accent : colors.inkMuted,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -149,7 +167,12 @@ class FieldTile extends StatelessWidget {
                       children: [
                         Text(
                           label.toUpperCase(),
-                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: colors.inkMuted),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.6,
+                            color: colors.inkMuted,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -158,14 +181,19 @@ class FieldTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 15,
-                            fontWeight: hasValue ? FontWeight.w600 : FontWeight.w500,
-                            color: hasValue ? colors.ink : colors.inkMuted,
+                            fontWeight: hasValue
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: hasValue ? colors.ink : colors.placeholder,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  if (trailing != null) trailing! else if (!dense) Icon(Icons.chevron_right, color: colors.inkMuted),
+                  if (trailing != null)
+                    trailing!
+                  else if (!dense)
+                    Icon(Icons.chevron_right, color: colors.inkMuted),
                 ],
               ),
             ),
@@ -174,7 +202,10 @@ class FieldTile extends StatelessWidget {
         if (hasError)
           Padding(
             padding: const EdgeInsets.only(left: 14, top: 6),
-            child: Text(error!, style: const TextStyle(color: AppTheme.danger, fontSize: 12)),
+            child: Text(
+              error!,
+              style: const TextStyle(color: AppTheme.danger, fontSize: 12),
+            ),
           ),
       ],
     );
@@ -223,9 +254,19 @@ class ContactTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: colors.ink)),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: colors.ink,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(subtitle, style: TextStyle(fontSize: 13, color: colors.inkMuted)),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 13, color: colors.inkMuted),
+                    ),
                   ],
                 ),
               ),
@@ -241,7 +282,12 @@ class ContactTile extends StatelessWidget {
 /// A pill-shaped two-or-three-way switch, for Upcoming / Past and the price
 /// list filters.
 class SegmentedTabs extends StatelessWidget {
-  const SegmentedTabs({super.key, required this.labels, required this.index, required this.onChanged});
+  const SegmentedTabs({
+    super.key,
+    required this.labels,
+    required this.index,
+    required this.onChanged,
+  });
 
   final List<String> labels;
   final int index;
@@ -269,7 +315,9 @@ class SegmentedTabs extends StatelessWidget {
                   curve: Curves.easeOut,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: i == index ? (isDark ? AppTheme.brand : AppTheme.midnight) : Colors.transparent,
+                    color: i == index
+                        ? (isDark ? AppTheme.brand : AppTheme.midnight)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
@@ -278,7 +326,9 @@ class SegmentedTabs extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: i == index ? (isDark ? AppTheme.midnight : Colors.white) : colors.inkMuted,
+                      color: i == index
+                          ? (isDark ? AppTheme.midnight : Colors.white)
+                          : colors.inkMuted,
                     ),
                   ),
                 ),
@@ -315,7 +365,10 @@ class CalloutCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(18)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(18),
+      ),
       child: Row(
         children: [
           Expanded(
@@ -324,12 +377,28 @@ class CalloutCard extends StatelessWidget {
               children: [
                 Text(
                   eyebrow.toUpperCase(),
-                  style: TextStyle(color: isDark ? fgMuted : AppTheme.brand, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+                  style: TextStyle(
+                    color: isDark ? fgMuted : AppTheme.brand,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text(headline, style: TextStyle(color: fg, fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+                Text(
+                  headline,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(body, style: TextStyle(color: fgMuted, fontSize: 13, height: 1.3)),
+                Text(
+                  body,
+                  style: TextStyle(color: fgMuted, fontSize: 13, height: 1.3),
+                ),
               ],
             ),
           ),
@@ -337,8 +406,15 @@ class CalloutCard extends StatelessWidget {
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(color: fg.withValues(alpha: 0.12), shape: BoxShape.circle),
-            child: Icon(icon, color: isDark ? AppTheme.midnight : AppTheme.brand, size: 26),
+            decoration: BoxDecoration(
+              color: fg.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: isDark ? AppTheme.midnight : AppTheme.brand,
+              size: 26,
+            ),
           ),
         ],
       ),
@@ -368,14 +444,22 @@ class BadgeRow extends StatelessWidget {
                 Text(
                   item.label,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: colors.ink),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: colors.ink,
+                  ),
                 ),
                 if (item.caption != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     item.caption!,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11.5, color: colors.inkMuted, height: 1.3),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: colors.inkMuted,
+                      height: 1.3,
+                    ),
                   ),
                 ],
               ],
@@ -400,15 +484,25 @@ class FieldLabel extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 6),
-      child: Row(
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 2,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
             text.toUpperCase(),
-            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: colors.inkMuted),
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+              color: colors.inkMuted,
+            ),
           ),
           if (optional) ...[
-            const SizedBox(width: 6),
-            Text('optional', style: TextStyle(fontSize: 10.5, color: colors.inkMuted)),
+            Text(
+              'optional',
+              style: TextStyle(fontSize: 10.5, color: colors.inkMuted),
+            ),
           ],
         ],
       ),

@@ -1,118 +1,87 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme.dart';
+import '../../../domain/place.dart';
+import '../../places/place_autocomplete_field.dart';
 
-/// Instant "Where can we take you?" search bar and popular UK destination chips.
+/// The "Where can we take you?" bar that opens the booking form, with a row
+/// of popular destinations under it that preset the form in one tap.
+///
+/// The chip row scrolls edge to edge, so the launcher takes the screen's
+/// [gutter] and applies it itself rather than living inside a padded column.
 class SearchLauncher extends StatelessWidget {
-  const SearchLauncher({super.key, required this.onTap, required this.onSelectHub});
+  const SearchLauncher({
+    super.key,
+    required this.onSelectPlace,
+    required this.onSelectHub,
+    this.gutter = 18,
+  });
 
-  final VoidCallback onTap;
+  final ValueChanged<PlaceSelection> onSelectPlace;
   final void Function(String name, String address) onSelectHub;
+  final double gutter;
+
+  static const _hubs = [
+    (
+      label: 'Heathrow (LHR)',
+      icon: Icons.flight_takeoff_rounded,
+      address: 'London Heathrow Airport (LHR)',
+    ),
+    (
+      label: 'Gatwick (LGW)',
+      icon: Icons.flight_takeoff_rounded,
+      address: 'London Gatwick Airport (LGW)',
+    ),
+    (
+      label: 'Southampton (SOU)',
+      icon: Icons.flight_takeoff_rounded,
+      address: 'Southampton Airport (SOU)',
+    ),
+    (
+      label: 'Bournemouth (BOH)',
+      icon: Icons.flight_takeoff_rounded,
+      address: 'Bournemouth Airport (BOH)',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final hubs = [
-      (label: 'Heathrow (LHR)', icon: Icons.flight_takeoff_rounded, address: 'London Heathrow Airport (LHR)'),
-      (label: 'Cruise Terminal', icon: Icons.directions_boat_rounded, address: 'Southampton Cruise Terminals'),
-      (label: 'Gatwick (LGW)', icon: Icons.flight_takeoff_rounded, address: 'London Gatwick Airport (LGW)'),
-      (label: 'Central London', icon: Icons.apartment_rounded, address: 'Central London, UK'),
-    ];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: colors.card,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.search_rounded, size: 22, color: AppTheme.brandDark),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Where can we take you?',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: colors.inkMuted,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppTheme.brand : AppTheme.midnight,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Book',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppTheme.midnight : Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 14,
-                        color: isDark ? AppTheme.midnight : Colors.white,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: gutter),
+          child: PlaceAutocompleteField(onSelected: onSelectPlace),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 4),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.symmetric(horizontal: gutter),
           child: Row(
             children: [
-              for (final hub in hubs)
+              for (final (i, hub) in _hubs.indexed)
                 Padding(
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: EdgeInsets.only(left: i == 0 ? 0 : 8),
                   child: ActionChip(
-                    avatar: Icon(hub.icon, size: 15, color: isDark ? AppTheme.brand : AppTheme.midnight),
-                    label: Text(
-                      hub.label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: colors.ink,
-                      ),
+                    avatar: Icon(hub.icon, size: 16, color: colors.accent),
+                    label: Text(hub.label),
+                    labelStyle: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: colors.ink,
                     ),
                     backgroundColor: colors.card,
+                    side: BorderSide(color: colors.inkFaint),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: colors.inkFaint),
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     onPressed: () => onSelectHub(hub.label, hub.address),
                   ),
                 ),
@@ -123,5 +92,3 @@ class SearchLauncher extends StatelessWidget {
     );
   }
 }
-
-/// Service selector cards matching the website's service pillars.

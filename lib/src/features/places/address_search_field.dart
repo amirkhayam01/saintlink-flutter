@@ -4,15 +4,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import '../../core/api_exception.dart';
+import '../../widgets/inner_screen_header.dart';
 import '../../core/theme.dart';
 import '../../domain/place.dart';
 import 'recent_places.dart';
 
-/// A field that opens a full-screen address search.
-///
-/// A full screen rather than an inline dropdown: on a phone the keyboard takes
-/// half the screen, and a suggestion list squeezed into the remaining space
-/// under a form field is the single most common place a booking is abandoned.
+/// Open address selection above the booking form, keeping the keyboard clear.
+Future<PlaceSelection?> showAddressSearchSheet(
+  BuildContext context, {
+  required String title,
+  PlaceSelection initial = PlaceSelection.empty,
+}) {
+  return showModalBottomSheet<PlaceSelection>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
+    backgroundColor: context.colors.surface,
+    constraints: const BoxConstraints(maxWidth: 640),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    clipBehavior: Clip.antiAlias,
+    builder: (context) {
+      final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+      final available =
+          (MediaQuery.sizeOf(context).height -
+                  keyboard -
+                  MediaQuery.viewPaddingOf(context).top -
+                  48)
+              .clamp(0.0, double.infinity);
+      return Padding(
+        padding: EdgeInsets.only(bottom: keyboard),
+        child: SizedBox(
+          height: available * 0.9,
+          child: AddressSearchScreen(
+            title: title,
+            initial: initial,
+            isBottomSheet: true,
+          ),
+        ),
+      );
+    },
+  );
+}
+
+/// An address field that opens the shared search sheet.
 class AddressField extends StatelessWidget {
   const AddressField({
     super.key,
@@ -32,14 +70,13 @@ class AddressField extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () async {
-        final selection = await Navigator.of(context).push<PlaceSelection>(
-          MaterialPageRoute(
-            fullscreenDialog: true,
-            builder: (_) => AddressSearchScreen(title: label, initial: value),
-          ),
+        final selection = await showAddressSearchSheet(
+          context,
+          title: label,
+          initial: value,
         );
 
-        if (selection != null) onChanged(selection);
+        if (selection != null && context.mounted) onChanged(selection);
       },
       child: InputDecorator(
         decoration: InputDecoration(
@@ -49,24 +86,37 @@ class AddressField extends StatelessWidget {
               ? null
               : Icon(
                   value.isLocated ? Icons.check_circle : Icons.info_outline,
-                  color: value.isLocated ? AppTheme.success : AppTheme.brandDark,
+                  color: value.isLocated
+                      ? AppTheme.success
+                      : context.colors.accent,
                 ),
         ),
         isEmpty: value.isEmpty,
-        child: Text(value.address, maxLines: 2, overflow: TextOverflow.ellipsis),
+        child: Text(
+          value.address,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     );
   }
 }
 
 class AddressSearchScreen extends ConsumerStatefulWidget {
-  const AddressSearchScreen({super.key, required this.title, required this.initial});
+  const AddressSearchScreen({
+    super.key,
+    required this.title,
+    required this.initial,
+    this.isBottomSheet = false,
+  });
 
   final String title;
   final PlaceSelection initial;
+  final bool isBottomSheet;
 
   @override
-  ConsumerState<AddressSearchScreen> createState() => _AddressSearchScreenState();
+  ConsumerState<AddressSearchScreen> createState() =>
+      _AddressSearchScreenState();
 }
 
 class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
@@ -74,12 +124,20 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   Timer? _debounce;
   List<PlaceSuggestion> _suggestions = const [];
   bool _searching = false;
+  bool _resolving = false;
+  int _revision = 0;
   bool _searchUnavailable = false;
+  String? _selectionError;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initial.address);
+    if (widget.initial.address.trim().length >= 3) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _onChanged(_controller.text);
+      });
+    }
   }
 
   @override
@@ -93,39 +151,57 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   /// customer typing "Southampton Airport" does not need eighteen of them.
   void _onChanged(String text) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 350), () => _search(text));
+    final revision = ++_revision;
+    setState(() {
+      _suggestions = const [];
+      _searchUnavailable = false;
+      _selectionError = null;
+      _searching = text.trim().length >= 3;
+    });
+    if (!_searching) return;
+    _debounce = Timer(
+      const Duration(milliseconds: 350),
+      () => _search(text, revision),
+    );
   }
 
-  Future<void> _search(String text) async {
-    if (text.trim().length < 3) {
-      setState(() => _suggestions = const []);
-
-      return;
-    }
-
-    setState(() => _searching = true);
-
+  Future<void> _search(String text, int revision) async {
     try {
       final results = await ref.read(placesRepositoryProvider).search(text);
-      if (!mounted) return;
-      setState(() {
-        _suggestions = results;
-        _searchUnavailable = false;
-      });
+      if (!mounted || revision != _revision) return;
+      setState(() => _suggestions = results);
     } catch (_) {
-      if (!mounted) return;
-      // Search being down must not block a booking: the typed text is still
-      // usable, and the server can price known places from text alone.
+      if (!mounted || revision != _revision) return;
       setState(() => _searchUnavailable = true);
     } finally {
-      if (mounted) setState(() => _searching = false);
+      if (mounted && revision == _revision) setState(() => _searching = false);
     }
   }
 
   Future<void> _choose(PlaceSuggestion suggestion) async {
-    final selection = await ref.read(placesRepositoryProvider).resolve(suggestion);
-    if (!mounted) return;
-    _finish(selection);
+    if (_resolving) return;
+    _debounce?.cancel();
+    ++_revision;
+    setState(() {
+      _resolving = true;
+      _searching = false;
+    });
+    try {
+      final selection = await ref
+          .read(placesRepositoryProvider)
+          .resolve(suggestion);
+      if (!mounted) return;
+      _finish(selection);
+    } catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _selectionError = error is ApiException
+            ? error.message
+            : 'Unable to select this address. Please try again.',
+      );
+    } finally {
+      if (mounted) setState(() => _resolving = false);
+    }
   }
 
   void _finish(PlaceSelection selection) {
@@ -134,6 +210,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   }
 
   void _useTypedText() {
+    if (_resolving) return;
     Navigator.of(context).pop(PlaceSelection(address: _controller.text.trim()));
   }
 
@@ -141,89 +218,193 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   Widget build(BuildContext context) {
     final typed = _controller.text.trim();
     final colors = context.colors;
-    final recents = ref.watch(recentPlacesProvider).value ?? const <PlaceSelection>[];
+    final recents =
+        ref.watch(recentPlacesProvider).value ?? const <PlaceSelection>[];
     final browsing = typed.length < 3;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Column(
-        children: [
+    final body = Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+          child: TextField(
+            controller: _controller,
+            autofocus: true,
+            readOnly: _resolving,
+            maxLength: 200,
+            textInputAction: TextInputAction.search,
+            onChanged: (text) {
+              setState(() {});
+              _onChanged(text);
+            },
+            onSubmitted: (_) =>
+                typed.isEmpty || _resolving ? null : _useTypedText(),
+            decoration: InputDecoration(
+              hintText: 'Address, postcode, airport or port',
+              counterText: '',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searching || _resolving
+                  ? const Padding(
+                      padding: EdgeInsets.all(14),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : (typed.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _controller.clear();
+                              setState(() {});
+                              _onChanged('');
+                            },
+                          )),
+            ),
+          ),
+        ),
+        if (_searchUnavailable)
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-            child: TextField(
-              controller: _controller,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              onChanged: (text) {
-                setState(() {});
-                _onChanged(text);
-              },
-              onSubmitted: (_) => typed.isEmpty ? null : _useTypedText(),
-              decoration: InputDecoration(
-                hintText: 'Address, postcode, airport or port',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searching
-                    ? const Padding(padding: EdgeInsets.all(14), child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)))
-                    : (typed.isEmpty ? null : IconButton(icon: const Icon(Icons.clear), onPressed: () { _controller.clear(); setState(() {}); _onChanged(''); })),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            child: Text(
+              'Suggestions are unavailable right now. You can still continue with the address as typed.',
+              style: TextStyle(color: colors.inkMuted, fontSize: 13),
+            ),
+          ),
+        if (_selectionError != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                _selectionError!,
+                style: TextStyle(fontSize: 13, color: colors.inkMuted),
               ),
             ),
           ),
-          if (_searchUnavailable)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Text('Suggestions are unavailable right now. You can still continue with the address as typed.', style: TextStyle(color: colors.inkMuted, fontSize: 13)),
-            ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 24),
-              children: [
-                if (browsing) ...[
-                  _Heading('Airports and ports'),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final place in shortcutPlaces)
-                          ActionChip(
-                            avatar: Icon(place.address.contains('Cruise') ? Icons.directions_boat_outlined : Icons.flight_takeoff, size: 16, color: colors.ink),
-                            label: Text(place.address),
-                            labelStyle: TextStyle(color: colors.ink, fontWeight: FontWeight.w600, fontSize: 13),
-                            backgroundColor: colors.card,
-                            side: BorderSide(color: colors.inkFaint),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                            onPressed: () => _finish(place),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 24),
+            children: [
+              if (browsing) ...[
+                _Heading('Airports and ports'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final place in shortcutPlaces)
+                        ActionChip(
+                          avatar: Icon(
+                            place.address.contains('Cruise')
+                                ? Icons.directions_boat_outlined
+                                : Icons.flight_takeoff,
+                            size: 16,
+                            color: colors.ink,
                           ),
-                      ],
-                    ),
+                          label: Text(place.address),
+                          labelStyle: TextStyle(
+                            color: colors.ink,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                          backgroundColor: colors.card,
+                          side: BorderSide(color: colors.inkFaint),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          onPressed: () => _finish(place),
+                        ),
+                    ],
                   ),
-                  if (recents.isNotEmpty) ...[
-                    _Heading('Recent'),
-                    for (final place in recents)
-                      _PlaceRow(icon: Icons.history, title: place.address, onTap: () => _finish(place)),
-                  ],
-                ] else ...[
-                  for (final suggestion in _suggestions)
-                    _PlaceRow(icon: Icons.place_outlined, title: suggestion.description, onTap: () => _choose(suggestion)),
-                  if (_suggestions.isEmpty && !_searching && !_searchUnavailable)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                      child: Text('No matches yet — keep typing, or use the address as written.', style: TextStyle(color: colors.inkMuted, fontSize: 13)),
+                ),
+                if (recents.isNotEmpty) ...[
+                  _Heading('Recent'),
+                  for (final place in recents)
+                    _PlaceRow(
+                      icon: Icons.history,
+                      title: place.address,
+                      onTap: () => _finish(place),
                     ),
-                  _PlaceRow(
-                    icon: Icons.keyboard_outlined,
-                    title: 'Use "$typed"',
-                    subtitle: 'As typed, without a map location',
-                    muted: true,
-                    onTap: _useTypedText,
-                  ),
                 ],
+              ] else ...[
+                for (final suggestion in _suggestions)
+                  _PlaceRow(
+                    icon: Icons.place_outlined,
+                    title: suggestion.description,
+                    onTap: () {
+                      if (!_resolving) _choose(suggestion);
+                    },
+                  ),
+                if (_suggestions.isNotEmpty)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'Google Maps',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (_suggestions.isEmpty && !_searching && !_searchUnavailable)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Text(
+                      'No matches yet — keep typing, or use the address as written.',
+                      style: TextStyle(color: colors.inkMuted, fontSize: 13),
+                    ),
+                  ),
+                _PlaceRow(
+                  icon: Icons.keyboard_outlined,
+                  title: 'Use "$typed"',
+                  subtitle: 'As typed, without a map location',
+                  muted: true,
+                  onTap: _useTypedText,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+    if (widget.isBottomSheet) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 8, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: colors.ink,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Close address search',
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
               ],
             ),
           ),
+          Expanded(child: body),
         ],
-      ),
+      );
+    }
+    return Scaffold(
+      appBar: InnerScreenHeader(title: widget.title),
+      body: body,
     );
   }
 }
@@ -237,13 +418,27 @@ class _Heading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
-      child: Text(text.toUpperCase(), style: TextStyle(color: context.colors.inkMuted, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+      child: Text(
+        text.toUpperCase(),
+        style: TextStyle(
+          color: context.colors.inkMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
     );
   }
 }
 
 class _PlaceRow extends StatelessWidget {
-  const _PlaceRow({required this.icon, required this.title, required this.onTap, this.subtitle, this.muted = false});
+  const _PlaceRow({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.subtitle,
+    this.muted = false,
+  });
 
   final IconData icon;
   final String title;
@@ -264,7 +459,11 @@ class _PlaceRow extends StatelessWidget {
             Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: colors.inkFaint)),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.inkFaint),
+              ),
               child: Icon(icon, size: 18, color: colors.inkMuted),
             ),
             const SizedBox(width: 12),
@@ -272,8 +471,21 @@ class _PlaceRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15, fontWeight: muted ? FontWeight.w500 : FontWeight.w600, color: muted ? colors.inkMuted : colors.ink)),
-                  if (subtitle != null) Text(subtitle!, style: TextStyle(color: colors.inkMuted, fontSize: 12)),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: muted ? FontWeight.w500 : FontWeight.w600,
+                      color: muted ? colors.inkMuted : colors.ink,
+                    ),
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      style: TextStyle(color: colors.inkMuted, fontSize: 12),
+                    ),
                 ],
               ),
             ),

@@ -89,31 +89,31 @@ class ServiceScreen extends ConsumerWidget {
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
-            child: HeroBanner(
-              image: AssetImage(kind.image),
-              height: 240,
-              bottomInset: OverlapSheet.overlap,
-              title: kind.title,
-              showBack: true,
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: OverlapSheet(
-              padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(kind.lead, style: TextStyle(fontSize: 15, height: 1.45, color: colors.ink)),
-                  const SizedBox(height: 22),
-                  BadgeRow(items: kind.promises),
-                  const SizedBox(height: 28),
-                  SectionTitle(kind.listTitle, subtitle: kind.listSubtitle),
-                  const SizedBox(height: 14),
-                  for (final destination in kind.destinations) ...[
-                    _DestinationRow(destination: destination, icon: kind.icon, onTap: () => quoteFor(destination)),
-                    const SizedBox(height: 10),
+            child: HeroPage(
+              hero: HeroBanner(
+                image: AssetImage(kind.image),
+                height: 240,
+                bottomInset: OverlapSheet.overlap,
+                title: kind.title,
+                showBack: true,
+              ),
+              sheet: OverlapSheet(
+                padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(kind.lead, style: TextStyle(fontSize: 15, height: 1.45, color: colors.ink)),
+                    const SizedBox(height: 22),
+                    BadgeRow(items: kind.promises),
+                    const SizedBox(height: 28),
+                    SectionTitle(kind.listTitle, subtitle: kind.listSubtitle),
+                    const SizedBox(height: 14),
+                    for (final destination in kind.destinations) ...[
+                      _DestinationRow(destination: destination, icon: kind.icon, onTap: () => quoteFor(destination)),
+                      const SizedBox(height: 10),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

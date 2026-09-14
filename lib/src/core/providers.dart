@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../features/auth/auth_repository.dart';
+import '../features/auth/demo_session.dart';
+import '../features/auth/demo_repositories.dart';
 import '../features/booking/booking_repository.dart';
 import '../features/places/places_repository.dart';
 import 'api_client.dart';
@@ -19,7 +21,9 @@ final tokenStoreProvider = Provider<TokenStore>((ref) {
 });
 
 /// Override in `main.dart` to send reports somewhere other than the console.
-final errorReporterProvider = Provider<ErrorReporter>((ref) => ConsoleErrorReporter());
+final errorReporterProvider = Provider<ErrorReporter>(
+  (ref) => ConsoleErrorReporter(),
+);
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient(
@@ -29,6 +33,13 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  if (ref.watch(demoSessionProvider) != null) {
+    return DemoAuthRepository(
+      api: ref.watch(apiClientProvider),
+      tokens: ref.watch(tokenStoreProvider),
+      session: ref.read(demoSessionProvider.notifier),
+    );
+  }
   return AuthRepository(
     api: ref.watch(apiClientProvider),
     tokens: ref.watch(tokenStoreProvider),
@@ -36,6 +47,9 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
+  if (ref.watch(demoSessionProvider) != null) {
+    return DemoBookingRepository(ref.watch(apiClientProvider));
+  }
   return BookingRepository(ref.watch(apiClientProvider));
 });
 

@@ -91,7 +91,10 @@ class StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colour = AppTheme.statusColor(status);
+    // Pending statuses come back as the darker gold, which goes dull on
+    // midnight; the ground-aware accent is the same colour by day.
+    final statusColour = AppTheme.statusColor(status);
+    final colour = statusColour == AppTheme.brandDark ? context.colors.accent : statusColour;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -107,14 +110,15 @@ class StatusChip extends StatelessWidget {
 /// The fixed bottom action the website's mobile layout uses, carried over so
 /// the primary button is always where the thumb is.
 class BottomAction extends StatelessWidget {
-  const BottomAction({super.key, required this.child});
+  const BottomAction({super.key, required this.child, this.verticalPadding = 12});
 
   final Widget child;
+  final double verticalPadding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + MediaQuery.paddingOf(context).bottom),
+      padding: EdgeInsets.fromLTRB(20, verticalPadding, 20, verticalPadding + MediaQuery.paddingOf(context).bottom),
       decoration: BoxDecoration(
         color: context.colors.card,
         border: Border(top: BorderSide(color: context.colors.inkFaint)),

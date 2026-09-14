@@ -47,24 +47,38 @@ class TripsController extends AsyncNotifier<TripsState> {
     final current = state.value;
     if (current == null || !current.hasMore || current.isLoadingMore) return;
 
-    state = AsyncData(current.copyWith(isLoadingMore: true, loadMoreError: null));
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, loadMoreError: null),
+    );
 
     try {
-      final next = await ref.read(bookingRepositoryProvider).myBookings(page: current.page.currentPage + 1);
+      final next = await ref
+          .read(bookingRepositoryProvider)
+          .myBookings(page: current.page.currentPage + 1);
 
-      state = AsyncData(current.copyWith(
-        bookings: [...current.bookings, ...next.items],
-        page: next.meta,
-        isLoadingMore: false,
-      ));
+      state = AsyncData(
+        current.copyWith(
+          bookings: [...current.bookings, ...next.items],
+          page: next.meta,
+          isLoadingMore: false,
+        ),
+      );
     } on ApiException catch (error) {
-      state = AsyncData(current.copyWith(isLoadingMore: false, loadMoreError: error.message));
+      state = AsyncData(
+        current.copyWith(isLoadingMore: false, loadMoreError: error.message),
+      );
     }
   }
 }
 
-final tripsProvider = AsyncNotifierProvider.autoDispose<TripsController, TripsState>(TripsController.new);
+final tripsProvider =
+    AsyncNotifierProvider.autoDispose<TripsController, TripsState>(
+      TripsController.new,
+    );
 
-final tripDetailProvider = FutureProvider.autoDispose.family<Booking, String>((ref, reference) {
+final tripDetailProvider = FutureProvider.autoDispose.family<Booking, String>((
+  ref,
+  reference,
+) {
   return ref.watch(bookingRepositoryProvider).booking(reference);
 });

@@ -18,7 +18,21 @@ Without `API_BASE_URL` the app points at `https://saintslink.co.uk/api/v1`.
 When it is pointed anywhere else, the first screen shows which backend it is
 talking to so a test booking never lands somewhere unexpected.
 
-Toolchain: Flutter 3.47 / Dart 3.13 (stable). Android minSdk 23, iOS 15.
+Toolchain: Flutter 3.47 / Dart 3.13 (stable). Android minSdk 24, iOS 15.
+
+## Booking route maps
+
+Vehicle and Details show a Google road map with driving directions, using the
+same Maps JavaScript and Directions APIs as the website. The compact preview
+reserves room for the From/To overlay; expanding opens an interactive map.
+
+Android reads only `VITE_GOOGLE_MAPS_API_KEY` from the sibling `../saintslink/.env`
+at build time. To override it, set `googleMapsBrowserKey` in Android's ignored
+`local.properties`, or set `GOOGLE_MAPS_BROWSER_KEY` in the build environment.
+Other supported platforms can use `--dart-define=GOOGLE_MAPS_BROWSER_KEY=...`.
+This must be a public browser key with the website's HTTPS origin allowed;
+server Places keys are kept on the backend. Use a full rebuild after changing
+the key or native plugin configuration.
 
 ## Backend setup for local use
 

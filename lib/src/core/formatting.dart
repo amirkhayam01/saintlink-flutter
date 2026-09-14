@@ -18,7 +18,10 @@ class Formatting {
   static String money(double amount, [String currency = 'GBP']) {
     if (currency == 'GBP') return _currency.format(amount);
 
-    return NumberFormat.currency(locale: 'en_GB', name: currency).format(amount);
+    return NumberFormat.currency(
+      locale: 'en_GB',
+      name: currency,
+    ).format(amount);
   }
 
   static String date(DateTime value) => _dayAndMonth.format(value);
@@ -31,7 +34,32 @@ class Formatting {
 
   static String time(DateTime value) => _time.format(value);
 
-  static String dateAndTime(DateTime value) => '${_dayAndMonth.format(value)} at ${_time.format(value)}';
+  static String time12Hour(DateTime value) =>
+      DateFormat('h:mm a').format(value);
+
+  static bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  static String journeyDateLabel(DateTime value, {DateTime? now}) {
+    final today = now ?? DateTime.now();
+    return _sameDay(value, today)
+        ? 'Today'
+        : '${weekday(value)} ${monthShort(value)} ${value.day}';
+  }
+
+  static String journeyDateAndTime(DateTime value, {DateTime? now}) {
+    final today = now ?? DateTime.now();
+    final tomorrow = DateTime(today.year, today.month, today.day + 1);
+    final prefix = _sameDay(value, today)
+        ? 'Today'
+        : _sameDay(value, tomorrow)
+        ? 'Tomorrow'
+        : weekday(value);
+    return '$prefix ${monthShort(value)} ${value.day}, ${time12Hour(value)}';
+  }
+
+  static String dateAndTime(DateTime value) =>
+      '${_dayAndMonth.format(value)} at ${_time.format(value)}';
 
   /// Journey length as a person would say it: "1 hr 25 min".
   static String duration(int minutes) {

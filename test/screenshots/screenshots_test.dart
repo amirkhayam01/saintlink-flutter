@@ -11,6 +11,7 @@ import 'package:saints_link/src/features/auth/sign_in_screen.dart';
 import 'package:saints_link/src/features/booking/booking_flow_controller.dart';
 import 'package:saints_link/src/features/booking/details_screen.dart';
 import 'package:saints_link/src/features/booking/journey_screen.dart';
+import 'package:saints_link/src/features/booking/journey_date_time_sheet.dart';
 import 'package:saints_link/src/features/booking/confirmation_screen.dart';
 import 'package:saints_link/src/features/booking/vehicle_screen.dart';
 import 'package:saints_link/src/features/trips/trip_detail_screen.dart';
@@ -147,6 +148,20 @@ void main() {
         theme: AppTheme.dark(),
         tall: true,
       ));
+  testWidgets('journey date time picker', (tester) async {
+    tester.view.physicalSize = const Size(1179, 2556);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.runAsync(loadFonts);
+    final c = container();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(container: c, child: MaterialApp(theme: AppTheme.light(), home: const JourneyScreen())));
+    await tester.pumpAndSettle();
+    showJourneyDateTimeSheet(tester.element(find.byType(JourneyScreen)), title: 'Pickup date & time', minimum: DateTime.now(), initial: DateTime.now().add(const Duration(days: 1, hours: 1)));
+    await tester.pumpAndSettle();
+    await expectLater(find.byType(MaterialApp), matchesGoldenFile('out/journey_date_time_picker.png'));
+  });
   testWidgets('journey', (t) => shot(t, 'journey', const JourneyScreen(), tall: true));
   testWidgets('journey filled', (t) => shot(t, 'journey_filled', const JourneyScreen(), prime: (c) async {
         c.read(bookingFlowProvider.notifier).updateJourney((_) => quotableJourney.copyWith(

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../features/auth/demo_session.dart';
+
 import 'package:go_router/go_router.dart';
 
 import '../core/theme.dart';
@@ -18,7 +22,7 @@ class AppBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? AppTheme.brand : AppTheme.brandDark;
+    final activeColor = colors.accent;
 
     return Container(
       decoration: BoxDecoration(
@@ -44,14 +48,18 @@ class AppBottomNavBar extends StatelessWidget {
                 fontFamily: 'Figtree',
                 fontSize: 12,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? (isDark ? AppTheme.brand : colors.ink) : colors.inkMuted,
+                color: selected
+                    ? (isDark ? AppTheme.brand : colors.ink)
+                    : colors.inkMuted,
               );
             }),
             iconTheme: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
               return IconThemeData(
                 size: 22,
-                color: selected ? (isDark ? AppTheme.brand : colors.ink) : colors.inkMuted,
+                color: selected
+                    ? (isDark ? AppTheme.brand : colors.ink)
+                    : colors.inkMuted,
               );
             }),
           ),
@@ -89,15 +97,36 @@ class AppBottomNavBar extends StatelessWidget {
   }
 }
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      body: navigationShell,
+      body: Column(
+        children: [
+          if (ref.watch(demoSessionProvider) != null)
+            SafeArea(
+              bottom: false,
+              child: Container(
+                width: double.infinity,
+                color: context.colors.tint,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                child: Text(
+                  'Demo account · sample trips',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: context.colors.ink),
+                ),
+              ),
+            ),
+          Expanded(child: navigationShell),
+        ],
+      ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: navigationShell.currentIndex,
         onTap: (index) {

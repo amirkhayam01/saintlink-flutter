@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/inner_screen_header.dart';
 import '../../widgets/ticket_card.dart';
 import '../auth/auth_controller.dart';
 import '../payment/payment_controller.dart';
@@ -30,12 +31,17 @@ class ConfirmationScreen extends ConsumerStatefulWidget {
 
 class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
   Future<void> _pay(Booking booking) async {
-    final outcome = await ref.read(paymentControllerProvider(booking.reference).notifier).pay(
+    final outcome = await ref
+        .read(paymentControllerProvider(booking.reference).notifier)
+        .pay(
           presentTestSheet: (details) => showTestPaymentSheet(context, details),
         );
 
     if (outcome == PaymentOutcome.cancelled && mounted) {
-      showMessage(context, 'Payment cancelled. Your booking is saved — you can pay from My trips.');
+      showMessage(
+        context,
+        'Payment cancelled. Your booking is saved — you can pay from My trips.',
+      );
     }
   }
 
@@ -53,13 +59,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(18),
-            child: Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 14), child: StepIndicator(step: 3)),
-          ),
-        ),
+        appBar: const InnerScreenHeader(title: 'Your booking', showBack: false),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           children: [
@@ -67,12 +67,21 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
             const SizedBox(height: 22),
             TicketCard(
               booking: booking,
-              headline: payment.isPaid ? 'Paid and booked' : 'Thanks — we have your booking',
+              headline: payment.isPaid
+                  ? 'Paid and booked'
+                  : 'Thanks — we have your booking',
               paidOverride: payment.isPaid,
             ),
             const SizedBox(height: 20),
-            _NextSteps(booking: booking, paid: payment.isPaid, signedIn: signedIn),
-            if (payment.error != null) ...[const SizedBox(height: 12), ErrorNotice(payment.error!)],
+            _NextSteps(
+              booking: booking,
+              paid: payment.isPaid,
+              signedIn: signedIn,
+            ),
+            if (payment.error != null) ...[
+              const SizedBox(height: 12),
+              ErrorNotice(payment.error!),
+            ],
           ],
         ),
         bottomNavigationBar: BottomAction(
@@ -84,7 +93,9 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                   onPressed: payment.isPaying ? null : () => _pay(booking),
                   child: payment.isPaying
                       ? const ButtonSpinner()
-                      : Text('Pay ${Formatting.money(booking.totalAmount, booking.currency)} now'),
+                      : Text(
+                          'Pay ${Formatting.money(booking.totalAmount, booking.currency)} now',
+                        ),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -136,8 +147,15 @@ class _ConfirmedHero extends StatelessWidget {
             child: Container(
               width: 60,
               height: 60,
-              decoration: const BoxDecoration(color: AppTheme.success, shape: BoxShape.circle),
-              child: const Icon(Icons.check_rounded, color: Colors.white, size: 36),
+              decoration: const BoxDecoration(
+                color: AppTheme.success,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 36,
+              ),
             ),
           ),
         ),
@@ -149,7 +167,9 @@ class _ConfirmedHero extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          paid ? 'Your transfer is paid for and in the diary.' : 'Your transfer is booked. Here is everything you need.',
+          paid
+              ? 'Your transfer is paid for and in the diary.'
+              : 'Your transfer is booked. Here is everything you need.',
           textAlign: TextAlign.center,
           style: TextStyle(color: colors.inkMuted, fontSize: 14),
         ),
@@ -161,16 +181,32 @@ class _ConfirmedHero extends StatelessWidget {
           child: InkWell(
             onTap: () async {
               await Clipboard.setData(ClipboardData(text: booking.reference));
-              if (context.mounted) showMessage(context, 'Reference ${booking.reference} copied');
+              if (context.mounted) {
+                showMessage(context, 'Reference ${booking.reference} copied');
+              }
             },
             child: Container(
               padding: const EdgeInsets.fromLTRB(14, 8, 12, 8),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(999), border: Border.all(color: colors.inkFaint)),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: colors.inkFaint),
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Ref ', style: TextStyle(color: colors.inkMuted, fontSize: 13)),
-                  Text(booking.reference, style: TextStyle(color: colors.ink, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                  Text(
+                    'Ref ',
+                    style: TextStyle(color: colors.inkMuted, fontSize: 13),
+                  ),
+                  Text(
+                    booking.reference,
+                    style: TextStyle(
+                      color: colors.ink,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   Icon(Icons.copy_rounded, size: 16, color: colors.inkMuted),
                 ],
@@ -185,7 +221,11 @@ class _ConfirmedHero extends StatelessWidget {
 
 /// What happens now, in the order it happens.
 class _NextSteps extends StatelessWidget {
-  const _NextSteps({required this.booking, required this.paid, required this.signedIn});
+  const _NextSteps({
+    required this.booking,
+    required this.paid,
+    required this.signedIn,
+  });
 
   final Booking booking;
   final bool paid;
@@ -195,20 +235,40 @@ class _NextSteps extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final steps = <(IconData, String)>[
-      if (booking.customerEmail != null) (Icons.mail_outline, 'Confirmation sent to ${booking.customerEmail}'),
-      if (!paid && booking.canPay) (Icons.credit_card, 'Pay now to secure the booking, or later from My trips'),
-      if (!paid && !booking.canPay) (Icons.support_agent, 'Our team will confirm your booking shortly'),
-      (Icons.directions_car_outlined, 'Your driver\'s details arrive the day before travel'),
-      if (!signedIn) (Icons.phone_iphone, 'Sign in with your mobile number to see this trip in the app any time'),
+      if (booking.customerEmail != null)
+        (Icons.mail_outline, 'Confirmation sent to ${booking.customerEmail}'),
+      if (!paid && booking.canPay)
+        (
+          Icons.credit_card,
+          'Pay now to secure the booking, or later from My trips',
+        ),
+      if (!paid && !booking.canPay)
+        (Icons.support_agent, 'Our team will confirm your booking shortly'),
+      (
+        Icons.directions_car_outlined,
+        'Your driver\'s details arrive the day before travel',
+      ),
+      if (!signedIn)
+        (
+          Icons.phone_iphone,
+          'Sign in with your mobile number to see this trip in the app any time',
+        ),
     ];
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.inkFaint),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('What happens next', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'What happens next',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 10),
           for (final (icon, text) in steps)
             Padding(
@@ -216,9 +276,18 @@ class _NextSteps extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(icon, size: 18, color: AppTheme.brandDark),
+                  Icon(icon, size: 18, color: colors.accent),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(text, style: TextStyle(color: colors.ink, fontSize: 14, height: 1.35))),
+                  Expanded(
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        color: colors.ink,
+                        fontSize: 14,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -13,24 +13,26 @@ class PlacesRepository {
   Future<List<PlaceSuggestion>> search(String query) async {
     if (query.trim().length < 3) return const [];
 
-    final response = await _api.get('/places/autocomplete', query: {'query': query.trim()});
+    final response = await _api.get(
+      '/places/autocomplete',
+      query: {'query': query.trim()},
+    );
 
     return (response['data'] as List<dynamic>)
         .map((item) => PlaceSuggestion.fromJson(item as Map<String, dynamic>))
         .toList();
   }
 
-  /// Resolves a chosen suggestion to coordinates the pricing engine can measure
-  /// from. Falls back to the suggestion's own text if the lookup fails, so a
-  /// customer is never blocked from continuing — the journey simply prices less
-  /// precisely.
+  /// Only continue after the server has verified the selected Google place.
   Future<PlaceSelection> resolve(PlaceSuggestion suggestion) async {
-    try {
-      final response = await _api.get('/places/details', query: {'place_id': suggestion.placeId});
-
-      return PlaceSelection.fromJson(response);
-    } catch (_) {
-      return PlaceSelection(address: suggestion.description, placeId: suggestion.placeId);
-    }
+    final response = await _api.get(
+      '/places/details',
+      query: {'place_id': suggestion.placeId},
+    );
+    final place = PlaceSelection.fromJson(response);
+    // Postal addresses can omit the airport or business name the customer
+    // selected. Keep that label alongside the verified ID and coordinates.
+    final description = suggestion.description.trim();
+    return description.isEmpty ? place : place.copyWith(address: description);
   }
 }

@@ -44,7 +44,11 @@ class AppTheme {
      */
     final primaryButton = isDark ? brand : midnight;
     final onPrimaryButton = isDark ? midnight : Colors.white;
-    const buttonText = TextStyle(fontFamily: 'Figtree', fontSize: 16, fontWeight: FontWeight.w600);
+    const buttonText = TextStyle(
+      fontFamily: 'Figtree',
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+    );
 
     final base = ThemeData(
       useMaterial3: true,
@@ -78,14 +82,21 @@ class AppTheme {
     );
 
     return base.copyWith(
-      textTheme: _textTheme(base.textTheme.apply(bodyColor: colors.ink, displayColor: colors.ink), colors),
+      textTheme: _textTheme(
+        base.textTheme.apply(bodyColor: colors.ink, displayColor: colors.ink),
+        colors,
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: colors.card,
         foregroundColor: colors.ink,
         elevation: 0,
         scrolledUnderElevation: 1,
         centerTitle: false,
-        titleTextStyle: base.textTheme.titleLarge!.copyWith(fontSize: 18, fontWeight: FontWeight.w700, color: colors.ink),
+        titleTextStyle: base.textTheme.titleLarge!.copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: colors.ink,
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -94,7 +105,9 @@ class AppTheme {
           disabledBackgroundColor: colors.inkFaint,
           disabledForegroundColor: colors.inkMuted,
           minimumSize: const Size.fromHeight(52),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           textStyle: buttonText,
         ),
       ),
@@ -103,19 +116,36 @@ class AppTheme {
           foregroundColor: colors.ink,
           minimumSize: const Size.fromHeight(52),
           side: BorderSide(color: colors.inkFaint),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           textStyle: buttonText,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
+        hintStyle: TextStyle(
+          color: colors.placeholder,
+          fontWeight: FontWeight.w400,
+        ),
         fillColor: colors.card,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: _inputBorder(colors.inkFaint),
         enabledBorder: _inputBorder(colors.inkFaint),
-        focusedBorder: _inputBorder(isDark ? brand : midnight, width: 1.6),
+        focusedBorder: _inputBorder(
+          colors.accent.withValues(alpha: 0.5),
+          width: 1.2,
+        ),
         errorBorder: _inputBorder(danger),
         focusedErrorBorder: _inputBorder(danger, width: 1.6),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: colors.accent,
+        selectionColor: colors.accent.withValues(alpha: 0.18),
+        selectionHandleColor: colors.accent,
       ),
       cardTheme: CardThemeData(
         color: colors.card,
@@ -127,7 +157,10 @@ class AppTheme {
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: colors.ink, textStyle: buttonText.copyWith(fontSize: 14)),
+        style: TextButton.styleFrom(
+          foregroundColor: colors.ink,
+          textStyle: buttonText.copyWith(fontSize: 14),
+        ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: brand,
@@ -139,7 +172,11 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         extendedTextStyle: buttonText.copyWith(fontSize: 15),
       ),
-      dividerTheme: DividerThemeData(color: colors.inkFaint, space: 1, thickness: 1),
+      dividerTheme: DividerThemeData(
+        color: colors.inkFaint,
+        space: 1,
+        thickness: 1,
+      ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: isDark ? colors.inkFaint : midnight,
@@ -152,12 +189,28 @@ class AppTheme {
   /// Derived with copyWith so every style keeps the family and falls back the
   /// same way; a bare TextStyle here would silently drop back to Roboto.
   static TextTheme _textTheme(TextTheme t, AppColors colors) => t.copyWith(
-        headlineMedium: t.headlineMedium!.copyWith(fontSize: 28, fontWeight: FontWeight.w800, height: 1.15, letterSpacing: -0.5),
-        titleLarge: t.titleLarge!.copyWith(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.2),
-        titleMedium: t.titleMedium!.copyWith(fontSize: 16, fontWeight: FontWeight.w600),
-        bodyMedium: t.bodyMedium!.copyWith(fontSize: 15, height: 1.4),
-        bodySmall: t.bodySmall!.copyWith(fontSize: 13, height: 1.4, color: colors.inkMuted),
-      );
+    headlineMedium: t.headlineMedium!.copyWith(
+      fontSize: 28,
+      fontWeight: FontWeight.w800,
+      height: 1.15,
+      letterSpacing: -0.5,
+    ),
+    titleLarge: t.titleLarge!.copyWith(
+      fontSize: 20,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.2,
+    ),
+    titleMedium: t.titleMedium!.copyWith(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+    ),
+    bodyMedium: t.bodyMedium!.copyWith(fontSize: 15, height: 1.4),
+    bodySmall: t.bodySmall!.copyWith(
+      fontSize: 13,
+      height: 1.4,
+      color: colors.inkMuted,
+    ),
+  );
 
   static OutlineInputBorder _inputBorder(Color color, {double width = 1}) {
     return OutlineInputBorder(
@@ -171,10 +224,10 @@ class AppTheme {
   /// Red is reserved for things that are wrong, per the site's token rules, so
   /// only a cancellation gets it — an unpaid booking is merely pending.
   static Color statusColor(String status) => switch (status) {
-        'confirmed' || 'completed' => success,
-        'cancelled' || 'refunded' => danger,
-        _ => brandDark,
-      };
+    'confirmed' || 'completed' => success,
+    'cancelled' || 'refunded' => danger,
+    _ => brandDark,
+  };
 }
 
 /// The ground-dependent palette: zinc on white by day, the inverse by night.
@@ -190,6 +243,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.errorBorder,
     required this.errorText,
     required this.tint,
+    required this.accent,
   });
 
   static const light = AppColors(
@@ -202,6 +256,7 @@ class AppColors extends ThemeExtension<AppColors> {
     errorBorder: Color(0xFFFECACA),
     errorText: Color(0xFF991B1B),
     tint: Color(0x1FFACC15),
+    accent: AppTheme.brandDark,
   );
 
   static const dark = AppColors(
@@ -214,12 +269,15 @@ class AppColors extends ThemeExtension<AppColors> {
     errorBorder: Color(0xFF7F1D1D),
     errorText: Color(0xFFFCA5A5),
     tint: Color(0x2EFACC15),
+    accent: AppTheme.brand,
   );
 
   /// Body text.
   final Color ink;
 
   /// Secondary text: helper lines, captions, labels.
+  Color get placeholder => inkMuted.withValues(alpha: 0.78);
+
   final Color inkMuted;
 
   /// Borders and dividers.
@@ -239,11 +297,22 @@ class AppColors extends ThemeExtension<AppColors> {
   /// cards and pills. Slightly stronger on the dark ground so it still reads.
   final Color tint;
 
+  /// Gold as a text and icon colour: the darker gold on white, where the logo
+  /// gold fails contrast, and the logo gold itself on midnight, where the
+  /// darker one goes dull.
+  final Color accent;
+
   /// The one shadow the app uses, on cards that float over the hero or the
   /// ground. Softer and larger than Material's default elevation.
   List<BoxShadow> get floatingShadow => [
-        BoxShadow(color: Colors.black.withValues(alpha: surface.computeLuminance() > 0.5 ? 0.10 : 0.5), blurRadius: 28, offset: const Offset(0, 12)),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(
+        alpha: surface.computeLuminance() > 0.5 ? 0.10 : 0.5,
+      ),
+      blurRadius: 28,
+      offset: const Offset(0, 12),
+    ),
+  ];
 
   @override
   AppColors copyWith({
@@ -256,6 +325,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? errorBorder,
     Color? errorText,
     Color? tint,
+    Color? accent,
   }) {
     return AppColors(
       ink: ink ?? this.ink,
@@ -267,6 +337,7 @@ class AppColors extends ThemeExtension<AppColors> {
       errorBorder: errorBorder ?? this.errorBorder,
       errorText: errorText ?? this.errorText,
       tint: tint ?? this.tint,
+      accent: accent ?? this.accent,
     );
   }
 
@@ -284,6 +355,7 @@ class AppColors extends ThemeExtension<AppColors> {
       errorBorder: Color.lerp(errorBorder, other.errorBorder, t)!,
       errorText: Color.lerp(errorText, other.errorText, t)!,
       tint: Color.lerp(tint, other.tint, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
     );
   }
 }

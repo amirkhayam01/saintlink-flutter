@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +56,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
 
     try {
-      final sent = await ref.read(authRepositoryProvider).requestCode(_phoneForServer);
+      final sent = await ref
+          .read(authRepositoryProvider)
+          .requestCode(_phoneForServer);
       if (!mounted) return;
       setState(() {
         _sent = sent;
@@ -71,7 +74,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         setState(() => _resendIn--);
       });
     } on ApiException catch (error) {
-      if (mounted) setState(() => _error = error.firstErrorFor('phone') ?? error.message);
+      if (mounted) {
+        setState(() => _error = error.firstErrorFor('phone') ?? error.message);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -90,7 +95,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             phone: _phoneForServer,
             code: _code.text.trim(),
             name: _name.text,
-            deviceName: Theme.of(context).platform == TargetPlatform.iOS ? 'iPhone' : 'Android phone',
+            deviceName: Theme.of(context).platform == TargetPlatform.iOS
+                ? 'iPhone'
+                : 'Android phone',
           );
       await ref.read(authControllerProvider.notifier).completeSignIn(customer);
       if (mounted) context.go(widget.redirectTo ?? '/trips');
@@ -130,7 +137,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   _error = null;
                   _code.clear();
                 })
-              : () => context.pop(),
+              : () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/');
+                  }
+                },
         ),
       ),
       backgroundColor: colors.surface,
@@ -142,14 +155,25 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ListView(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             children: [
-              Center(child: Image.asset(dark ? 'assets/brand/logo-dark.png' : 'assets/brand/logo-light.png', height: 40)),
+              Center(
+                child: Image.asset(
+                  dark
+                      ? 'assets/brand/logo-dark.png'
+                      : 'assets/brand/logo-light.png',
+                  height: 40,
+                ),
+              ),
               const SizedBox(height: 32),
               if (!awaitingCode) ...[
-                Text('Sign in with your mobile', style: Theme.of(context).textTheme.headlineMedium),
+                Text(
+                  'Sign in with your mobile',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'We will text you a six-digit code. No password, nothing to remember.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.inkMuted),
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: colors.inkMuted),
                 ),
                 const SizedBox(height: 28),
                 const FieldLabel('Mobile number'),
@@ -159,15 +183,31 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   autofocus: true,
                   autofillHints: const [AutofillHints.telephoneNumber],
                   textInputAction: TextInputAction.next,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
                   decoration: InputDecoration(
                     hintText: '7700 900123',
-                    hintStyle: TextStyle(color: colors.inkMuted.withValues(alpha: 0.6), fontWeight: FontWeight.w500),
+                    hintStyle: TextStyle(
+                      color: colors.placeholder,
+                      fontWeight: FontWeight.w500,
+                    ),
                     prefixIcon: const Padding(
                       padding: EdgeInsets.fromLTRB(16, 0, 10, 0),
-                      child: Text('+44', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                      child: Text(
+                        '+44',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 0,
+                      minHeight: 0,
+                    ),
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
@@ -177,19 +217,29 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   controller: _name,
                   textCapitalization: TextCapitalization.words,
                   autofillHints: const [AutofillHints.name],
-                  decoration: const InputDecoration(hintText: 'Only needed the first time', prefixIcon: Icon(Icons.person_outline, size: 20)),
+                  decoration: const InputDecoration(
+                    hintText: 'Only needed the first time',
+                    prefixIcon: Icon(Icons.person_outline, size: 20),
+                  ),
                 ),
               ] else ...[
-                Text('Enter the code', style: Theme.of(context).textTheme.headlineMedium),
+                Text(
+                  'Enter the code',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 8),
                 Text.rich(
                   TextSpan(
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.inkMuted),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: colors.inkMuted),
                     children: [
                       const TextSpan(text: 'Sent to '),
                       TextSpan(
                         text: _sent!.maskedPhone,
-                        style: TextStyle(color: colors.ink, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: colors.ink,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const TextSpan(text: '. It expires in a few minutes.'),
                     ],
@@ -207,11 +257,18 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 Center(
                   child: TextButton(
                     onPressed: _resendIn > 0 || _busy ? null : _requestCode,
-                    child: Text(_resendIn > 0 ? 'Resend code in ${_resendIn}s' : 'Resend code'),
+                    child: Text(
+                      _resendIn > 0
+                          ? 'Resend code in ${_resendIn}s'
+                          : 'Resend code',
+                    ),
                   ),
                 ),
               ],
-              if (_error != null) ...[const SizedBox(height: 16), ErrorNotice(_error!)],
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                ErrorNotice(_error!),
+              ],
               const SizedBox(height: 28),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,7 +278,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   Expanded(
                     child: Text(
                       'Your number is only used to sign you in and to reach you about your bookings.',
-                      style: TextStyle(color: colors.inkMuted, fontSize: 13, height: 1.4),
+                      style: TextStyle(
+                        color: colors.inkMuted,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
@@ -231,11 +292,36 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         ],
       ),
       bottomNavigationBar: BottomAction(
-        child: FilledButton(
-          onPressed: _busy
-              ? null
-              : (awaitingCode ? (_code.text.length == 6 ? _verify : null) : (_phone.text.replaceAll(RegExp(r'\D'), '').length >= 10 ? _requestCode : null)),
-          child: _busy ? const ButtonSpinner() : Text(awaitingCode ? 'Sign in' : 'Send code'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton(
+              onPressed: _busy
+                  ? null
+                  : (awaitingCode
+                        ? (_code.text.length == 6 ? _verify : null)
+                        : (_phone.text.replaceAll(RegExp(r'\D'), '').length >=
+                                  10
+                              ? _requestCode
+                              : null)),
+              child: _busy
+                  ? const ButtonSpinner()
+                  : Text(awaitingCode ? 'Sign in' : 'Send code'),
+            ),
+            if (kDebugMode)
+              TextButton.icon(
+                onPressed: _busy
+                    ? null
+                    : () {
+                        FocusScope.of(context).unfocus();
+                        ref.read(authControllerProvider.notifier).signInDemo();
+                        context.go(widget.redirectTo ?? '/trips');
+                      },
+                icon: const Icon(Icons.person_outline, size: 18),
+                label: const Text('Demo login'),
+              ),
+          ],
         ),
       ),
     );
@@ -255,7 +341,12 @@ class _Glow extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [AppTheme.brand.withValues(alpha: 0.22), AppTheme.brand.withValues(alpha: 0)]),
+          gradient: RadialGradient(
+            colors: [
+              AppTheme.brand.withValues(alpha: 0.22),
+              AppTheme.brand.withValues(alpha: 0),
+            ],
+          ),
         ),
       ),
     );
@@ -265,7 +356,11 @@ class _Glow extends StatelessWidget {
 /// Six digit boxes over one invisible text field, so the keyboard, paste and
 /// SMS autofill all keep working while the code reads like a code.
 class _OtpBoxes extends StatefulWidget {
-  const _OtpBoxes({required this.controller, required this.enabled, required this.onCompleted});
+  const _OtpBoxes({
+    required this.controller,
+    required this.enabled,
+    required this.onCompleted,
+  });
 
   final TextEditingController controller;
   final bool enabled;
@@ -318,11 +413,27 @@ class _OtpBoxesState extends State<_OtpBoxes> {
                       color: colors.card,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: focused && i == text.length.clamp(0, 5) && text.length < 6 ? AppTheme.brand : colors.inkFaint,
-                        width: focused && i == text.length.clamp(0, 5) && text.length < 6 ? 2 : 1,
+                        color:
+                            focused &&
+                                i == text.length.clamp(0, 5) &&
+                                text.length < 6
+                            ? AppTheme.brand
+                            : colors.inkFaint,
+                        width:
+                            focused &&
+                                i == text.length.clamp(0, 5) &&
+                                text.length < 6
+                            ? 2
+                            : 1,
                       ),
                     ),
-                    child: Text(i < text.length ? text[i] : '', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
+                    child: Text(
+                      i < text.length ? text[i] : '',
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
                 if (i < 5) const SizedBox(width: 8),
@@ -340,7 +451,10 @@ class _OtpBoxesState extends State<_OtpBoxes> {
                 autofocus: true,
                 keyboardType: TextInputType.number,
                 autofillHints: const [AutofillHints.oneTimeCode],
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
                 showCursor: false,
                 enableInteractiveSelection: false,
                 decoration: const InputDecoration(border: InputBorder.none),

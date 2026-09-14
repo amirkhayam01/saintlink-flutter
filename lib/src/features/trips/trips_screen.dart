@@ -10,6 +10,7 @@ import '../../widgets/skeleton.dart';
 import '../../widgets/tiles.dart';
 import '../../domain/booking.dart';
 import 'trips_controller.dart';
+import '../auth/auth_controller.dart';
 
 class TripsScreen extends ConsumerStatefulWidget {
   const TripsScreen({super.key});
@@ -23,6 +24,9 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!ref.watch(authControllerProvider).isSignedIn) {
+      return const SizedBox.shrink();
+    }
     final trips = ref.watch(tripsProvider);
 
     return Scaffold(
@@ -45,14 +49,29 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: ErrorNotice(error.toString(), onRetry: () => ref.invalidate(tripsProvider)),
+            child: ErrorNotice(
+              error.toString(),
+              onRetry: () => ref.invalidate(tripsProvider),
+            ),
           ),
         ),
         data: (state) => AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: _tab == 0
-              ? _TripList(state.upcoming, key: const ValueKey('upcoming'), state: state, emptyTitle: 'No upcoming trips', emptyBody: 'Book a transfer and it will appear here, ready for the day.')
-              : _TripList(state.past, key: const ValueKey('past'), state: state, emptyTitle: 'No past trips yet', emptyBody: 'Completed journeys stay here for your records.'),
+              ? _TripList(
+                  state.upcoming,
+                  key: const ValueKey('upcoming'),
+                  state: state,
+                  emptyTitle: 'No upcoming trips',
+                  emptyBody: 'Book a transfer and it will appear here, ready for the day.',
+                )
+              : _TripList(
+                  state.past,
+                  key: const ValueKey('past'),
+                  state: state,
+                  emptyTitle: 'No past trips yet',
+                  emptyBody: 'Completed journeys stay here for your records.',
+                ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -65,7 +84,13 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
 }
 
 class _TripList extends ConsumerWidget {
-  const _TripList(this.bookings, {super.key, required this.state, required this.emptyTitle, required this.emptyBody});
+  const _TripList(
+    this.bookings, {
+    super.key,
+    required this.state,
+    required this.emptyTitle,
+    required this.emptyBody,
+  });
 
   final List<Booking> bookings;
   final TripsState state;
@@ -85,9 +110,20 @@ class _TripList extends ConsumerWidget {
                     children: [
                       const IconDisc(Icons.receipt_long_outlined, size: 72),
                       const SizedBox(height: 18),
-                      Text(emptyTitle, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
+                      Text(
+                        emptyTitle,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                       const SizedBox(height: 6),
-                      Text(emptyBody, textAlign: TextAlign.center, style: TextStyle(color: context.colors.inkMuted, height: 1.4)),
+                      Text(
+                        emptyBody,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: context.colors.inkMuted,
+                          height: 1.4,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -113,7 +149,11 @@ class _TripList extends ConsumerWidget {
 /// The last row of a list with more pages: fetches the next page as soon as
 /// it scrolls into view, and falls back to a button if that fetch failed.
 class _LoadMore extends StatefulWidget {
-  const _LoadMore({required this.isLoading, required this.error, required this.onLoad});
+  const _LoadMore({
+    required this.isLoading,
+    required this.error,
+    required this.onLoad,
+  });
 
   final bool isLoading;
   final String? error;
@@ -140,7 +180,13 @@ class _LoadMoreState extends State<_LoadMore> {
 
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 16),
-      child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5))),
+      child: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2.5),
+        ),
+      ),
     );
   }
 }
@@ -156,7 +202,11 @@ class _TripCard extends StatelessWidget {
     final when = booking.pickupAt;
 
     return Container(
-      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.inkFaint),
+      ),
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
@@ -171,12 +221,46 @@ class _TripCard extends StatelessWidget {
                 Container(
                   width: 56,
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(color: booking.isUpcoming ? AppTheme.brand : colors.surface, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: booking.isUpcoming ? AppTheme.brand : colors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Column(
                     children: [
-                      Text(when == null ? '—' : Formatting.weekday(when).toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: booking.isUpcoming ? AppTheme.midnight : colors.inkMuted)),
-                      Text(when == null ? '' : '${when.day}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, height: 1.1, color: booking.isUpcoming ? AppTheme.midnight : colors.ink)),
-                      Text(when == null ? '' : Formatting.monthShort(when), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: booking.isUpcoming ? AppTheme.midnight : colors.inkMuted)),
+                      Text(
+                        when == null
+                            ? '—'
+                            : Formatting.weekday(when).toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          color: booking.isUpcoming
+                              ? AppTheme.midnight
+                              : colors.inkMuted,
+                        ),
+                      ),
+                      Text(
+                        when == null ? '' : '${when.day}',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          height: 1.1,
+                          color: booking.isUpcoming
+                              ? AppTheme.midnight
+                              : colors.ink,
+                        ),
+                      ),
+                      Text(
+                        when == null ? '' : Formatting.monthShort(when),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: booking.isUpcoming
+                              ? AppTheme.midnight
+                              : colors.inkMuted,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -187,8 +271,21 @@ class _TripCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Expanded(child: Text(when == null ? booking.reference : Formatting.time(when), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
-                          StatusChip(label: booking.statusLabel, status: booking.status),
+                          Expanded(
+                            child: Text(
+                              when == null
+                                  ? booking.reference
+                                  : Formatting.time(when),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                          StatusChip(
+                            label: booking.statusLabel,
+                            status: booking.status,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -202,19 +299,49 @@ class _TripCard extends StatelessWidget {
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          Expanded(child: Text('${booking.vehicle ?? ''}${booking.isReturn ? ' · return' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.inkMuted, fontSize: 13))),
-                          Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                          Expanded(
+                            child: Text(
+                              '${booking.vehicle ?? ''}${booking.isReturn ? ' · return' : ''}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.inkMuted,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            Formatting.money(
+                              booking.totalAmount,
+                              booking.currency,
+                            ),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text('Ref ${booking.reference}', style: TextStyle(color: colors.inkMuted, fontSize: 11, letterSpacing: 0.3)),
+                      Text(
+                        'Ref ${booking.reference}',
+                        style: TextStyle(
+                          color: colors.inkMuted,
+                          fontSize: 11,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 4),
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
-                  child: Icon(Icons.chevron_right, color: colors.inkMuted, size: 20),
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: colors.inkMuted,
+                    size: 20,
+                  ),
                 ),
               ],
             ),

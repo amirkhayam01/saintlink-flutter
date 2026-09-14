@@ -30,22 +30,20 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Where can we take you?'), findsOneWidget);
-        expect(find.text('Our Services'), findsOneWidget);
+        expect(find.text('Our services'), findsOneWidget);
+        expect(find.text('Popular fixed fares'), findsOneWidget);
         expect(find.textContaining('Good '), findsOneWidget);
-        expect(find.byIcon(Icons.menu_rounded), findsOneWidget);
 
-        // Open side drawer and verify theme switch is present inside
-        await tester.tap(find.byIcon(Icons.menu_rounded));
-        await tester.pumpAndSettle();
-        expect(find.byType(Drawer), findsOneWidget);
-        expect(find.byType(Switch), findsOneWidget);
+        // The theme toggle sits on the hero and offers the other mode.
+        final toggle = theme.brightness == Brightness.dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded;
+        expect(find.byIcon(toggle), findsOneWidget);
       });
 
       testWidgets('journey screen', (tester) async {
         await tester.pumpWidget(app(const JourneyScreen(), theme));
         await tester.pump();
 
-        expect(find.text('See prices'), findsOneWidget);
+        expect(find.text('Continue'), findsOneWidget);
         expect(find.text('Add a stop'), findsOneWidget);
       });
 

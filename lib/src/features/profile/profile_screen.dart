@@ -48,7 +48,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
 
-    final saved = await ref.read(profileControllerProvider.notifier).save(
+    final saved = await ref
+        .read(profileControllerProvider.notifier)
+        .save(
           firstName: _firstName.text,
           lastName: _lastName.text,
           email: _email.text,
@@ -57,14 +59,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     if (saved && mounted) {
       showMessage(context, 'Your details have been updated.');
-      context.pop();
+      if (context.canPop()) context.pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(profileControllerProvider);
-    final Customer customer = ref.watch(authControllerProvider).customer!;
+    final customer = ref.watch(authControllerProvider).customer;
+    if (customer == null) return const SizedBox.shrink();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Your details')),
@@ -75,15 +78,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             _IdentityCard(customer: customer),
             const SizedBox(height: 28),
-            const SectionTitle('Name and email', subtitle: 'Used on your bookings and confirmation emails.'),
+            const SectionTitle(
+              'Name and email',
+              subtitle: 'Used on your bookings and confirmation emails.',
+            ),
             const SizedBox(height: 14),
             const FieldLabel('First name'),
             TextFormField(
               controller: _firstName,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(hintText: 'e.g. Ada', prefixIcon: const Icon(Icons.person_outline, size: 20), errorText: state.fieldErrors['first_name']?.first),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Please enter your first name' : null,
+              decoration: InputDecoration(
+                hintText: 'e.g. Ada',
+                prefixIcon: const Icon(Icons.person_outline, size: 20),
+                errorText: state.fieldErrors['first_name']?.first,
+              ),
+              validator: (v) => (v ?? '').trim().isEmpty
+                  ? 'Please enter your first name'
+                  : null,
             ),
             const SizedBox(height: 14),
             const FieldLabel('Last name'),
@@ -91,7 +103,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               controller: _lastName,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              decoration: InputDecoration(hintText: 'e.g. Lovelace', prefixIcon: const Icon(Icons.badge_outlined, size: 20), errorText: state.fieldErrors['last_name']?.first),
+              decoration: InputDecoration(
+                hintText: 'e.g. Lovelace',
+                prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                errorText: state.fieldErrors['last_name']?.first,
+              ),
             ),
             const SizedBox(height: 14),
             const FieldLabel('Email', optional: true),
@@ -100,12 +116,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.done,
               autocorrect: false,
-              decoration: InputDecoration(hintText: 'you@example.com', prefixIcon: const Icon(Icons.mail_outline, size: 20), helperText: 'For booking confirmations and receipts', errorText: state.fieldErrors['email']?.first),
+              decoration: InputDecoration(
+                hintText: 'you@example.com',
+                prefixIcon: const Icon(Icons.mail_outline, size: 20),
+                helperText: 'For booking confirmations and receipts',
+                errorText: state.fieldErrors['email']?.first,
+              ),
               validator: (v) {
                 final text = (v ?? '').trim();
                 if (text.isEmpty) return null;
 
-                return text.contains('@') && text.contains('.') ? null : 'Please enter a valid email address';
+                return text.contains('@') && text.contains('.')
+                    ? null
+                    : 'Please enter a valid email address';
               },
               onFieldSubmitted: (_) => _save(),
             ),
@@ -113,11 +136,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               title: const Text('Offers and news'),
-              subtitle: Text('Occasional emails from Saints Link. You can turn this off at any time.', style: TextStyle(color: context.colors.inkMuted, fontSize: 13)),
+              subtitle: Text(
+                'Occasional emails from Saints Link. You can turn this off at any time.',
+                style: TextStyle(color: context.colors.inkMuted, fontSize: 13),
+              ),
               value: _marketingConsent,
               onChanged: (v) => setState(() => _marketingConsent = v),
             ),
-            if (state.error != null) ...[const SizedBox(height: 12), ErrorNotice(state.error!)],
+            if (state.error != null) ...[
+              const SizedBox(height: 12),
+              ErrorNotice(state.error!),
+            ],
             const SizedBox(height: 28),
             const SectionTitle('Appearance'),
             const SizedBox(height: 10),
@@ -126,16 +155,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               secondary: const IconDisc(Icons.dark_mode_outlined, size: 40),
               title: const Text('Dark mode'),
               value: Theme.of(context).brightness == Brightness.dark,
-              onChanged: (_) => ref.read(themeModeProvider.notifier).toggleTheme(),
+              onChanged: (_) =>
+                  ref.read(themeModeProvider.notifier).toggleTheme(),
             ),
             const SizedBox(height: 28),
-            const SectionTitle('Need a hand?', subtitle: 'Our office is in Southampton and answers the phone.'),
+            const SectionTitle(
+              'Need a hand?',
+              subtitle: 'Our office is in Southampton and answers the phone.',
+            ),
             const SizedBox(height: 14),
             ContactTile(
               icon: Icons.call_outlined,
               title: 'Call us',
               subtitle: Env.supportPhone,
-              onTap: () => openLink(context, 'tel:${Env.supportPhone.replaceAll(' ', '')}'),
+              onTap: () => openLink(
+                context,
+                'tel:${Env.supportPhone.replaceAll(' ', '')}',
+              ),
             ),
             const SizedBox(height: 10),
             ContactTile(
@@ -192,26 +228,59 @@ class _IdentityCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: AppTheme.midnight, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: AppTheme.midnight,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         children: [
           Container(
             width: 52,
             height: 52,
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: AppTheme.brand, borderRadius: BorderRadius.circular(16)),
-            child: Text(initials.isEmpty ? '?' : initials, style: const TextStyle(color: AppTheme.midnight, fontSize: 20, fontWeight: FontWeight.w800)),
+            decoration: BoxDecoration(
+              color: AppTheme.brand,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              initials.isEmpty ? '?' : initials,
+              style: const TextStyle(
+                color: AppTheme.midnight,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(customer.name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                Text(
+                  customer.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(customer.maskedPhone, style: const TextStyle(color: Color(0xFFA1A1AA), fontSize: 13)),
+                Text(
+                  customer.maskedPhone,
+                  style: const TextStyle(
+                    color: Color(0xFFA1A1AA),
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                const Text('Your number is how you sign in. To change it, sign out and sign in with the new one.', style: TextStyle(color: Color(0xFF71717A), fontSize: 11, height: 1.3)),
+                const Text(
+                  'Your number is how you sign in. To change it, sign out and sign in with the new one.',
+                  style: TextStyle(
+                    color: Color(0xFF71717A),
+                    fontSize: 11,
+                    height: 1.3,
+                  ),
+                ),
               ],
             ),
           ),

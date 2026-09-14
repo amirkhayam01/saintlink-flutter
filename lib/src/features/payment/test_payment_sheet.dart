@@ -40,13 +40,13 @@ class _TestPaymentSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.brand.withValues(alpha: 0.18),
+              color: colors.tint,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.brandDark.withValues(alpha: 0.4)),
+              border: Border.all(color: colors.accent.withValues(alpha: 0.4)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.science_outlined, color: AppTheme.brandDark),
+                Icon(Icons.science_outlined, color: colors.accent),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
