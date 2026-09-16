@@ -1,3 +1,3 @@
 git add .
-git commit -m "feat: add profile and trips screens along with header widgets"  
+git commit -m "feat: add profile screen UI with user details and account settings"  
 git push origin talha
