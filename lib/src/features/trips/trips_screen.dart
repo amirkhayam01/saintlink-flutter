@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/inner_screen_header.dart';
 import '../../widgets/route_timeline.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/tiles.dart';
@@ -30,49 +31,56 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     final trips = ref.watch(tripsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My trips'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(58),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+      appBar: InnerScreenHeader(
+        title: 'My trips',
+        showBack: false,
+        background: InnerScreenHeader.brandBackground(),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             child: SegmentedTabs(
               labels: const ['Upcoming', 'Past'],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
           ),
-        ),
-      ),
-      body: trips.when(
-        loading: () => const TripListSkeleton(),
-        error: (error, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: ErrorNotice(
-              error.toString(),
-              onRetry: () => ref.invalidate(tripsProvider),
+          Expanded(
+            child: trips.when(
+              loading: () => const TripListSkeleton(),
+              error: (error, _) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: ErrorNotice(
+                    error.toString(),
+                    onRetry: () => ref.invalidate(tripsProvider),
+                  ),
+                ),
+              ),
+              data: (state) => AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: _tab == 0
+                    ? _TripList(
+                        state.upcoming,
+                        key: const ValueKey('upcoming'),
+                        state: state,
+                        emptyTitle: 'No upcoming trips',
+                        emptyBody:
+                            'Book a transfer and it will appear here, ready for the day.',
+                      )
+                    : _TripList(
+                        state.past,
+                        key: const ValueKey('past'),
+                        state: state,
+                        emptyTitle: 'No past trips yet',
+                        emptyBody:
+                            'Completed journeys stay here for your records.',
+                      ),
+              ),
             ),
           ),
-        ),
-        data: (state) => AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: _tab == 0
-              ? _TripList(
-                  state.upcoming,
-                  key: const ValueKey('upcoming'),
-                  state: state,
-                  emptyTitle: 'No upcoming trips',
-                  emptyBody: 'Book a transfer and it will appear here, ready for the day.',
-                )
-              : _TripList(
-                  state.past,
-                  key: const ValueKey('past'),
-                  state: state,
-                  emptyTitle: 'No past trips yet',
-                  emptyBody: 'Completed journeys stay here for your records.',
-                ),
-        ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go('/book'),

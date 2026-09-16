@@ -26,7 +26,7 @@ class BookingScreenHeader extends StatelessWidget
   final double mapHeight;
 
   @override
-  Size get preferredSize => Size.fromHeight(expandable ? 76 + mapHeight : 76);
+  Size get preferredSize => Size.fromHeight(expandable ? 80 + mapHeight : 80);
 
   @override
   Widget build(BuildContext context) => InnerScreenHeader(

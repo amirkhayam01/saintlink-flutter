@@ -13,7 +13,24 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
     this.background,
     this.headerContent,
     this.contentHeight = 0,
+    this.titleColor,
   });
+
+  /// Brand gold gradient background for inner screen headers.
+  static Widget brandBackground() => const SizedBox.expand(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFACC15), // AppTheme.brand
+                Color(0xFFEAB308), // darker gold
+              ],
+            ),
+          ),
+        ),
+      );
 
   final String title;
   final VoidCallback? onBack;
@@ -22,19 +39,27 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
   final Widget? background;
   final Widget? headerContent;
   final double contentHeight;
+  final Color? titleColor;
 
   @override
-  Size get preferredSize => Size.fromHeight(76 + contentHeight);
+  Size get preferredSize => Size.fromHeight(80 + contentHeight);
 
   @override
   Widget build(BuildContext context) {
+    final effectiveTitleColor = titleColor ??
+        (background == null ? Colors.white : AppTheme.midnight);
+
     return AppBar(
       backgroundColor: background == null
           ? AppTheme.midnight
-          : context.colors.surface,
-      foregroundColor: background == null ? Colors.white : AppTheme.midnight,
-      flexibleSpace: background,
+          : Colors.transparent,
+      foregroundColor: effectiveTitleColor,
+      flexibleSpace: background == null
+          ? null
+          : SizedBox.expand(child: background),
       surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
       toolbarHeight: 60,
       centerTitle: true,
       automaticallyImplyLeading: false,
@@ -52,22 +77,25 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
         style: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w700,
-          color: background == null ? Colors.white : AppTheme.midnight,
+          color: effectiveTitleColor,
         ),
       ),
       actions: actions,
       bottom: PreferredSize(
-        preferredSize: Size.fromHeight(16 + contentHeight),
+        preferredSize: Size.fromHeight(20 + contentHeight),
         child: Column(
           children: [
             if (headerContent != null)
               SizedBox(height: contentHeight, child: headerContent),
-            Container(
-              height: 16,
-              decoration: BoxDecoration(
-                color: context.colors.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
+            Transform.translate(
+              offset: const Offset(0, 1),
+              child: Container(
+                height: 21,
+                decoration: BoxDecoration(
+                  color: context.colors.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                 ),
               ),
             ),

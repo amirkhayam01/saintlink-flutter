@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../core/theme_controller.dart';
 import '../../domain/customer.dart';
 import '../../widgets/common.dart';
+import '../../widgets/inner_screen_header.dart';
 import '../../widgets/tiles.dart';
 import '../auth/auth_controller.dart';
 import 'profile_controller.dart';
@@ -70,11 +71,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (customer == null) return const SizedBox.shrink();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your details')),
+      appBar: InnerScreenHeader(
+        title: 'Your details',
+        showBack: false,
+        background: InnerScreenHeader.brandBackground(),
+      ),
       body: Form(
         key: _form,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
             _IdentityCard(customer: customer),
             const SizedBox(height: 28),
