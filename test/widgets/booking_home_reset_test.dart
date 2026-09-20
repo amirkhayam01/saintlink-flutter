@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:saints_link/src/core/providers.dart';
 import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/features/booking/booking_flow_controller.dart';
+import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/features/booking/journey_draft.dart';
+import 'package:saints_link/src/features/places/recent_places.dart';
 import 'package:saints_link/src/router.dart';
 
 import '../support/fakes.dart';
@@ -73,7 +75,7 @@ void main() {
     );
   }
 
-  testWidgets('Home airport shortcut opens a fresh destination-only form', (
+  testWidgets('a Recent on Home opens a fresh destination-only form', (
     tester,
   ) async {
     final container = ProviderContainer(
@@ -82,6 +84,10 @@ void main() {
           FakeBookingRepository()..vehicles = fixtureVehicles(),
         ),
         authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        recentPlacesProvider.overrideWith(_HeathrowRecent.new),
+        customerPlacesProvider.overrideWith(
+          (ref) async => const <PlaceSelection>[],
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -99,15 +105,25 @@ void main() {
     container
         .read(bookingFlowProvider.notifier)
         .updateJourney((_) => quotableJourney);
-    await tester.tap(find.text('Heathrow (LHR)'));
+    await tester.tap(find.text('Heathrow Airport'));
     await tester.pumpAndSettle();
     final journey = container.read(bookingFlowProvider).journey;
     expect(journey.pickup.isEmpty, isTrue);
-    // The server's own name for the place, from the one shortcut list.
     expect(journey.dropoff.address, 'Heathrow Airport');
     expect(journey.dropoff.isLocated, isTrue);
     expect(journey.pickupDate, isNull);
     expect(journey.passengerCount, 1);
     expect(tester.takeException(), isNull);
   });
+}
+
+class _HeathrowRecent extends RecentPlaces {
+  @override
+  Future<List<PlaceSelection>> build() async => const [
+    PlaceSelection(
+      address: 'Heathrow Airport',
+      latitude: 51.4700,
+      longitude: -0.4543,
+    ),
+  ];
 }

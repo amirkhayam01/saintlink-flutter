@@ -119,9 +119,8 @@ class HomeScreen extends ConsumerWidget {
                         child: UpcomingTripBanner(auth: auth, spacingBelow: 16),
                       ),
                       SearchLauncher(
+                        gutter: gutter,
                         onSelectPlace: (place) =>
-                            presetAndBook((j) => j.copyWith(dropoff: place)),
-                        onSelectHub: (place) =>
                             presetAndBook((j) => j.copyWith(dropoff: place)),
                       ),
                       const SizedBox(height: 18),

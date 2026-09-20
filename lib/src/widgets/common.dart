@@ -16,8 +16,12 @@ class SectionTitle extends StatelessWidget {
       children: [
         Text(
           text,
-          style: Theme.of(context).textTheme.titleLarge
-              ?.copyWith(fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+            color: context.colors.ink,
+          ),
         ),
         if (subtitle != null) ...[
           const SizedBox(height: 4),
