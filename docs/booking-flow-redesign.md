@@ -5,9 +5,8 @@
 > covers the *flow* rather than the screens: where booking starts, how fast a
 > customer reaches a price, and how the map behaves.
 >
-> **Progress:** Phase 0 and Phase 2A complete (20 Sep 2026). Phase 1 in
-> progress — SDKs enabled, keys still to be created and restricted. Phase 2B
-> decided (implicit frequency list) and next up.
+> **Progress:** Phases 0 and 2 complete (20 Sep 2026). Phase 1 in progress —
+> SDKs enabled, keys still to be created and restricted. Phase 3 next.
 
 Spans two repositories:
 
@@ -84,7 +83,7 @@ enough for pricing is a separate business question and out of scope here.
 location" produces a lat/lng, and a lat/lng needs turning into an address a
 customer recognises and a driver can drive to. That endpoint does not exist yet.
 
-### B3 — Saved places do not exist server-side
+### B3 — Saved places do not exist server-side — **RESOLVED** (Phase 2B)
 
 `recent_places.dart` keeps the last 5 located places in `SharedPreferences`, on
 the device. Nothing in `app/` or `database/migrations/` has any concept of a
@@ -225,39 +224,53 @@ Cheapest visible win. The data layer already exists.
       existing `recentPlacesProvider`. Hidden until there is real history —
       the chip row already offers every shortcut, so a fallback list would be
       a copy of the row above it.
-- [x] **Found and fixed while there:** the shortcut chips sent a bare address
-      string with no coordinates, so `isLocated` was false and the engine
-      matched the fare by text instead of measuring it — despite
-      `shortcutPlaces` holding the server's own name and position for the
-      same airport (verified against `TaxiOperationsSeeder`). The chips are
-      now the shortcut list itself. IATA codes kept on the labels.
+- [x] The shortcut chips are now the shortcut list itself rather than a
+      second hand-written copy of it, so the server's canonical names are the
+      only spelling in the app. IATA codes kept on the labels.
+      **Correction (found during 2B):** this was first recorded as a pricing
+      fix — "the engine matched by text instead of measuring". It is not.
+      `GooglePlacesService::secureJourney` discards every client coordinate
+      the server did not verify against Google itself, so the chips'
+      positions never reach the engine; a catalogue name like "Heathrow
+      Airport" is placed from the server's own list either way. The real gain
+      was one source of truth for the names. Comments and the test were
+      corrected in `adc0020`.
 - [x] `home with recents` added to the screenshot harness via a fake
       notifier; the real one reads SharedPreferences, whose channel never
       answers in a widget test. `booking_home_reset_test` now asserts
       `dropoff.isLocated`.
 
-#### 2B — Backend, resolving B3 (1 day) — **NEXT**
+#### 2B — Backend and sync — **DONE** (20 Sep 2026; backend `cb63551`, app `adc0020`)
 
-**Decided: implicit frequency list.** No labels, no naming UI. The backend
-records each located place a signed-in customer books to or from, and returns
-the most frequently used. Simpler table, and it means the app's "Go again" is
-identical for a synced customer and a device-only guest — the source just
-changes.
+**Decided: implicit frequency list.** No labels, no naming UI. A booking is
+the signal.
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /api/v1/places/recent` | The customer's most-used places, most frequent first |
-| `DELETE /api/v1/places/recent/{id}` | Forget one |
+- [x] `customer_places` table, `CustomerPlace` model, `CustomerPlaceService`.
+      Keyed by place id, or by coordinates to four decimals for a shortcut
+      that has none — so two bookings to the same shortcut land on one row.
+- [x] Recording hooked into `Api\V1\BookingController::store` after the
+      transaction, never allowed to fail the booking. Guests record nothing.
+- [x] **Found while there:** an app shortcut arrives at the server with no
+      coordinates at all (see the 2A correction above), so it could never
+      have been remembered. `JourneyQuoteService` gained a public
+      `locate(address)` exposing the same profile-then-service-location
+      resolution it already uses to price, and the row gets the position the
+      engine priced it at.
+- [x] `GET /api/v1/places/recent`, `DELETE /api/v1/places/recent/{id}`
+      (scoped to the caller). Documented in `docs/mobile-api.md`.
+- [x] App: `customerPlacesProvider` fetches when signed in and not in a
+      preview session; `goAgainPlacesProvider` merges it ahead of the device
+      list, deduplicated by place id or name. A confirmed booking invalidates
+      the synced list. Home and the address search field both read the merge.
+- [x] Five backend tests (both ends remembered, repeat bookings counted not
+      duplicated, unplaceable end skipped, guest records nothing, list order
+      and scoped forget). Three app tests for the merge rule. Backend
+      **336/336**, app **123/123**, screenshots 24/24.
 
-No `POST`: a booking *is* the signal. `BookingService` upserts a row for each
-located pickup and dropoff when a signed-in customer books, bumping a
-`use_count` and `last_used_at`. New `customer_places` table
-(`customer_id, address, place_id, latitude, longitude, use_count,
-last_used_at`), unique on `(customer_id, place_id)`.
-
-Device recents stay as the offline fallback and as the guest experience. This
-also backs the "Favourite locations" row, currently *Coming soon* on the
-account screen — as a list of most-used places rather than a pinning UI.
+Device recents stay as the offline fallback and as the guest experience.
+**Not yet wired:** the "Favourite locations" row on the account screen is
+still *Coming soon*. It now has a real source — a most-used list with a
+forget action — and is a small follow-up rather than part of this phase.
 
 ### Phase 3 — Current location (backend ½ day, app 1 day)
 
@@ -343,8 +356,8 @@ pricing, capacity display or the sticky `Continue · £155.00` bar.
 Day 1     ├── Phase 1 (ops: request map keys) ────── 🔶 SDKs on, keys pending
 Day 1     └── Phase 0 (merge amir, fix B5)          ✅ DONE │
 Days 2–3      Phase 2A (recents on Home)            ✅ DONE │
-              Phase 2B (customer_places, backend)   ← NEXT  │
-Days 4–5      Phase 3 (current location)                    │
+              Phase 2B (customer_places + sync)     ✅ DONE │
+Days 4–5      Phase 3 (current location)            ← NEXT  │
 Days 6–8      Phase 4 (native map) ◄────────────────────────┘ unblocked
 Days 9–12     Phase 5 (Home as booking entry)
 Days 13–14    Phase 6 (split journey form)
@@ -354,8 +367,8 @@ Day 15        Phase 7 (vehicle list)
 Phases 2, 3, 6 and 7 are independent of the key provisioning and can absorb any
 delay in Phase 1.
 
-**Backend total: ~2 days remaining** (saved places, reverse geocode; the B5
-migration is done).
+**Backend total: ~½ day remaining** (reverse geocode; B5 and the places
+list are done).
 Larger only if the Routes API integration in Phase 4(b) is approved.
 
 ---
