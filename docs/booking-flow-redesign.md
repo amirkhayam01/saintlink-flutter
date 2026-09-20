@@ -5,9 +5,10 @@
 > covers the *flow* rather than the screens: where booking starts, how fast a
 > customer reaches a price, and how the map behaves.
 >
-> **Progress:** Phases 0, 2 and 3 complete (20 Sep 2026). Phase 1 in
-> progress — SDKs enabled, keys still to be created and restricted. Phase 4
-> (native map) is next and is blocked on those keys.
+> **Progress:** Phases 0–4 complete (20 Sep 2026). The native map is built
+> and its Android wiring verified by a debug APK build, but **tiles are
+> unconfirmed** — no device on the build machine. First thing to do is run
+> it on a phone. Phase 5 next; it needs sign-off on dropping the `Book` tab.
 
 Spans two repositories:
 
@@ -92,7 +93,7 @@ saved or favourite place. Consequences: recents are lost on reinstall, never
 reach a second device, and the "Favourite locations" row on the account screen
 has nothing to be wired to.
 
-### B4 — Only a browser Places key is configured
+### B4 — Only a browser Places key is configured — **RESOLVED** (Phase 1)
 
 `config/services.php` has `google.places_key` and nothing else. The map WebView
 obtains a *referrer-restricted browser key* over a `MethodChannel`. Native Maps
@@ -201,19 +202,22 @@ Prerequisite for everything; all later phases touch these files.
       clean, **120/120** app tests, **331/331** backend tests (2,401
       assertions).
 
-### Phase 1 — Provision native map keys — **IN PROGRESS** (ops)
+### Phase 1 — Provision native map keys — **DONE** (20 Sep 2026)
 
-Blocks Phase 4 entirely. No code. Values and hazards are under **B4** above.
-
-- [x] Google Cloud console: enable **Maps SDK for Android** and **Maps SDK for iOS**
-- [ ] Create the Android key, restricted to package `uk.co.saintslink.app` +
-      debug SHA-1(s); API-restricted to Maps SDK for Android
-- [ ] Create the iOS key, restricted to bundle `uk.co.saintslink.saintsLink`;
+- [x] Maps SDK for Android, Maps SDK for iOS and **Geocoding API** enabled
+- [x] Android key created, restricted to package `uk.co.saintslink.app` +
+      this machine's debug SHA-1; API-restricted to Maps SDK for Android
+- [x] iOS key created, restricted to bundle `uk.co.saintslink.saintsLink`;
       API-restricted to Maps SDK for iOS
-- [ ] Put both in `android/local.properties` / iOS config — not in chat, not
-      in the backend `.env`
+- [x] Both in ignored files: `android/local.properties`
+      (`googleMapsAndroidKey`), `ios/Flutter/Secrets.xcconfig`
+      (`GOOGLE_MAPS_IOS_KEY`). A copy that had been pasted into `env.dart`
+      was removed before it could be committed; git history confirmed clean.
+- [ ] **Talha's debug SHA-1** must be added to the Android key or the map is
+      grey on his machine
 - [ ] Set a billing budget alert before the first build ships
-- [ ] Add "register release SHA-1 on the Android key" to the release checklist
+- [ ] Add "register release SHA-1 on the Android key" to the release
+      checklist — `build.gradle.kts` still signs release with the debug key
 
 ### Phase 2 — Surface recents, then make them real
 
@@ -302,15 +306,34 @@ have priced precisely — `secureJourney` discards unverified client
 coordinates. It is the reverse geocode's verified `place_id` that makes the
 engine trust the position, which is why the endpoint returns one.
 
-### Phase 4 — Native map (app 2–3 days, blocked on Phase 1)
+### Phase 4 — Native map — **DONE** (20 Sep 2026, `55ea6b1`)
 
-Replace `google_journey_map.dart` with `google_maps_flutter`; delete
-`webview_flutter`.
+- [x] `google_journey_map.dart` rewritten on `google_maps_flutter`;
+      `webview_flutter` removed — the map was its only use. The browser-key
+      plumbing (manifest tag, Gradle chain, `MainActivity` MethodChannel) is
+      gone with it.
+- [x] Pins for every located end, lettered in travel order (A, 1…n, B),
+      camera fitted to their bounds with the header's route card kept clear.
+      Typed-never-picked addresses get no pin. Nothing located → a nudge to
+      pick from the suggestions, not an empty map.
+- [x] Header preview is lite-mode with every gesture off; the expanded sheet
+      is interactive. Dark style JSON in dark mode.
+- [x] Keys: Android via `local.properties` → manifest placeholder →
+      `com.google.android.geo.API_KEY`; iOS via `Secrets.xcconfig` →
+      `Info.plist` → `GMSServices.provideAPIKey` in `AppDelegate`.
+      `Secrets.xcconfig.example` committed as the template. README updated.
+- [x] **Verified by `flutter build apk --debug`:** the key lands in the
+      merged manifest under the tag the SDK reads. **Not verified: tiles.**
+      No Android device or emulator on the build machine.
+- [x] Tests stub the platform-views channel and the map's method channel
+      (`test/support/platform_views.dart`), so screens around the map still
+      pump and screenshot. App **130/130**, screenshots 24/24.
+- [x] Route line: option **(a)** shipped — no line. See B1 and below.
 
-- Markers for pickup, stops and dropoff; camera fitted to their bounds
-- A dark map style JSON, so the map stops being a light grey `#EAF0EF` panel in
-  dark mode
-- **The route line is a decision, not a given** (see B1). Options:
+**First thing next session: run it on a phone.** Grey tiles with no error
+means the key restriction does not match the build that is running.
+
+The route-line decision from the original plan, still open:
   - *(a)* Ship markers and fitted bounds, no line. Cheapest, and honest —
     nothing on screen then implies a routing accuracy we do not have.
   - *(b)* New Google Routes integration in the backend, polyline returned with
@@ -365,8 +388,8 @@ Day 1     └── Phase 0 (merge amir, fix B5)          ✅ DONE │
 Days 2–3      Phase 2A (recents on Home)            ✅ DONE │
               Phase 2B (customer_places + sync)     ✅ DONE │
 Days 4–5      Phase 3 (current location)            ✅ DONE │
-Days 6–8      Phase 4 (native map) ◄─── ← NEXT, blocked on keys ┘
-Days 9–12     Phase 5 (Home as booking entry)
+Days 6–8      Phase 4 (native map)                  ✅ DONE │
+Days 9–12     Phase 5 (Home as booking entry)       ← NEXT
 Days 13–14    Phase 6 (split journey form)
 Day 15        Phase 7 (vehicle list)
 ```
@@ -402,7 +425,9 @@ New coverage worth writing:
 
 - ~~Location permission denied, and permission permanently denied~~ done
 - ~~Reverse geocode failure — the pickup field must stay usable~~ done
-- Map unavailable, with and without a network
+- Map unavailable, with and without a network — *partly*: nothing-located
+  and stubbed-platform cases are covered; a real network-loss render needs
+  a device
 - ~~Guest vs signed-in recents (device-only vs synced)~~ done
 
 ---
