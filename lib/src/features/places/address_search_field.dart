@@ -218,8 +218,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   Widget build(BuildContext context) {
     final typed = _controller.text.trim();
     final colors = context.colors;
-    final recents =
-        ref.watch(recentPlacesProvider).value ?? const <PlaceSelection>[];
+    final recents = ref.watch(goAgainPlacesProvider);
     final browsing = typed.length < 3;
 
     final body = Column(

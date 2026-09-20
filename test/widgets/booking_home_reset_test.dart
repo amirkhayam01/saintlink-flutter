@@ -95,9 +95,9 @@ void main() {
     final journey = container.read(bookingFlowProvider).journey;
     expect(journey.pickup.isEmpty, isTrue);
     /*
-     * The server's own name for the place, carrying the server's own
-     * coordinates: a chip has to price identically to the same airport picked
-     * from the suggestions, and a bare string would be matched by text alone.
+     * The server's own name for the place, from the one shortcut list, rather
+     * than a second hand-written spelling of it. The coordinates are the
+     * app's: the server places the name from its own catalogue.
      */
     expect(journey.dropoff.address, 'Heathrow Airport');
     expect(journey.dropoff.isLocated, isTrue);

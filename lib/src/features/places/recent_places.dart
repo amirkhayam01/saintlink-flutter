@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/providers.dart';
 import '../../domain/place.dart';
+import '../auth/auth_controller.dart';
+import '../auth/demo_session.dart';
 
 /// The last few places the customer chose, kept on the device.
 ///
@@ -43,6 +46,47 @@ class RecentPlaces extends AsyncNotifier<List<PlaceSelection>> {
 }
 
 final recentPlacesProvider = AsyncNotifierProvider<RecentPlaces, List<PlaceSelection>>(RecentPlaces.new);
+
+/// The places the server has seen this customer book, most used first.
+///
+/// Empty for a guest without a request being made, and refetched whenever the
+/// customer signs in or out because it watches the session. A booking
+/// invalidates it, so the list moves the moment a journey is confirmed.
+final customerPlacesProvider = FutureProvider<List<PlaceSelection>>((ref) async {
+  if (!ref.watch(authControllerProvider.select((auth) => auth.isSignedIn))) {
+    return const [];
+  }
+
+  // A preview session is signed in without a server behind it.
+  if (ref.watch(demoSessionProvider) != null) return const [];
+
+  try {
+    return await ref.watch(placesRepositoryProvider).recent();
+  } catch (_) {
+    // The device list below still stands; a failed sync costs nothing visible.
+    return const [];
+  }
+});
+
+/// What "Go again" shows: the server's list where there is one, then anything
+/// the device remembers that the server has not seen.
+///
+/// The server ranks by how often a place was booked, which is the order that
+/// serves habit, so it goes first. The device list fills in behind it for a
+/// guest, for a customer whose sync failed, and for the moments between
+/// choosing a place and the booking that would teach the server about it.
+final goAgainPlacesProvider = Provider<List<PlaceSelection>>((ref) {
+  final synced = ref.watch(customerPlacesProvider).value ?? const <PlaceSelection>[];
+  final local = ref.watch(recentPlacesProvider).value ?? const <PlaceSelection>[];
+
+  bool same(PlaceSelection a, PlaceSelection b) =>
+      (a.placeId != null && a.placeId == b.placeId) || a.address == b.address;
+
+  return [
+    ...synced,
+    ...local.where((place) => !synced.any((s) => same(s, place))),
+  ];
+});
 
 /// Places the fleet serves so often they deserve one tap.
 ///

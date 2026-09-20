@@ -38,6 +38,12 @@ class PreviewApi implements ApiClient {
     calls.add(path);
     throw StateError('Unexpected API write: $path');
   }
+
+  @override
+  Future<Map<String, dynamic>> delete(String path) async {
+    calls.add(path);
+    throw StateError('Unexpected API write: $path');
+  }
 }
 
 class PreviewTokens implements TokenStore {

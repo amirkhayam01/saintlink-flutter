@@ -24,11 +24,12 @@ class SearchLauncher extends StatelessWidget {
 
   /*
    * The chips are the shortcut list itself rather than a second copy of it.
-   * They used to carry a hand-written label and a bare address string, which
-   * arrived at the pricing engine with no coordinates: `isLocated` false, and
-   * a fare matched from text instead of measured. `shortcutPlaces` holds the
-   * server's own names and positions, so a chip now prices exactly as the
-   * same place picked from the suggestions would.
+   * They used to carry their own hand-written address strings — "London
+   * Heathrow Airport (LHR)" — beside a list that already held the server's
+   * own name for the same place. One source now. Note the coordinates are for
+   * the app's benefit only: the server places a name like "Heathrow Airport"
+   * from its own catalogue and, rightly, discards any position it did not
+   * verify against Google itself.
    */
   static const _hubIcon = Icons.flight_takeoff_rounded;
 

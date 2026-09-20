@@ -34,9 +34,7 @@ class RecentPlacesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final places = (ref.watch(recentPlacesProvider).value ?? const [])
-        .take(_maxRows)
-        .toList();
+    final places = ref.watch(goAgainPlacesProvider).take(_maxRows).toList();
 
     if (places.isEmpty) return const SizedBox.shrink();
 

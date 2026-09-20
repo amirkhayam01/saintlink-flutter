@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../domain/booking.dart';
 import '../../domain/quote.dart';
 import '../../domain/vehicle_category.dart';
+import '../places/recent_places.dart';
 import 'journey_draft.dart';
 
 part 'booking_flow_controller.freezed.dart';
@@ -222,6 +223,8 @@ class BookingFlowController extends Notifier<BookingFlowState> {
 
       if (generation != _resetGeneration) return null;
       state = state.copyWith(isBooking: false, booking: booking);
+      // The server has just recorded both ends of this journey.
+      ref.invalidate(customerPlacesProvider);
 
       return booking;
     } on ApiException catch (error) {

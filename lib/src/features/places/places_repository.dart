@@ -35,4 +35,16 @@ class PlacesRepository {
     final description = suggestion.description.trim();
     return description.isEmpty ? place : place.copyWith(address: description);
   }
+
+  /// The signed-in customer's most-used places, most frequent first.
+  ///
+  /// Kept by the server from their bookings, so it survives a reinstall and
+  /// follows them to a new phone — which the device-side recents cannot.
+  Future<List<PlaceSelection>> recent() async {
+    final response = await _api.get('/places/recent');
+
+    return (response['data'] as List<dynamic>)
+        .map((item) => PlaceSelection.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
 }

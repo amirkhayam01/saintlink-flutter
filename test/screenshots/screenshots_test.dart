@@ -89,6 +89,9 @@ void main() {
   ProviderContainer container({RecentPlaces Function()? recents}) => ProviderContainer(overrides: [
         bookingRepositoryProvider.overrideWithValue(bookings),
         authRepositoryProvider.overrideWithValue(auth),
+        // The session is faked but the API client is real: without this the
+        // signed-in home would fire a live request whose timeout outlives the test.
+        customerPlacesProvider.overrideWith((ref) async => const <PlaceSelection>[]),
         if (recents != null) recentPlacesProvider.overrideWith(recents),
       ]);
 
