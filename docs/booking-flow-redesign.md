@@ -1,9 +1,12 @@
 # Booking flow redesign — app + backend
 
-> Status: proposed, September 2026. Successor to `design-plan.md`, which covered
-> the screen-level rebuild and is now largely implemented. This plan covers the
-> *flow* rather than the screens: where booking starts, how fast a customer
-> reaches a price, and how the map behaves.
+> Status: in progress, September 2026. Successor to `design-plan.md`, which
+> covered the screen-level rebuild and is now largely implemented. This plan
+> covers the *flow* rather than the screens: where booking starts, how fast a
+> customer reaches a price, and how the map behaves.
+>
+> **Progress:** Phase 0 complete (20 Sep 2026). Phase 1 not started — it is an
+> ops task with a lead time and gates Phase 4, so it should be raised now.
 
 Spans two repositories:
 
@@ -96,7 +99,7 @@ SDKs cannot use that kind of key — they need a Maps SDK for Android key
 (restricted by package name + SHA-1) and a Maps SDK for iOS key (restricted by
 bundle ID). **This is the long-lead item in the whole plan.**
 
-### B5 — Bug: `PATCH /api/v1/me` can 500 on a cleared last name
+### B5 — Bug: `PATCH /api/v1/me` can 500 on a cleared last name — **FIXED**
 
 `customers.last_name` is declared `$table->string('last_name')` — **NOT NULL**
 (`2026_04_04_000050_create_customers_table.php:15`), and no later migration
@@ -112,6 +115,13 @@ lastName: lastName.trim().isEmpty ? null : lastName.trim(),
 A customer who clears their last name and saves hits a NOT NULL violation on
 MySQL in strict mode. Not caused by this redesign — worth fixing first because
 Phase 0 already touches that screen.
+
+**Fixed in Phase 0** (`saintslink@dc6d417`). Reproduced first: the new test
+`a customer can clear their last name` failed with
+`SQLSTATE[23000] ... NOT NULL constraint failed: customers.last_name` before
+the migration and passes after it. Migration
+`2026_09_20_000100_make_customer_last_name_nullable` relaxes the column and
+normalises existing empty strings to null.
 
 ---
 
@@ -147,16 +157,20 @@ entirely with the swap.
 Ordered by dependency, not by value. Phase 1 is an ops task with a lead time —
 **start it on day one regardless of where implementation begins.**
 
-### Phase 0 — Clear the decks (½ day)
+### Phase 0 — Clear the decks — **DONE** (20 Sep 2026)
 
 Prerequisite for everything; all later phases touch these files.
 
-1. Merge the `amir` branch (review fixes on top of `talha`: dark-mode icon
-   contrast, status-bar overlay style, the silent marketing-save failure,
-   restored SDK constraints, 1.55 MB → 221 KB of images).
-2. Fix **B5**: migration making `customers.last_name` nullable, with a
-   backfill decision for existing blank-ish rows.
-3. Confirm `flutter analyze` clean and 120 tests green on the merge result.
+- [x] Merge the `amir` branch (review fixes on top of `talha`: dark-mode icon
+      contrast, status-bar overlay style, the silent marketing-save failure,
+      restored SDK constraints, 1.55 MB → 221 KB of images).
+      Fast-forwarded `master` to `226ee3a`.
+- [x] Fix **B5**: `customers.last_name` is now nullable, existing empty
+      strings normalised to null, with a regression test that was confirmed
+      failing beforehand. `saintslink@dc6d417`.
+- [x] Confirm the suites are green on the merge result: `flutter analyze`
+      clean, **120/120** app tests, **331/331** backend tests (2,401
+      assertions).
 
 ### Phase 1 — Provision native map keys (ops, 1–5 days elapsed)
 
@@ -272,8 +286,8 @@ pricing, capacity display or the sticky `Continue · £155.00` bar.
 ## Sequencing
 
 ```
-Day 1     ├── Phase 1 (ops: request map keys) ──────────────┐ elapsed
-Day 1     └── Phase 0 (merge amir, fix B5)                  │
+Day 1     ├── Phase 1 (ops: request map keys) ──────────────┐ elapsed  ← NEXT
+Day 1     └── Phase 0 (merge amir, fix B5)          ✅ DONE │
 Days 2–3      Phase 2 (recents on Home, then saved places)  │
 Days 4–5      Phase 3 (current location)                    │
 Days 6–8      Phase 4 (native map) ◄────────────────────────┘ unblocked
@@ -285,7 +299,8 @@ Day 15        Phase 7 (vehicle list)
 Phases 2, 3, 6 and 7 are independent of the key provisioning and can absorb any
 delay in Phase 1.
 
-**Backend total: ~2.5 days** (B5 migration, saved places, reverse geocode).
+**Backend total: ~2 days remaining** (saved places, reverse geocode; the B5
+migration is done).
 Larger only if the Routes API integration in Phase 4(b) is approved.
 
 ---
