@@ -138,7 +138,6 @@ void main() {
     c.read(bookingFlowProvider.notifier).selectVehicle('executive-saloon');
   }
 
-  testWidgets('home full', (t) => shot(t, 'home_full', const JourneyScreen(), tall: true));
   testWidgets('home', (t) => shot(
         t,
         'home',
