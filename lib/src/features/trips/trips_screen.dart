@@ -136,21 +136,46 @@ class _TripList extends ConsumerWidget {
                 ),
               ],
             )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 96),
-              // One extra row at the end for the pager while there are pages left.
-              itemCount: bookings.length + (state.hasMore ? 1 : 0),
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => index < bookings.length
-                  ? _TripCard(bookings[index])
-                  : _LoadMore(
-                      isLoading: state.isLoadingMore,
-                      error: state.loadMoreError,
-                      onLoad: () => ref.read(tripsProvider.notifier).loadMore(),
-                    ),
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 96),
+              children: [
+                for (final (i, booking) in bookings.indexed) ...[
+                  if (_startsMonth(bookings, i))
+                    Padding(
+                      padding: EdgeInsets.only(top: i == 0 ? 4 : 18, bottom: 8),
+                      child: GroupLabel(_monthLabel(booking)),
+                    )
+                  else
+                    const SizedBox(height: 10),
+                  _TripCard(booking),
+                ],
+                // One extra row at the end for the pager while there are pages left.
+                if (state.hasMore)
+                  _LoadMore(
+                    isLoading: state.isLoadingMore,
+                    error: state.loadMoreError,
+                    onLoad: () => ref.read(tripsProvider.notifier).loadMore(),
+                  ),
+              ],
             ),
     );
   }
+}
+
+bool _startsMonth(List<Booking> bookings, int i) {
+  if (i == 0) return true;
+  final a = bookings[i - 1].pickupAt;
+  final b = bookings[i].pickupAt;
+  if (a == null || b == null) return a != b;
+  return a.year != b.year || a.month != b.month;
+}
+
+String _monthLabel(Booking booking) {
+  final when = booking.pickupAt;
+  if (when == null) return 'Date to be confirmed';
+  final now = DateTime.now();
+  final month = Formatting.monthLong(when);
+  return when.year == now.year ? month : '$month ${when.year}';
 }
 
 /// The last row of a list with more pages: fetches the next page as soon as
@@ -203,152 +228,104 @@ class _TripCard extends StatelessWidget {
 
   final Booking booking;
 
+  /// "Today · 09:00", "Tomorrow · 09:00", else "Fri 25 Sep · 09:00".
+  String _headline() {
+    final when = booking.pickupAt;
+    if (when == null) return booking.reference;
+    final today = DateUtils.dateOnly(DateTime.now());
+    final day = DateUtils.dateOnly(when);
+    final date = day == today
+        ? 'Today'
+        : day == today.add(const Duration(days: 1))
+        ? 'Tomorrow'
+        : '${Formatting.weekday(when)} ${when.day} ${Formatting.monthShort(when)}';
+    return '$date · ${Formatting.time(when)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final when = booking.pickupAt;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.inkFaint),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
+    return Opacity(
+      opacity: booking.isUpcoming ? 1 : 0.72,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => context.push('/trips/${booking.reference}'),
           child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Date block, calendar-style, so a list of trips scans by day.
-                Container(
-                  width: 56,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: booking.isUpcoming ? AppTheme.brand : colors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        when == null
-                            ? '—'
-                            : Formatting.weekday(when).toUpperCase(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _headline(),
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                          color: booking.isUpcoming
-                              ? AppTheme.midnight
-                              : colors.inkMuted,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: colors.ink,
                         ),
                       ),
-                      Text(
-                        when == null ? '' : '${when.day}',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          height: 1.1,
-                          color: booking.isUpcoming
-                              ? AppTheme.midnight
-                              : colors.ink,
-                        ),
-                      ),
-                      Text(
-                        when == null ? '' : Formatting.monthShort(when),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: booking.isUpcoming
-                              ? AppTheme.midnight
-                              : colors.inkMuted,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    StatusChip(
+                      label: booking.statusLabel,
+                      status: booking.status,
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(Icons.chevron_right, color: colors.inkMuted, size: 20),
+                  ],
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                const SizedBox(height: 12),
+                RouteTimeline(
+                  dense: true,
+                  points: [
+                    RoutePoint(address: booking.pickupAddress ?? ''),
+                    RoutePoint(address: booking.dropoffAddress ?? ''),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Divider(height: 1, color: colors.inkFaint),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              when == null
-                                  ? booking.reference
-                                  : Formatting.time(when),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                          StatusChip(
-                            label: booking.statusLabel,
-                            status: booking.status,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      RouteTimeline(
-                        dense: true,
-                        points: [
-                          RoutePoint(address: booking.pickupAddress ?? ''),
-                          RoutePoint(address: booking.dropoffAddress ?? ''),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${booking.vehicle ?? ''}${booking.isReturn ? ' · return' : ''}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colors.inkMuted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
                           Text(
-                            Formatting.money(
-                              booking.totalAmount,
-                              booking.currency,
+                            '${booking.vehicle ?? ''}${booking.isReturn ? ' · return' : ''}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: colors.ink,
                             ),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            booking.reference,
+                            style: TextStyle(
+                              color: colors.inkMuted,
+                              fontSize: 11,
+                              letterSpacing: 0.4,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Ref ${booking.reference}',
-                        style: TextStyle(
-                          color: colors.inkMuted,
-                          fontSize: 11,
-                          letterSpacing: 0.3,
-                        ),
+                    ),
+                    Text(
+                      Formatting.money(booking.totalAmount, booking.currency),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: colors.ink,
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Icon(
-                    Icons.chevron_right,
-                    color: colors.inkMuted,
-                    size: 20,
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
