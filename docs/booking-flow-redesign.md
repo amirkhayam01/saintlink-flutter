@@ -5,10 +5,10 @@
 > covers the *flow* rather than the screens: where booking starts, how fast a
 > customer reaches a price, and how the map behaves.
 >
-> **Progress:** Phases 0–4 and 5a complete (20 Sep 2026). The native map is
-> built and its Android wiring verified by a debug APK build, but **tiles are
+> **Progress:** Phases 0–5 complete (20 Sep 2026). The native map is built
+> and its Android wiring verified by a debug APK build, but **tiles are
 > unconfirmed** — no device on the build machine. First thing to do is run
-> it on a phone. Phase 5 next; it needs sign-off on dropping the `Book` tab.
+> it on a phone. Phases 6 and 7 remain; neither needs anything from anyone.
 > **Decided:** no map on Home (map loads are free, but Home has nothing to
 > show on one); location asked for on the pickup tap only, never at launch.
 
@@ -374,26 +374,33 @@ Six rules, decided once:
 
 App **129/129** (one obsolete asset test removed), screenshots 24/24.
 
-### Phase 5 — Home becomes the booking entry point (app 3–4 days)
+### Phase 5 — Home becomes the booking entry point — **DONE** (20 Sep 2026, `d0b55da`)
 
-**Decided 20 Sep: no map on Home.** Native map loads are free, but a map on
-Home would show the customer's position and nothing else — inDrive's need,
-not this product's. The value of this phase is the *ordering*. Hero stays.
+**Decided: no map on Home.** Native map loads are free, but a map on Home
+would show the customer's position and nothing else — inDrive's need, not
+this product's. The value of this phase was the *ordering*. Hero stays.
 
-The largest change and the main prize.
+Home top to bottom now: hero → **next trip** (moved up from mid-page; gone
+when there is none) → `Where to?` + shortcut chips → **Go again** → a
+**Plan a journey** button → services → trust strip → popular fares. The three
+things a returning customer needs are above the fold; the marketing is still
+there for anyone still deciding.
 
-Today Home is a marketing page — greeting, hero, search field, services grid,
-trust strip, popular fares, fleet carousel — and booking lives in a *separate
-tab*. Good for a first-time visitor being convinced. Pure friction for the
-third-time customer going to Heathrow again.
+- [x] Next-trip banner moved to the top of the sheet
+- [x] "Plan a journey" button — the one explicit door into the full form,
+      replacing what the tab used to be
+- [x] Fleet carousel moved off Home to Routes & prices, beside the prices
+      it explains
+- [x] **`Book` tab removed.** `/book` left the shell and is a root route
+      pushed over it with a back arrow; every door in (search, chips, Go
+      again, service tiles, fare cards, the button) pushes. Three tabs:
+      Home / Trips / **Account** (renamed from Profile to match its header).
+- [x] Tests updated for the new paths — you cannot reach a tab from inside
+      the form any more, which is the point. `home with next trip` added to
+      the screenshot harness. App **129/129**, screenshots 25/25.
 
-- Hero at top, `Where to?` and Go again immediately beneath
-- Services, trust strip, fleet demoted below the fold or moved into Services
-- **The `Book` tab becomes redundant** — bottom nav goes 4 items to 3
-  (Home / Trips / Profile), which needs a `router.dart` change and a redirect
-  for anything still pointing at `/book`
-- Keep the trust messaging on the page. It is the differentiator; it just does
-  not need to be on the critical path every single time
+**Not verified on a device**, same as Phase 4. Worth checking on a phone:
+the back arrow from the form lands on whichever screen opened it.
 
 ### Phase 6 — Shorten time-to-first-price (app 2 days)
 
@@ -424,8 +431,8 @@ Days 2–3      Phase 2A (recents on Home)            ✅ DONE │
 Days 4–5      Phase 3 (current location)            ✅ DONE │
 Days 6–8      Phase 4 (native map)                  ✅ DONE │
               Phase 5a (consistency pass)         ✅ DONE │
-Days 9–12     Phase 5 (Home as booking entry)       ← NEXT
-Days 13–14    Phase 6 (split journey form)
+Days 9–12     Phase 5 (Home as booking entry)       ✅ DONE
+Days 13–14    Phase 6 (split journey form)          ← NEXT
 Day 15        Phase 7 (vehicle list)
 ```
 
@@ -476,5 +483,5 @@ New coverage worth writing:
    frequency list, no labels. Table shape in Phase 2B reflects this.
 3. ~~**Who owns the Google Cloud project**~~ SDKs enabled 20 Sep; keys still
    to be created against the values under B4.
-4. **Does dropping the `Book` tab need sign-off?** It is the most visible change
-   in the plan to anyone already using the app.
+4. ~~**Does dropping the `Book` tab need sign-off?**~~ Signed off and done
+   20 Sep.
