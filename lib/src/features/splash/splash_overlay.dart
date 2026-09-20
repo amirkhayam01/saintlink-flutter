@@ -60,59 +60,89 @@ class _SplashOverlayState extends State<SplashOverlay> {
   }
 }
 
-class _Splash extends StatelessWidget {
+/// Light ground, the logo, a slim gold bar while the app comes up.
+class _Splash extends StatefulWidget {
   const _Splash();
 
   @override
+  State<_Splash> createState() => _SplashState();
+}
+
+class _SplashState extends State<_Splash> with SingleTickerProviderStateMixin {
+  late final _enter = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  )..forward();
+  late final _fade = CurvedAnimation(parent: _enter, curve: Curves.easeOut);
+  late final _rise = Tween(
+    begin: 0.96,
+    end: 1.0,
+  ).animate(CurvedAnimation(parent: _enter, curve: Curves.easeOutCubic));
+
+  @override
+  void dispose() {
+    _enter.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    const colors = AppColors.light;
+
     return Material(
-      color: AppTheme.midnight,
+      color: colors.surface,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/brand/hero-harbor.webp',
-            fit: BoxFit.cover,
-            alignment: const Alignment(0.2, 0),
-          ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xCC020617),
-                  Color(0x66020617),
-                  Color(0xF2020617),
-                ],
-                stops: [0, 0.5, 1],
-              ),
-            ),
-          ),
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('assets/brand/logo-dark.png', height: 56),
-              const SizedBox(height: 18),
-              const Text(
-                'Airport, cruise and private hire transfers',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.2,
+              FadeTransition(
+                opacity: _fade,
+                child: ScaleTransition(
+                  scale: _rise,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 56),
+                    child: Image.asset(
+                      'assets/brand/logo-light.png',
+                      fit: BoxFit.contain,
+                      height: 64,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 36),
+              FadeTransition(
+                opacity: _fade,
+                child: const SizedBox(
+                  width: 120,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.all(Radius.circular(3)),
+                    child: LinearProgressIndicator(
+                      minHeight: 3,
+                      color: AppTheme.brand,
+                      backgroundColor: Color(0x33FACC15),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const Positioned(
+          Positioned(
             left: 0,
             right: 0,
-            bottom: 48,
-            child: Text(
-              'Southampton · Hampshire · every UK airport and port',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+            bottom: 44,
+            child: FadeTransition(
+              opacity: _fade,
+              child: Text(
+                'Airport, cruise and private hire transfers',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colors.inkMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ),
         ],

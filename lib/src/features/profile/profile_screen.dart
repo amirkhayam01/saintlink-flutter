@@ -267,24 +267,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 children: [
                   ListRow(
-                    icon: Icons.camera_alt_outlined,
-                    title: 'Instagram',
-                    chevron: true,
-                    onTap: () => openLink(context, Env.instagramUrl),
-                  ),
-                  const ListRowDivider(),
-                  ListRow(
-                    icon: Icons.music_note_rounded,
-                    title: 'TikTok',
-                    chevron: true,
-                    onTap: () => openLink(context, Env.tiktokUrl),
-                  ),
-                  const ListRowDivider(),
-                  ListRow(
                     icon: Icons.facebook_rounded,
                     title: 'Facebook',
                     chevron: true,
                     onTap: () => openLink(context, Env.facebookUrl),
+                  ),
+                  const ListRowDivider(),
+                  const ListRow(
+                    icon: Icons.camera_alt_outlined,
+                    title: 'Instagram',
+                    trailing: _ComingSoon(),
+                  ),
+                  const ListRowDivider(),
+                  const ListRow(
+                    icon: Icons.music_note_rounded,
+                    title: 'TikTok',
+                    trailing: _ComingSoon(),
                   ),
                   const ListRowDivider(),
                   const ListRow(
