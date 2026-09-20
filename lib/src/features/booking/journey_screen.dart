@@ -8,130 +8,272 @@ import '../../domain/place.dart';
 import '../../widgets/common.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/inner_screen_header.dart';
+import '../../widgets/route_timeline.dart';
 import '../places/address_search_field.dart';
 import 'booking_flow_controller.dart';
 import 'booking_screen_header.dart';
+import 'google_journey_map.dart';
 import 'journey_draft.dart';
 import 'journey_date_time_sheet.dart';
 
-/// The booking form: where, when, who — then "See prices".
+/// The booking form, in two stages over a map.
 ///
-/// The form mirrors the website's search widget field for field, because the
+/// First the route: pickup, any stops, destination — and the pins appear on
+/// the map behind the sheet as each one is chosen. Then, once both ends are
+/// named, when and who: date and time, a return, passengers and luggage —
+/// and "See prices". Two short screens instead of one long form, because
+/// the thing a customer wants is a price, and the fewer questions between
+/// them and it the better; the second stage asks only what the price
+/// depends on.
+///
+/// The fields mirror the website's search widget one for one, because the
 /// server validates both against the same rules — a journey the site would
 /// refuse is refused here for the same reason, with the same message.
-class JourneyScreen extends ConsumerWidget {
+class JourneyScreen extends ConsumerStatefulWidget {
   const JourneyScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<JourneyScreen> createState() => _JourneyScreenState();
+}
+
+enum _Stage { route, when }
+
+class _JourneyScreenState extends ConsumerState<JourneyScreen> {
+  /*
+   * Always the route first, even when it arrived filled in from a fare card:
+   * the customer sees both ends on the map before being asked anything
+   * else, and a wrong preset is one tap from fixed rather than three.
+   */
+  _Stage _stage = _Stage.route;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(bookingFlowProvider);
     final controller = ref.read(bookingFlowProvider.notifier);
     final journey = state.journey;
+    final colors = context.colors;
+    final onRoute = _stage == _Stage.route;
 
     return Scaffold(
       appBar: BookingScreenHeader(
         journey: journey,
-        title: 'Plan your journey',
-        onBack: () => context.pop(),
+        curvedEdge: false,
+        title: onRoute ? 'Plan your journey' : 'When are you travelling?',
+        // From the second stage, back is back to the route, not out of the form.
+        onBack: onRoute
+            ? () => context.pop()
+            : () => setState(() => _stage = _Stage.route),
         actions: [
           if (!journey.pickup.isEmpty ||
               !journey.dropoff.isEmpty ||
               journey.pickupDate != null)
             IconButton(
               tooltip: 'Clear journey',
-              onPressed: controller.reset,
+              onPressed: () {
+                controller.reset();
+                setState(() => _stage = _Stage.route);
+              },
               icon: const Icon(Icons.restart_alt_rounded),
             ),
         ],
       ),
-      body: ListView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          const BookingProgress(step: 0),
-          const SizedBox(height: 20),
-          _RouteEditor(journey: journey, controller: controller),
-          const SizedBox(height: 24),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _JourneyDateTimeField(
-                date: journey.pickupDate,
-                time: journey.pickupTime,
-                minimum: DateTime.now(),
-                title: 'Pickup date & time',
-                onChanged: (value) => controller.updateJourney(
-                  (j) => j.copyWith(
-                    pickupDate: DateUtils.dateOnly(value),
-                    pickupTime: TimeOfDay.fromDateTime(value),
+          GoogleJourneyMap(
+            journey: journey,
+            interactive: true,
+            regionWhenEmpty: true,
+          ),
+          DraggableScrollableSheet(
+            initialChildSize: onRoute ? 0.56 : 0.72,
+            minChildSize: 0.4,
+            maxChildSize: 0.94,
+            snap: true,
+            builder: (context, scroll) => Material(
+              color: colors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  const _DragHandle(),
+                  Expanded(
+                    child: ListView(
+                      controller: scroll,
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
+                      children: [
+                        const BookingProgress(step: 0),
+                        const SizedBox(height: 20),
+                        if (onRoute)
+                          _RouteEditor(journey: journey, controller: controller)
+                        else
+                          _WhenAndWho(
+                            journey: journey,
+                            controller: controller,
+                            onEditRoute: () =>
+                                setState(() => _stage = _Stage.route),
+                          ),
+                        if (!onRoute && state.quoteError != null) ...[
+                          const SizedBox(height: 16),
+                          ErrorNotice(state.quoteError!),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
+                  BottomAction(
+                    verticalPadding: 8,
+                    child: onRoute
+                        ? FilledButton(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            onPressed: journey.hasRoute
+                                ? () => setState(() => _stage = _Stage.when)
+                                : null,
+                            child: const Text('Continue'),
+                          )
+                        : FilledButton(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            onPressed: journey.isQuotable && !state.isQuoting
+                                ? () async {
+                                    if (await controller.requestQuote() &&
+                                        context.mounted) {
+                                      context.push('/book/vehicle');
+                                    }
+                                  }
+                                : null,
+                            child: state.isQuoting
+                                ? const ButtonSpinner()
+                                : const Text('See prices'),
+                          ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'Return journey',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-                activeTrackColor: context.colors.accent.withValues(alpha: 0.3),
-                activeThumbColor: context.colors.accent,
-                value: journey.isReturn,
-                onChanged: (value) => controller.updateJourney(
-                  (j) => value ? j.copyWith(isReturn: true) : j.withoutReturn(),
-                ),
-              ),
-              if (journey.isReturn)
-                _ReturnCard(journey: journey, controller: controller),
-            ],
+            ),
           ),
-          const SizedBox(height: 24),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              CountStepper(
-                label: 'Passengers',
-                value: journey.passengerCount,
-                min: 1,
-                max: 8,
-                onChanged: (v) => controller.updateJourney(
-                  (j) => j.copyWith(passengerCount: v),
-                ),
-              ),
-              const SizedBox(height: 8),
-              CountStepper(
-                label: 'Large suitcases',
-                value: journey.luggageCount,
-                min: 0,
-                max: 8,
-                onChanged: (v) => controller.updateJourney(
-                  (j) => j.copyWith(luggageCount: v),
-                ),
-              ),
-            ],
-          ),
-          if (state.quoteError != null) ...[
-            const SizedBox(height: 16),
-            ErrorNotice(state.quoteError!),
-          ],
         ],
       ),
-      bottomNavigationBar: BottomAction(
-        verticalPadding: 8,
-        child: FilledButton(
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-          onPressed: journey.isQuotable && !state.isQuoting
-              ? () async {
-                  if (await controller.requestQuote() && context.mounted) {
-                    context.push('/book/vehicle');
-                  }
-                }
-              : null,
-          child: state.isQuoting
-              ? const ButtonSpinner()
-              : const Text('Continue'),
-        ),
+    );
+  }
+}
+
+/// The pill that says "this slides".
+class _DragHandle extends StatelessWidget {
+  const _DragHandle();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 10, bottom: 6),
+    child: Container(
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: context.colors.inkFaint,
+        borderRadius: BorderRadius.circular(2),
       ),
+    ),
+  );
+}
+
+/// The second stage: the route as a line to check, then what the price
+/// depends on.
+class _WhenAndWho extends StatelessWidget {
+  const _WhenAndWho({
+    required this.journey,
+    required this.controller,
+    required this.onEditRoute,
+  });
+
+  final JourneyDraft journey;
+  final BookingFlowController controller;
+  final VoidCallback onEditRoute;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: RouteTimeline(
+                    dense: true,
+                    points: [
+                      RoutePoint(address: journey.pickup.address),
+                      for (final stop in journey.via)
+                        if (!stop.isEmpty) RoutePoint(address: stop.address),
+                      RoutePoint(address: journey.dropoff.address),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: onEditRoute,
+                  style: TextButton.styleFrom(foregroundColor: colors.accent),
+                  child: const Text('Edit'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        _JourneyDateTimeField(
+          date: journey.pickupDate,
+          time: journey.pickupTime,
+          minimum: DateTime.now(),
+          title: 'Pickup date & time',
+          onChanged: (value) => controller.updateJourney(
+            (j) => j.copyWith(
+              pickupDate: DateUtils.dateOnly(value),
+              pickupTime: TimeOfDay.fromDateTime(value),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: const Text(
+            'Return journey',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          activeTrackColor: colors.accent.withValues(alpha: 0.3),
+          activeThumbColor: colors.accent,
+          value: journey.isReturn,
+          onChanged: (value) => controller.updateJourney(
+            (j) => value ? j.copyWith(isReturn: true) : j.withoutReturn(),
+          ),
+        ),
+        if (journey.isReturn)
+          _ReturnCard(journey: journey, controller: controller),
+        const SizedBox(height: 24),
+        CountStepper(
+          label: 'Passengers',
+          value: journey.passengerCount,
+          min: 1,
+          max: 8,
+          onChanged: (v) =>
+              controller.updateJourney((j) => j.copyWith(passengerCount: v)),
+        ),
+        const SizedBox(height: 8),
+        CountStepper(
+          label: 'Large suitcases',
+          value: journey.luggageCount,
+          min: 0,
+          max: 8,
+          onChanged: (v) =>
+              controller.updateJourney((j) => j.copyWith(luggageCount: v)),
+        ),
+      ],
     );
   }
 }

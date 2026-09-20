@@ -39,12 +39,17 @@ abstract class JourneyDraft with _$JourneyDraft {
     String? vehicleCategorySlug,
   }) = _JourneyDraft;
 
-  /// Whether there is enough here to ask for a price.
-  bool get isQuotable =>
+  /// Both ends named, and not the same place. The first half of the form
+  /// is done when this is true; the price still needs a date.
+  bool get hasRoute =>
       !pickup.isEmpty &&
       !dropoff.isEmpty &&
       pickup.address.trim().toLowerCase() !=
-          dropoff.address.trim().toLowerCase() &&
+          dropoff.address.trim().toLowerCase();
+
+  /// Whether there is enough here to ask for a price.
+  bool get isQuotable =>
+      hasRoute &&
       pickupDate != null &&
       pickupTime != null &&
       (!isReturn || (returnDate != null && returnTime != null));

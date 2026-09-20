@@ -15,20 +15,26 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
     this.headerContent,
     this.contentHeight = 0,
     this.titleColor,
+    this.curvedEdge = true,
   });
+
+  /// The surface-coloured curve along the bottom that begins the content
+  /// below. Off when the body is a map: the curve would float over it as a
+  /// white tab attached to nothing.
+  final bool curvedEdge;
 
   /// Brand gold gradient background for inner screen headers.
   static Widget brandBackground() => const SizedBox.expand(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppTheme.brand, AppTheme.brandDark],
-            ),
-          ),
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppTheme.brand, AppTheme.brandDark],
         ),
-      );
+      ),
+    ),
+  );
 
   final String title;
   final VoidCallback? onBack;
@@ -40,12 +46,13 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
   final Color? titleColor;
 
   @override
-  Size get preferredSize => Size.fromHeight(80 + contentHeight);
+  Size get preferredSize =>
+      Size.fromHeight((curvedEdge ? 80 : 60) + contentHeight);
 
   @override
   Widget build(BuildContext context) {
-    final effectiveTitleColor = titleColor ??
-        (background == null ? Colors.white : AppTheme.midnight);
+    final effectiveTitleColor =
+        titleColor ?? (background == null ? Colors.white : AppTheme.midnight);
 
     return AppBar(
       backgroundColor: background == null
@@ -89,23 +96,24 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: actions,
       bottom: PreferredSize(
-        preferredSize: Size.fromHeight(20 + contentHeight),
+        preferredSize: Size.fromHeight((curvedEdge ? 20 : 0) + contentHeight),
         child: Column(
           children: [
             if (headerContent != null)
               SizedBox(height: contentHeight, child: headerContent),
-            Transform.translate(
-              offset: const Offset(0, 1),
-              child: Container(
-                height: 21,
-                decoration: BoxDecoration(
-                  color: context.colors.surface,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24),
+            if (curvedEdge)
+              Transform.translate(
+                offset: const Offset(0, 1),
+                child: Container(
+                  height: 21,
+                  decoration: BoxDecoration(
+                    color: context.colors.surface,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

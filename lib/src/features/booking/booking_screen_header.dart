@@ -16,7 +16,11 @@ class BookingScreenHeader extends StatelessWidget
     this.expandable = false,
     this.actions = const [],
     this.mapHeight = 300,
+    this.curvedEdge = true,
   });
+
+  /// See [InnerScreenHeader.curvedEdge].
+  final bool curvedEdge;
 
   final String title;
   final JourneyDraft journey;
@@ -26,12 +30,15 @@ class BookingScreenHeader extends StatelessWidget
   final double mapHeight;
 
   @override
-  Size get preferredSize => Size.fromHeight(expandable ? 80 + mapHeight : 80);
+  Size get preferredSize => Size.fromHeight(
+    (curvedEdge ? 80 : 60) + (expandable ? mapHeight : 0),
+  );
 
   @override
   Widget build(BuildContext context) => InnerScreenHeader(
     title: title,
     onBack: onBack,
+    curvedEdge: curvedEdge,
     contentHeight: expandable ? mapHeight : 0,
     headerContent: expandable && mapHeight > 0
         ? Stack(

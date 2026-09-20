@@ -27,9 +27,15 @@ class GoogleJourneyMap extends ConsumerStatefulWidget {
     required this.journey,
     this.interactive = false,
     this.topPadding = 0,
+    this.regionWhenEmpty = false,
   });
 
   final JourneyDraft journey;
+
+  /// With nothing to pin yet, show the area the fleet serves rather than a
+  /// nudge. For the map that sits under the route sheet: it is the ground
+  /// the form stands on, and a grey panel with a sentence on it is not.
+  final bool regionWhenEmpty;
 
   /// Pannable and zoomable. Off for the preview in the screen header, where
   /// a stray drag would fight the page's scroll; on for the expanded sheet.
@@ -126,7 +132,7 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
      */
     final showLocation = ref.watch(locationGrantedProvider).value ?? false;
 
-    if (points.isEmpty) {
+    if (points.isEmpty && !widget.regionWhenEmpty) {
       return ColoredBox(
         color: colors.surface,
         child: Center(
@@ -174,8 +180,8 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
       color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFEAF0EF),
       child: GoogleMap(
         initialCameraPosition: CameraPosition(
-          target: _latLng(points.first.$2),
-          zoom: 11,
+          target: points.isEmpty ? _southampton : _latLng(points.first.$2),
+          zoom: points.isEmpty ? 10 : 11,
         ),
         markers: markers,
         style: isDark ? _darkStyle : null,
@@ -204,6 +210,9 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
     );
   }
 }
+
+/// Where the fleet is based; where an empty map looks.
+const _southampton = LatLng(50.9097, -1.4044);
 
 /// Google's night styling, trimmed to what this map shows: land, water and
 /// roads on the app's dark ground, with the point-of-interest clutter that

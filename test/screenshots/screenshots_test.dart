@@ -96,7 +96,7 @@ void main() {
         if (recents != null) recentPlacesProvider.overrideWith(recents),
       ]);
 
-  Future<void> shot(WidgetTester tester, String name, Widget home, {ThemeData? theme, Future<void> Function(ProviderContainer)? prime, bool tall = false, RecentPlaces Function()? recents}) async {
+  Future<void> shot(WidgetTester tester, String name, Widget home, {ThemeData? theme, Future<void> Function(ProviderContainer)? prime, bool tall = false, RecentPlaces Function()? recents, Future<void> Function(WidgetTester)? act}) async {
     stubPlatformViews();
     // flutter_test draws elevation as a solid black outline unless told
     // otherwise; these pictures exist to be looked at, so shadows are real.
@@ -113,6 +113,10 @@ void main() {
       child: MaterialApp(theme: theme ?? AppTheme.light(), home: home, debugShowCheckedModeBanner: false),
     ));
     await tester.pump(const Duration(milliseconds: 400));
+    if (act != null) {
+      await act(tester);
+      await tester.pumpAndSettle();
+    }
     // Asset images only decode outside the fake-async zone.
     await tester.runAsync(() async {
       for (final element in find.byType(Image).evaluate()) {
@@ -201,7 +205,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(find.byType(MaterialApp), matchesGoldenFile('out/journey_date_time_picker.png'));
   });
-  testWidgets('journey', (t) => shot(t, 'journey', const JourneyScreen(), tall: true));
+  testWidgets('journey', (t) => shot(t, 'journey', const JourneyScreen()));
   testWidgets('journey filled', (t) => shot(t, 'journey_filled', const JourneyScreen(), prime: (c) async {
         c.read(bookingFlowProvider.notifier).updateJourney((_) => quotableJourney.copyWith(
               dropoff: const PlaceSelection(address: 'Heathrow Airport Terminal 5', placeId: 'h', latitude: 51.47, longitude: -0.49),
@@ -210,6 +214,14 @@ void main() {
               returnTime: const TimeOfDay(hour: 14, minute: 0),
             ));
       }));
+  testWidgets('journey when', (t) => shot(t, 'journey_when', const JourneyScreen(), prime: (c) async {
+        c.read(bookingFlowProvider.notifier).updateJourney((_) => quotableJourney.copyWith(
+              dropoff: const PlaceSelection(address: 'Heathrow Airport Terminal 5', placeId: 'h', latitude: 51.47, longitude: -0.49),
+              isReturn: true,
+              returnDate: DateTime(2026, 10, 5),
+              returnTime: const TimeOfDay(hour: 14, minute: 0),
+            ));
+      }, act: (t) => t.tap(find.text('Continue'))));
   testWidgets('vehicle', (t) => shot(t, 'vehicle', const VehicleScreen(), prime: primeQuote));
   testWidgets('details', (t) => shot(t, 'details', const DetailsScreen(), prime: primeQuote));
   testWidgets('sign in', (t) => shot(t, 'sign_in', const SignInScreen()));

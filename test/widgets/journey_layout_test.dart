@@ -20,6 +20,15 @@ Finder fieldNamed(String label) => find.descendant(
   matching: find.byType(InputDecorator),
 );
 
+/// The form is a sheet over a map now; on the default 800x600 test window
+/// its lower half is off-screen and taps there land on nothing.
+void phoneSized(WidgetTester tester) {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 void main() {
   for (final dark in [false, true]) {
     for (final scale in [1.0, 2.0]) {
@@ -76,8 +85,9 @@ void main() {
   }
 
   testWidgets(
-    'booking fields use floating labels without repeated section headings',
+    'the form asks for the route first and the date second',
     (tester) async {
+      phoneSized(tester);
       final container = ProviderContainer(
         overrides: [
           bookingRepositoryProvider.overrideWithValue(
@@ -96,15 +106,39 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Passengers & luggage'), findsNothing);
-      expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
-      final dateField = fieldNamed('Pickup date & time');
+      // Stage one: the route, and nothing else. No date yet, no way on
+      // until both ends are named.
+      expect(find.text('Plan your journey'), findsOneWidget);
+      expect(find.text('PICKUP DATE & TIME'), findsNothing);
       for (final label in ['Pickup address', 'Destination']) {
         final field = fieldNamed(label);
         expect(tester.widget<InputDecorator>(field).isEmpty, isTrue);
         expect(find.text(label.toUpperCase()), findsOneWidget);
       }
+      expect(tester.widget<FilledButton>(find.byType(FilledButton)).enabled, isFalse);
+
+      container
+          .read(bookingFlowProvider.notifier)
+          .updateJourney(
+            (j) => j.copyWith(
+              pickup: quotableJourney.pickup,
+              dropoff: quotableJourney.dropoff,
+            ),
+          );
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(find.byType(FilledButton)).enabled, isTrue);
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // Stage two: the route as a summary, and what the price depends on.
+      expect(find.text('When are you travelling?'), findsOneWidget);
+      expect(find.text('PICKUP ADDRESS'), findsNothing);
+      expect(find.text(quotableJourney.pickup.address), findsOneWidget);
+      expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
+      final dateField = fieldNamed('Pickup date & time');
       expect(tester.widget<InputDecorator>(dateField).isEmpty, isTrue);
+      expect(find.text('See prices'), findsOneWidget);
+      expect(tester.widget<FilledButton>(find.byType(FilledButton)).enabled, isFalse);
       await tester.tap(dateField);
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsOneWidget);
@@ -116,19 +150,25 @@ void main() {
           .read(bookingFlowProvider.notifier)
           .updateJourney(
             (j) => j.copyWith(
-              pickup: quotableJourney.pickup,
-              dropoff: quotableJourney.dropoff,
               pickupDate: DateUtils.dateOnly(selected),
               pickupTime: const TimeOfDay(hour: 15, minute: 5),
             ),
           );
       await tester.pumpAndSettle();
-      for (final label in ['Pickup address', 'Destination']) {
-        final field = fieldNamed(label);
-        expect(tester.widget<InputDecorator>(field).isEmpty, isFalse);
-        expect(find.text(label.toUpperCase()), findsOneWidget);
-      }
       expect(tester.widget<InputDecorator>(dateField).isEmpty, isFalse);
+      // A date makes it quotable, and the way on lights up.
+      expect(tester.widget<FilledButton>(find.byType(FilledButton)).enabled, isTrue);
+
+      // Edit goes back to the route, with everything kept.
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+      expect(find.text('Plan your journey'), findsOneWidget);
+      for (final label in ['Pickup address', 'Destination']) {
+        expect(tester.widget<InputDecorator>(fieldNamed(label)).isEmpty, isFalse);
+      }
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<InputDecorator>(fieldNamed('Pickup date & time')).isEmpty, isFalse);
       expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
       expect(
         find.text(
@@ -181,6 +221,7 @@ void main() {
   testWidgets('add a stop chooses an address directly and can remove it', (
     tester,
   ) async {
+    phoneSized(tester);
     final container = ProviderContainer(
       overrides: [
         bookingRepositoryProvider.overrideWithValue(FakeBookingRepository()),
@@ -200,6 +241,7 @@ void main() {
     expect(find.text('Plan your journey'), findsOneWidget);
     expect(find.text('Plan a journey'), findsNothing);
     expect(find.textContaining('Tell us where and when'), findsNothing);
+    await tester.ensureVisible(find.text('Add a stop'));
     await tester.tap(find.text('Add a stop'));
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsOneWidget);
@@ -226,6 +268,7 @@ void main() {
   testWidgets(
     'pickup and destination use sheets and closing preserves the form',
     (tester) async {
+      phoneSized(tester);
       final container = ProviderContainer(
         overrides: [
           bookingRepositoryProvider.overrideWithValue(FakeBookingRepository()),
