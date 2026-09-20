@@ -10,6 +10,7 @@ import '../../widgets/common.dart';
 import '../../widgets/hero_banner.dart';
 import '../../widgets/tiles.dart';
 import '../booking/booking_flow_controller.dart';
+import '../home/widgets/fleet_showcase_section.dart';
 
 /// Popular fixed routes with their "from" prices, filtered by kind of trip.
 /// Tapping a route presets the journey form; the quote is what gets charged.
@@ -28,6 +29,7 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
     final colors = context.colors;
     final groups = Content.routeGroups;
     final routes = groups[_group].routes;
+    final vehicles = ref.watch(bookingFlowProvider.select((s) => s.vehicles));
 
     void book(FixedRoute route) {
       ref.read(bookingFlowProvider.notifier).updateJourney(
@@ -36,7 +38,7 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
               dropoff: PlaceSelection(address: route.to),
             ),
           );
-      context.go('/book');
+      context.push('/book');
     }
 
     return Scaffold(
@@ -93,11 +95,33 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
               ),
             ),
           ),
+          /*
+           * The fleet, beside the prices it explains. It used to close the
+           * home screen, where it was the longest section on a page whose job
+           * is to start a booking; the page about what things cost is where
+           * "and here is what you would be riding in" belongs.
+           */
+          if (vehicles.isNotEmpty) ...[
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            SliverToBoxAdapter(
+              child: FleetShowcaseSection(
+                gutter: 20,
+                vehicles: vehicles,
+                onSelectVehicle: (v) {
+                  ref.read(bookingFlowProvider.notifier).updateJourney(
+                        (j) => j.copyWith(vehicleCategorySlug: v.slug),
+                      );
+                  context.push('/book');
+                },
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ],
         ],
       ),
       bottomNavigationBar: BottomAction(
         child: FilledButton(
-          onPressed: () => context.go('/book'),
+          onPressed: () => context.push('/book'),
           child: const Text('Price my journey'),
         ),
       ),

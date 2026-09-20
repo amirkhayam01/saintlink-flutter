@@ -10,7 +10,6 @@ import '../auth/auth_controller.dart';
 import '../booking/booking_flow_controller.dart';
 import '../booking/journey_draft.dart';
 import '../trips/trips_controller.dart';
-import 'widgets/fleet_showcase_section.dart';
 import 'widgets/home_top_bar.dart';
 import 'widgets/popular_fares_section.dart';
 import 'widgets/recent_places_section.dart';
@@ -19,12 +18,15 @@ import 'widgets/services_grid.dart';
 import 'widgets/trust_strip.dart';
 import 'widgets/upcoming_trip_banner.dart';
 
-/// The landing screen: a launcher, not a form.
+/// The front door, and where a booking starts.
 ///
-/// Photo hero with the greeting, then a sheet that rides up over it carrying
-/// the "where to" bar, the customer's next trip if they have one, the four
-/// service tiles, the trust promises, popular fixed fares and the fleet. The
-/// booking form itself lives on /book; every tile here just presets it.
+/// Photo hero with the greeting, then a sheet that rides up over it. What a
+/// returning customer needs sits at the top, in the order they need it: the
+/// trip they already have, where to next, the places they keep going back
+/// to, and a plain door into the full form. The four service tiles, the
+/// trust promises and the popular fares follow for anyone still deciding.
+/// The booking form itself lives on /book, pushed over this screen; every
+/// tile here just presets it.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -46,7 +48,6 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final auth = ref.watch(authControllerProvider);
-    final bookingState = ref.watch(bookingFlowProvider);
     final bookingController = ref.read(bookingFlowProvider.notifier);
     final firstName = auth.customer?.firstName;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -54,7 +55,7 @@ class HomeScreen extends ConsumerWidget {
     void presetAndBook(JourneyDraft Function(JourneyDraft) update) {
       bookingController.reset();
       bookingController.updateJourney(update);
-      context.go('/book');
+      context.push('/book');
     }
 
     return Scaffold(
@@ -118,6 +119,12 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // A trip already booked outranks everything else on the
+                      // page for the person who booked it. Gone when there is none.
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: gutter),
+                        child: UpcomingTripBanner(auth: auth, spacingBelow: 16),
+                      ),
                       SearchLauncher(
                         gutter: gutter,
                         onSelectPlace: (place) =>
@@ -131,21 +138,34 @@ class HomeScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            UpcomingTripBanner(
-                              auth: auth,
-                              spacingBelow: sectionGap,
-                            ),
                             RecentPlacesSection(
                               onSelect: (place) => presetAndBook(
                                 (j) => j.copyWith(dropoff: place),
                               ),
-                              spacingBelow: sectionGap,
+                              spacingBelow: 18,
                             ),
+                            /*
+                             * The one explicit door into the whole form, for
+                             * someone who wants to set the pickup, the date or
+                             * a return before naming a destination. The Book
+                             * tab used to be this; a button under the search
+                             * is where a hand already is.
+                             */
+                            FilledButton.icon(
+                              onPressed: () {
+                                bookingController.reset();
+                                context.push('/book');
+                              },
+                              icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+                              label: const Text('Plan a journey'),
+                            ),
+                            const SizedBox(height: sectionGap),
                             ServicesGrid(
                               onSelectService: (serviceName, defaultDropoff) {
                                 if (defaultDropoff == null) {
                                   bookingController.reset();
-                                  return context.go('/book');
+                                  context.push('/book');
+                                  return;
                                 }
                                 presetAndBook(
                                   (j) => j.copyWith(
@@ -178,18 +198,6 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            if (bookingState.vehicles.isNotEmpty) ...[
-              const SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
-              SliverToBoxAdapter(
-                child: FleetShowcaseSection(
-                  gutter: gutter,
-                  vehicles: bookingState.vehicles,
-                  onSelectVehicle: (v) => presetAndBook(
-                    (j) => j.copyWith(vehicleCategorySlug: v.slug),
-                  ),
-                ),
-              ),
-            ],
             SliverToBoxAdapter(
               child: SizedBox(
                 height: 28 + MediaQuery.paddingOf(context).bottom,

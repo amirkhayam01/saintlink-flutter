@@ -81,7 +81,7 @@ class ServiceScreen extends ConsumerWidget {
               dropoff: destination == null ? j.dropoff : PlaceSelection(address: destination.address),
             ),
           );
-      context.go('/book');
+      context.push('/book');
     }
 
     return Scaffold(

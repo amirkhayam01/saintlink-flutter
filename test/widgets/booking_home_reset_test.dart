@@ -10,9 +10,14 @@ import 'package:saints_link/src/router.dart';
 import '../support/fakes.dart';
 
 void main() {
-  for (final useTab in [true, false]) {
+  /*
+   * The form is pushed over the shell, so the only way back to Home from
+   * inside it is the back arrow — there is no tab bar underneath to tap.
+   * Two doors in: the "Plan a journey" button, and a direct route push.
+   */
+  for (final viaButton in [true, false]) {
     testWidgets(
-      'returning Home resets booking via ${useTab ? 'tab' : 'back'}',
+      'returning Home resets booking, entered via ${viaButton ? 'the button' : 'the route'}',
       (tester) async {
         final repository = FakeBookingRepository()
           ..vehicles = fixtureVehicles()
@@ -35,8 +40,13 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        router.go('/book');
+        if (viaButton) {
+          await tester.tap(find.text('Plan a journey'));
+        } else {
+          router.push('/book');
+        }
         await tester.pumpAndSettle();
+        expect(find.text('PICKUP ADDRESS'), findsOneWidget);
         final controller = container.read(bookingFlowProvider.notifier);
         controller.updateJourney(
           (_) => quotableJourney.copyWith(
@@ -48,14 +58,17 @@ void main() {
         await controller.requestQuote();
         await tester.pumpAndSettle();
         expect(container.read(bookingFlowProvider).quote, isNotNull);
-        await tester.tap(useTab ? find.text('Home') : find.byTooltip('Back'));
+        await tester.tap(find.byTooltip('Back'));
         await tester.pumpAndSettle();
+        // Back on Home, with the tabs and no Book among them.
+        expect(find.text('Trips'), findsOneWidget);
+        expect(find.text('Book'), findsNothing);
         final state = container.read(bookingFlowProvider);
         expect(state.journey, const JourneyDraft());
         expect(state.quote, isNull);
         expect(state.vehicles, isNotEmpty);
         expect(state.fieldErrors, isEmpty);
-        await tester.tap(find.text('Book'));
+        await tester.tap(find.text('Plan a journey'));
         await tester.pumpAndSettle();
         expect(find.text('PICKUP ADDRESS'), findsOneWidget);
         expect(find.text('DESTINATION'), findsOneWidget);

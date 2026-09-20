@@ -83,7 +83,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/book'),
+        onPressed: () => context.push('/book'),
         icon: const Icon(Icons.add),
         label: const Text('Book a transfer'),
       ),

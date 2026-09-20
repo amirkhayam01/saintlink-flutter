@@ -95,31 +95,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/book',
-                builder: (_, _) => const JourneyScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'vehicle',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, _) => const VehicleScreen(),
-                  ),
-                  GoRoute(
-                    path: 'details',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, _) => const DetailsScreen(),
-                  ),
-                  GoRoute(
-                    path: 'confirmed',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, _) => const ConfirmationScreen(),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
                 path: '/trips',
                 builder: (_, _) => const TripsScreen(),
                 routes: [
@@ -141,6 +116,34 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (_, _) => const ProfileScreen(),
               ),
             ],
+          ),
+        ],
+      ),
+      /*
+       * The booking form is a task the customer steps into and back out of,
+       * not a place they live: it pushes over the shell with a back arrow
+       * rather than occupying a tab. Every door into it — the search bar, a
+       * shortcut chip, Go again, a service tile, a fare card — lands here.
+       */
+      GoRoute(
+        path: '/book',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, _) => const JourneyScreen(),
+        routes: [
+          GoRoute(
+            path: 'vehicle',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (_, _) => const VehicleScreen(),
+          ),
+          GoRoute(
+            path: 'details',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (_, _) => const DetailsScreen(),
+          ),
+          GoRoute(
+            path: 'confirmed',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (_, _) => const ConfirmationScreen(),
           ),
         ],
       ),

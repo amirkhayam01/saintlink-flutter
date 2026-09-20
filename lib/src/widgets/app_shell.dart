@@ -75,11 +75,6 @@ class AppBottomNavBar extends StatelessWidget {
                 label: 'Home',
               ),
               NavigationDestination(
-                icon: Icon(Icons.commute_outlined),
-                selectedIcon: Icon(Icons.commute_rounded),
-                label: 'Book',
-              ),
-              NavigationDestination(
                 icon: Icon(Icons.receipt_long_outlined),
                 selectedIcon: Icon(Icons.receipt_long_rounded),
                 label: 'Trips',
@@ -87,7 +82,7 @@ class AppBottomNavBar extends StatelessWidget {
               NavigationDestination(
                 icon: Icon(Icons.person_outline_rounded),
                 selectedIcon: Icon(Icons.person_rounded),
-                label: 'Profile',
+                label: 'Account',
               ),
             ],
           ),

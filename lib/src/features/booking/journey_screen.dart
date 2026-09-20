@@ -32,7 +32,7 @@ class JourneyScreen extends ConsumerWidget {
       appBar: BookingScreenHeader(
         journey: journey,
         title: 'Plan your journey',
-        onBack: () => context.go('/'),
+        onBack: () => context.pop(),
         actions: [
           if (!journey.pickup.isEmpty ||
               !journey.dropoff.isEmpty ||

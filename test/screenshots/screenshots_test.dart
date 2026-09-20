@@ -160,6 +160,20 @@ void main() {
         tall: true,
         recents: _FakeRecentPlaces.new,
       ));
+  testWidgets('home with next trip', (t) => shot(
+        t,
+        'home_next_trip',
+        Scaffold(
+          body: const HomeScreen(),
+          bottomNavigationBar: AppBottomNavBar(currentIndex: 0, onTap: (_) {}),
+        ),
+        prime: (c) async {
+          bookings.pages = [[sample('SL-8K2M')]];
+          c.read(authControllerProvider);
+          await Future<void>.microtask(() {});
+        },
+        recents: _FakeRecentPlaces.new,
+      ));
   testWidgets('home dark', (t) => shot(
         t,
         'home_dark',

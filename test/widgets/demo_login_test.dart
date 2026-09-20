@@ -93,7 +93,7 @@ void main() {
       expect(trips.past.length, 1);
       final detail = await container.read(tripDetailProvider('DEMO-3').future);
       expect(detail.legs, isNotEmpty);
-      await tester.tap(find.text('Profile'));
+      await tester.tap(find.text('Account'));
       await tester.pumpAndSettle();
       expect(find.text('Alex Morgan'), findsOneWidget);
       expect(
