@@ -94,7 +94,13 @@ void main() {
     await tester.pumpAndSettle();
     final journey = container.read(bookingFlowProvider).journey;
     expect(journey.pickup.isEmpty, isTrue);
-    expect(journey.dropoff.address, 'London Heathrow Airport (LHR)');
+    /*
+     * The server's own name for the place, carrying the server's own
+     * coordinates: a chip has to price identically to the same airport picked
+     * from the suggestions, and a bare string would be matched by text alone.
+     */
+    expect(journey.dropoff.address, 'Heathrow Airport');
+    expect(journey.dropoff.isLocated, isTrue);
     expect(journey.pickupDate, isNull);
     expect(journey.passengerCount, 1);
     expect(tester.takeException(), isNull);

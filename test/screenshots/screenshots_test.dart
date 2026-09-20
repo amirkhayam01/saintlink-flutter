@@ -18,6 +18,7 @@ import 'package:saints_link/src/features/trips/trip_detail_screen.dart';
 import 'package:saints_link/src/features/trips/trips_screen.dart';
 import 'package:saints_link/src/features/home/home_screen.dart';
 import 'package:saints_link/src/features/places/address_search_field.dart';
+import 'package:saints_link/src/features/places/recent_places.dart';
 import 'package:saints_link/src/features/profile/profile_screen.dart';
 import 'package:saints_link/src/features/services/prices_screen.dart';
 import 'package:saints_link/src/features/services/service_screen.dart';
@@ -85,16 +86,17 @@ void main() {
         ],
       );
 
-  ProviderContainer container() => ProviderContainer(overrides: [
+  ProviderContainer container({RecentPlaces Function()? recents}) => ProviderContainer(overrides: [
         bookingRepositoryProvider.overrideWithValue(bookings),
         authRepositoryProvider.overrideWithValue(auth),
+        if (recents != null) recentPlacesProvider.overrideWith(recents),
       ]);
 
-  Future<void> shot(WidgetTester tester, String name, Widget home, {ThemeData? theme, Future<void> Function(ProviderContainer)? prime, bool tall = false}) async {
+  Future<void> shot(WidgetTester tester, String name, Widget home, {ThemeData? theme, Future<void> Function(ProviderContainer)? prime, bool tall = false, RecentPlaces Function()? recents}) async {
     await loadFonts();
     tester.view.physicalSize = Size(1179, tall ? 4400 : 2556);
     tester.view.devicePixelRatio = 3;
-    final c = container();
+    final c = container(recents: recents);
     c.read(bookingFlowProvider);
     await tester.pump(); // lets the fleet load settle
     if (prime != null) await prime(c);
@@ -134,6 +136,19 @@ void main() {
           ),
         ),
         tall: true,
+      ));
+  testWidgets('home with recents', (t) => shot(
+        t,
+        'home_recents',
+        Scaffold(
+          body: const HomeScreen(),
+          bottomNavigationBar: AppBottomNavBar(
+            currentIndex: 0,
+            onTap: (_) {},
+          ),
+        ),
+        tall: true,
+        recents: _FakeRecentPlaces.new,
       ));
   testWidgets('home dark', (t) => shot(
         t,
@@ -202,4 +217,15 @@ void main() {
   testWidgets('trip detail', (t) => shot(t, 'trip_detail', const TripDetailScreen(reference: 'SL-8K2M'), prime: (c) async {
         bookings.nextBooking = sample('SL-8K2M');
       }));
+}
+
+/// Recents as a customer who has booked twice would have them, without the
+/// preferences plugin the real notifier reads — its platform channel never
+/// answers inside a widget test.
+class _FakeRecentPlaces extends RecentPlaces {
+  @override
+  Future<List<PlaceSelection>> build() async => const [
+        PlaceSelection(address: '14 Bedford Place, Southampton', placeId: 'a', latitude: 50.9107, longitude: -1.4055),
+        PlaceSelection(address: 'Heathrow Airport', placeId: 'b', latitude: 51.4700, longitude: -0.4543),
+      ];
 }

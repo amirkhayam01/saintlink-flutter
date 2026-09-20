@@ -13,6 +13,7 @@ import '../trips/trips_controller.dart';
 import 'widgets/fleet_showcase_section.dart';
 import 'widgets/home_top_bar.dart';
 import 'widgets/popular_fares_section.dart';
+import 'widgets/recent_places_section.dart';
 import 'widgets/search_launcher.dart';
 import 'widgets/services_grid.dart';
 import 'widgets/trust_strip.dart';
@@ -121,11 +122,8 @@ class HomeScreen extends ConsumerWidget {
                         gutter: gutter,
                         onSelectPlace: (place) =>
                             presetAndBook((j) => j.copyWith(dropoff: place)),
-                        onSelectHub: (name, address) => presetAndBook(
-                          (j) => j.copyWith(
-                            dropoff: PlaceSelection(address: address),
-                          ),
-                        ),
+                        onSelectHub: (place) =>
+                            presetAndBook((j) => j.copyWith(dropoff: place)),
                       ),
                       const SizedBox(height: 18),
                       Padding(
@@ -135,6 +133,12 @@ class HomeScreen extends ConsumerWidget {
                           children: [
                             UpcomingTripBanner(
                               auth: auth,
+                              spacingBelow: sectionGap,
+                            ),
+                            RecentPlacesSection(
+                              onSelect: (place) => presetAndBook(
+                                (j) => j.copyWith(dropoff: place),
+                              ),
                               spacingBelow: sectionGap,
                             ),
                             ServicesGrid(
