@@ -8,6 +8,7 @@ import '../../core/api_exception.dart';
 import '../../widgets/inner_screen_header.dart';
 import '../../core/theme.dart';
 import '../../domain/place.dart';
+import 'current_location.dart';
 import 'recent_places.dart';
 
 /// Open address selection above the booking form, keeping the keyboard clear.
@@ -15,6 +16,7 @@ Future<PlaceSelection?> showAddressSearchSheet(
   BuildContext context, {
   required String title,
   PlaceSelection initial = PlaceSelection.empty,
+  bool allowCurrentLocation = false,
 }) {
   return showModalBottomSheet<PlaceSelection>(
     context: context,
@@ -43,6 +45,7 @@ Future<PlaceSelection?> showAddressSearchSheet(
             title: title,
             initial: initial,
             isBottomSheet: true,
+            allowCurrentLocation: allowCurrentLocation,
           ),
         ),
       );
@@ -108,11 +111,16 @@ class AddressSearchScreen extends ConsumerStatefulWidget {
     required this.title,
     required this.initial,
     this.isBottomSheet = false,
+    this.allowCurrentLocation = false,
   });
 
   final String title;
   final PlaceSelection initial;
   final bool isBottomSheet;
+
+  /// Offer "use my current location". On for the pickup field only: where the
+  /// customer is standing is a likely pickup and an unlikely destination.
+  final bool allowCurrentLocation;
 
   @override
   ConsumerState<AddressSearchScreen> createState() =>
@@ -128,6 +136,11 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
   int _revision = 0;
   bool _searchUnavailable = false;
   String? _selectionError;
+  bool _locating = false;
+
+  /// Set when the permission can no longer be asked for in-app, so the error
+  /// line grows an "Open settings" action instead of a dead end.
+  bool _offerSettings = false;
 
   @override
   void initState() {
@@ -204,6 +217,57 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
     }
   }
 
+  /*
+   * Two steps, and either can fail for a reason the customer can act on: the
+   * phone has to produce a fix, then the server has to name it. The prompt
+   * for permission happens inside the first step, on this tap and not
+   * before — a request at launch is the one most people refuse.
+   */
+  Future<void> _useCurrentLocation() async {
+    if (_locating || _resolving) return;
+    _debounce?.cancel();
+    ++_revision;
+    setState(() {
+      _locating = true;
+      _searching = false;
+      _selectionError = null;
+      _offerSettings = false;
+    });
+
+    try {
+      final fix = await ref.read(locationSourceProvider).current();
+      final selection = await ref
+          .read(placesRepositoryProvider)
+          .reverse(latitude: fix.latitude, longitude: fix.longitude);
+      if (!mounted) return;
+      _finish(selection);
+    } on LocationDeniedException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _offerSettings = error.denial == LocationDenial.deniedForever;
+        _selectionError = switch (error.denial) {
+          LocationDenial.servicesOff =>
+            'Location is switched off on this device. Turn it on, or search for your address instead.',
+          LocationDenial.denied =>
+            'We need your permission to use your location. You can search for your address instead.',
+          LocationDenial.deniedForever =>
+            'Location access is off for Saints Link. You can turn it on in Settings, or search for your address instead.',
+          LocationDenial.unavailable =>
+            'We could not find your location just now. Please try again, or search for your address instead.',
+        };
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _selectionError = error is ApiException
+            ? error.message
+            : 'We could not find an address at your location. Please search for it instead.',
+      );
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
   void _finish(PlaceSelection selection) {
     ref.read(recentPlacesProvider.notifier).remember(selection);
     Navigator.of(context).pop(selection);
@@ -276,9 +340,23 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Semantics(
               liveRegion: true,
-              child: Text(
-                _selectionError!,
-                style: TextStyle(fontSize: 13, color: colors.inkMuted),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _selectionError!,
+                    style: TextStyle(fontSize: 13, color: colors.inkMuted),
+                  ),
+                  if (_offerSettings)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () =>
+                            ref.read(locationSourceProvider).openSettings(),
+                        child: const Text('Open settings'),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -287,6 +365,13 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
             padding: const EdgeInsets.only(bottom: 24),
             children: [
               if (browsing) ...[
+                if (widget.allowCurrentLocation)
+                  _PlaceRow(
+                    icon: Icons.my_location_rounded,
+                    title: 'Use my current location',
+                    subtitle: _locating ? 'Finding your address…' : null,
+                    onTap: _useCurrentLocation,
+                  ),
                 _Heading('Airports and ports'),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),

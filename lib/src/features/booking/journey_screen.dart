@@ -311,6 +311,7 @@ class _RouteStop extends StatelessWidget {
               context,
               title: label,
               initial: value,
+              allowCurrentLocation: marker == _Marker.pickup,
             );
             if (selection != null && context.mounted) onChanged(selection);
           },

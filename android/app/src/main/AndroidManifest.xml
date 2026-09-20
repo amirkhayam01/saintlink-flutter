@@ -1,5 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      Foreground only, and asked for on a tap of "Use my current location",
+      never at launch. A pre-booked transfer has no reason to know where the
+      customer is in the background, and no permission here says it may.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <application
         android:label="Saints Link"
         android:name="${applicationName}"

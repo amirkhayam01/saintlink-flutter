@@ -207,7 +207,7 @@ void main() {
   testWidgets('trips', (t) => shot(t, 'trips', const TripsScreen(), prime: (c) async {
         bookings.pages = [[sample('SL-8K2M'), sample('SL-7QPA', days: 12, paid: false), sample('SL-2BXA', days: -20)]];
       }));
-  testWidgets('address search', (t) => shot(t, 'address_search', const AddressSearchScreen(title: 'Pickup', initial: PlaceSelection.empty)));
+  testWidgets('address search', (t) => shot(t, 'address_search', const AddressSearchScreen(title: 'Pickup', initial: PlaceSelection.empty, allowCurrentLocation: true)));
   testWidgets('profile', (t) => shot(t, 'profile', const ProfileScreen(), prime: (c) async {
         c.read(authControllerProvider);
         await Future<void>.microtask(() {});

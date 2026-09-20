@@ -36,6 +36,25 @@ class PlacesRepository {
     return description.isEmpty ? place : place.copyWith(address: description);
   }
 
+  /// The address at a position, as a place the engine will trust.
+  ///
+  /// A GPS fix is coordinates, and coordinates are neither something the
+  /// customer can read back nor somewhere a driver can be sent. The server
+  /// turns them into a verified place id and a postal address — the same
+  /// thing picking a suggestion produces — so "use my current location"
+  /// prices exactly as a typed-and-picked address would.
+  Future<PlaceSelection> reverse({
+    required double latitude,
+    required double longitude,
+  }) async {
+    final response = await _api.get(
+      '/places/reverse',
+      query: {'lat': latitude, 'lng': longitude},
+    );
+
+    return PlaceSelection.fromJson(response);
+  }
+
   /// The signed-in customer's most-used places, most frequent first.
   ///
   /// Kept by the server from their bookings, so it survives a reinstall and
