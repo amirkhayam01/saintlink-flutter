@@ -11,9 +11,7 @@ import 'demo_session.dart';
 class AuthState {
   const AuthState({this.customer, this.isRestoring = true});
 
-  /// The app starts here: a token may exist in secure storage, and until it has
-  /// been checked the router must not decide the customer is a guest and throw
-  /// them out to the sign-in screen.
+  /// Until the stored token is checked the router must not treat the customer as a guest.
   const AuthState.restoring() : this(isRestoring: true);
 
   const AuthState.guest() : this(isRestoring: false);
@@ -56,12 +54,7 @@ class AuthController extends Notifier<AuthState> {
       state = AuthState.signedIn(customer);
     } on ApiException catch (error) {
       if (revision != _sessionRevision) return;
-      /*
-       * A rejected token means the session is over — signed out elsewhere, or
-       * revoked. Anything else is probably the network, and treating that as a
-       * sign-out would log a customer out every time they opened the app in a
-       * tunnel, so the stored token is kept and only this session is guest.
-       */
+      // Only a rejected token ends the session; a network failure keeps it for next launch.
       if (error.isUnauthenticated) {
         await repository.signOut();
       }

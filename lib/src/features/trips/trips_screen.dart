@@ -66,8 +66,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                         key: const ValueKey('upcoming'),
                         state: state,
                         emptyTitle: 'No upcoming trips',
-                        emptyBody:
-                            'Plan a journey and it will appear here, ready for the day.',
+                        emptyBody: 'Plan a journey and it will appear here, ready for the day.',
                       )
                     : _TripList(
                         state.past,

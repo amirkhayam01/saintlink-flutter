@@ -7,20 +7,8 @@ import '../../domain/place.dart';
 import '../places/current_location.dart';
 import 'journey_draft.dart';
 
-/// The journey on a map: every end of it that has a position, framed.
-///
-/// This used to be a WebView running the Maps JavaScript SDK, which paid for
-/// a browser, an HTML load and a network fetch of the SDK on every appearance
-/// — hence the spinner, the 25-second timeout and the "Retry map" button it
-/// needed. The native SDK is compiled in and caches its tiles, so it draws on
-/// the first frame and none of that apparatus is needed any more.
-///
-/// Only located places are shown. A typed address the customer never picked
-/// from the suggestions has no position, and guessing one would put a pin
-/// somewhere the driver is not going. There is deliberately no route line:
-/// the server measures a journey as a straight line scaled by a constant and
-/// never asks Google for a route, so drawing one would claim a precision the
-/// fare does not have.
+/// The journey's located places, pinned and framed. No route line on purpose:
+/// the server never computes one, so drawing one would claim a precision the fare lacks.
 class GoogleJourneyMap extends ConsumerStatefulWidget {
   const GoogleJourneyMap({
     super.key,
@@ -32,9 +20,7 @@ class GoogleJourneyMap extends ConsumerStatefulWidget {
 
   final JourneyDraft journey;
 
-  /// With nothing to pin yet, show the area the fleet serves rather than a
-  /// nudge. For the map that sits under the route sheet: it is the ground
-  /// the form stands on, and a grey panel with a sentence on it is not.
+  /// With nothing to pin, show the fleet's region instead of a nudge.
   final bool regionWhenEmpty;
 
   /// Pannable and zoomable. Off for the preview in the screen header, where
@@ -56,8 +42,7 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
   /// position, each paired with its letter for the pin.
   List<(String, PlaceSelection)> get _points => [
     ('A', widget.journey.pickup),
-    for (final (i, stop) in widget.journey.via.indexed)
-      ('${i + 1}', stop),
+    for (final (i, stop) in widget.journey.via.indexed) ('${i + 1}', stop),
     ('B', widget.journey.dropoff),
   ].where((entry) => entry.$2.isLocated).toList();
 
@@ -95,8 +80,10 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
         return;
       }
 
-      var south = double.infinity, north = -double.infinity;
-      var west = double.infinity, east = -double.infinity;
+      var south = double.infinity;
+      var north = -double.infinity;
+      var west = double.infinity;
+      var east = -double.infinity;
       for (final (_, place) in points) {
         south = south < place.latitude! ? south : place.latitude!;
         north = north > place.latitude! ? north : place.latitude!;
@@ -124,12 +111,7 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final points = _points;
-    /*
-     * The "you are here" dot, only where the app already may. Map loads are
-     * free and the dot costs nothing, but it must never be the reason for a
-     * permission prompt — that stays on the pickup field, where there is a
-     * reason the customer can see.
-     */
+    // The location dot only where already permitted; the map never prompts.
     final showLocation = ref.watch(locationGrantedProvider).value ?? false;
 
     if (points.isEmpty && !widget.regionWhenEmpty) {
@@ -190,11 +172,7 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
           _controller = controller;
           _frame();
         },
-        /*
-         * The header preview is a picture of the route, not a map to explore:
-         * every gesture off so it can never steal the page's scroll, and lite
-         * mode on Android so it renders as a bitmap in one go.
-         */
+        // The preview is a picture: no gestures, and lite mode on Android.
         liteModeEnabled: !widget.interactive,
         zoomGesturesEnabled: widget.interactive,
         scrollGesturesEnabled: widget.interactive,
@@ -214,9 +192,7 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
 /// Where the fleet is based; where an empty map looks.
 const _southampton = LatLng(50.9097, -1.4044);
 
-/// Google's night styling, trimmed to what this map shows: land, water and
-/// roads on the app's dark ground, with the point-of-interest clutter that
-/// competes with the pins switched off.
+/// Night styling on the app's dark ground, with POI clutter off.
 const _darkStyle = '''
 [
   {"elementType":"geometry","stylers":[{"color":"#1c1c1e"}]},

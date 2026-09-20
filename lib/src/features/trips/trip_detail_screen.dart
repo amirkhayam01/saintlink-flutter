@@ -28,7 +28,9 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   bool _busy = false;
 
   Future<void> _pay(Booking booking) async {
-    final outcome = await ref.read(paymentControllerProvider(booking.reference).notifier).pay(
+    final outcome = await ref
+        .read(paymentControllerProvider(booking.reference).notifier)
+        .pay(
           presentTestSheet: (details) => showTestPaymentSheet(context, details),
         );
     if (!mounted) return;
@@ -39,20 +41,32 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       case PaymentOutcome.cancelled:
         showMessage(context, 'Payment cancelled. Your booking is still saved.');
       case PaymentOutcome.failed:
-        showMessage(context, ref.read(paymentControllerProvider(booking.reference)).error ?? 'Your payment could not be taken.');
+        showMessage(
+          context,
+          ref.read(paymentControllerProvider(booking.reference)).error ??
+              'Your payment could not be taken.',
+        );
     }
   }
 
   Future<void> _cancel(Booking booking) async {
-    final reason = await showDialog<String>(context: context, builder: (_) => const _CancelDialog());
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => const _CancelDialog(),
+    );
     if (reason == null || !mounted) return;
 
     setState(() => _busy = true);
 
     try {
-      await ref.read(bookingRepositoryProvider).requestCancellation(reference: booking.reference, reason: reason);
+      await ref
+          .read(bookingRepositoryProvider)
+          .requestCancellation(reference: booking.reference, reason: reason);
       if (!mounted) return;
-      showMessage(context, 'Cancellation requested. Our team will review it and confirm any refund.');
+      showMessage(
+        context,
+        'Cancellation requested. Our team will review it and confirm any refund.',
+      );
       ref.invalidate(tripDetailProvider(widget.reference));
       ref.invalidate(tripsProvider);
     } on ApiException catch (error) {
@@ -65,7 +79,9 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final detail = ref.watch(tripDetailProvider(widget.reference));
-    final paying = ref.watch(paymentControllerProvider(widget.reference).select((s) => s.isPaying));
+    final paying = ref.watch(
+      paymentControllerProvider(widget.reference).select((s) => s.isPaying),
+    );
     final busy = _busy || paying;
 
     return Scaffold(
@@ -77,16 +93,28 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
             icon: const Icon(Icons.copy_rounded, size: 20),
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: widget.reference));
-              if (context.mounted) showMessage(context, 'Reference ${widget.reference} copied');
+              if (context.mounted) {
+                showMessage(context, 'Reference ${widget.reference} copied');
+              }
             },
           ),
         ],
       ),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Padding(padding: const EdgeInsets.all(24), child: ErrorNotice(error.toString(), onRetry: () => ref.invalidate(tripDetailProvider(widget.reference))))),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ErrorNotice(
+              error.toString(),
+              onRetry: () =>
+                  ref.invalidate(tripDetailProvider(widget.reference)),
+            ),
+          ),
+        ),
         data: (booking) => RefreshIndicator(
-          onRefresh: () => ref.refresh(tripDetailProvider(widget.reference).future),
+          onRefresh: () =>
+              ref.refresh(tripDetailProvider(widget.reference).future),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
             children: [
@@ -95,10 +123,17 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: context.colors.tint, borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(
+                    color: context.colors.tint,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   child: Row(
                     children: [
-                      Icon(Icons.hourglass_top, size: 18, color: context.colors.accent),
+                      Icon(
+                        Icons.hourglass_top,
+                        size: 18,
+                        color: context.colors.accent,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -110,7 +145,12 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   ),
                 ),
               ],
-              for (final leg in booking.legs.where((l) => l.pickupWasAdjusted || l.flight != null || l.includedWaitingMinutes > 0)) ...[
+              for (final leg in booking.legs.where(
+                (l) =>
+                    l.pickupWasAdjusted ||
+                    l.flight != null ||
+                    l.includedWaitingMinutes > 0,
+              )) ...[
                 const SizedBox(height: 16),
                 _LegCard(leg: leg, showDirection: booking.isReturn),
               ],
@@ -122,10 +162,44 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                     for (final item in booking.fareItems)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(children: [Expanded(child: Text(item.label, style: TextStyle(color: context.colors.inkMuted))), Text(Formatting.money(item.amount, booking.currency))]),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.label,
+                                style: TextStyle(
+                                  color: context.colors.inkMuted,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              Formatting.money(item.amount, booking.currency),
+                            ),
+                          ],
+                        ),
                       ),
-                    if (booking.fareItems.isNotEmpty) Divider(height: 20, color: context.colors.inkFaint),
-                    Row(children: [const Expanded(child: Text('Total', style: TextStyle(fontWeight: FontWeight.w700))), Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18))]),
+                    if (booking.fareItems.isNotEmpty)
+                      Divider(height: 20, color: context.colors.inkFaint),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Total',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        Text(
+                          Formatting.money(
+                            booking.totalAmount,
+                            booking.currency,
+                          ),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -136,8 +210,10 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   children: [
                     DetailRow('Name', booking.customerName ?? ''),
                     DetailRow('Phone', booking.customerPhone ?? ''),
-                    if (booking.customerEmail != null) DetailRow('Email', booking.customerEmail!),
-                    if (booking.customerNotes != null) DetailRow('Notes', booking.customerNotes!),
+                    if (booking.customerEmail != null)
+                      DetailRow('Email', booking.customerEmail!),
+                    if (booking.customerNotes != null)
+                      DetailRow('Notes', booking.customerNotes!),
                   ],
                 ),
               ),
@@ -151,12 +227,21 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (booking.canPay) FilledButton(onPressed: busy ? null : () => _pay(booking), child: Text('Pay ${Formatting.money(booking.totalAmount, booking.currency)}')),
-                    if (booking.canPay && booking.isCancellable) const SizedBox(height: 8),
+                    if (booking.canPay)
+                      FilledButton(
+                        onPressed: busy ? null : () => _pay(booking),
+                        child: Text(
+                          'Pay ${Formatting.money(booking.totalAmount, booking.currency)}',
+                        ),
+                      ),
+                    if (booking.canPay && booking.isCancellable)
+                      const SizedBox(height: 8),
                     if (booking.isCancellable)
                       OutlinedButton(
                         onPressed: busy ? null : () => _cancel(booking),
-                        style: OutlinedButton.styleFrom(foregroundColor: AppTheme.danger),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.danger,
+                        ),
                         child: const Text('Request cancellation'),
                       ),
                   ],
@@ -178,16 +263,24 @@ class _LegCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Panel(
-      title: showDirection ? (leg.isReturnLeg ? 'Return journey' : 'Outward journey') : 'Your pickup',
+      title: showDirection
+          ? (leg.isReturnLeg ? 'Return journey' : 'Outward journey')
+          : 'Your pickup',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (leg.pickupAt != null) ...[
-            Text('${Formatting.fullDate(leg.pickupAt!)} · ${Formatting.time(leg.pickupAt!)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              '${Formatting.fullDate(leg.pickupAt!)} · ${Formatting.time(leg.pickupAt!)}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             if (leg.pickupWasAdjusted)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text('Moved from ${Formatting.time(leg.requestedPickupAt!)} to match your flight', style: TextStyle(color: context.colors.accent, fontSize: 12)),
+                child: Text(
+                  'Moved from ${Formatting.time(leg.requestedPickupAt!)} to match your flight',
+                  style: TextStyle(color: context.colors.accent, fontSize: 12),
+                ),
               ),
             const SizedBox(height: 8),
           ],
@@ -195,9 +288,18 @@ class _LegCard extends StatelessWidget {
             spacing: 12,
             runSpacing: 4,
             children: [
-              if (leg.flight != null) _Fact(Icons.flight, '${leg.flight!.number}${leg.flight!.terminal != null ? ' · ${leg.flight!.terminal}' : ''}${leg.flight!.status != null ? ' · ${leg.flight!.status}' : ''}'),
-              if (leg.meetAndGreet) const _Fact(Icons.waving_hand_outlined, 'Meet & greet'),
-              if (leg.includedWaitingMinutes > 0) _Fact(Icons.hourglass_bottom, '${leg.includedWaitingMinutes} min waiting included'),
+              if (leg.flight != null)
+                _Fact(
+                  Icons.flight,
+                  '${leg.flight!.number}${leg.flight!.terminal != null ? ' · ${leg.flight!.terminal}' : ''}${leg.flight!.status != null ? ' · ${leg.flight!.status}' : ''}',
+                ),
+              if (leg.meetAndGreet)
+                const _Fact(Icons.waving_hand_outlined, 'Meet & greet'),
+              if (leg.includedWaitingMinutes > 0)
+                _Fact(
+                  Icons.hourglass_bottom,
+                  '${leg.includedWaitingMinutes} min waiting included',
+                ),
             ],
           ),
         ],
@@ -213,7 +315,17 @@ class _Fact extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 15, color: context.colors.inkMuted), SizedBox(width: 4), Text(text, style: TextStyle(fontSize: 13, color: context.colors.inkMuted))]);
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 15, color: context.colors.inkMuted),
+      const SizedBox(width: 4),
+      Text(
+        text,
+        style: TextStyle(fontSize: 13, color: context.colors.inkMuted),
+      ),
+    ],
+  );
 }
 
 class _CancelDialog extends StatefulWidget {
@@ -239,16 +351,34 @@ class _CancelDialogState extends State<_CancelDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Our team reviews every request and confirms any refund under the cancellation policy.', style: TextStyle(fontSize: 13, color: context.colors.inkMuted)),
+          Text(
+            'Our team reviews every request and confirms any refund under the cancellation policy.',
+            style: TextStyle(fontSize: 13, color: context.colors.inkMuted),
+          ),
           const SizedBox(height: 12),
-          TextField(controller: _reason, maxLines: 3, maxLength: 1000, autofocus: true, decoration: const InputDecoration(labelText: 'Reason'), onChanged: (_) => setState(() {})),
+          TextField(
+            controller: _reason,
+            maxLines: 3,
+            maxLength: 1000,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Reason'),
+            onChanged: (_) => setState(() {}),
+          ),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Keep booking')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Keep booking'),
+        ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppTheme.danger, minimumSize: const Size(0, 44)),
-          onPressed: _reason.text.trim().isEmpty ? null : () => Navigator.of(context).pop(_reason.text.trim()),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.danger,
+            minimumSize: const Size(0, 44),
+          ),
+          onPressed: _reason.text.trim().isEmpty
+              ? null
+              : () => Navigator.of(context).pop(_reason.text.trim()),
           child: const Text('Request'),
         ),
       ],
@@ -268,7 +398,11 @@ class _Panel extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.inkFaint),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -3,17 +3,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/features/places/recent_places.dart';
 
-/*
- * "Go again" is one list with two sources: what the server has seen the
- * customer book, ranked by habit, and what the device remembers. The server's
- * order wins where it has an opinion; the device fills in behind it and never
- * repeats a place the server already listed.
- */
+// The server's list leads, the device fills in behind, nothing repeats.
 
-const home = PlaceSelection(address: '14 Bedford Place, Southampton', placeId: 'home', latitude: 50.91, longitude: -1.40);
-const heathrow = PlaceSelection(address: 'Heathrow Airport', latitude: 51.47, longitude: -0.45);
-const gatwick = PlaceSelection(address: 'Gatwick Airport', latitude: 51.15, longitude: -0.18);
-const cruise = PlaceSelection(address: 'Southampton Cruise Terminals', latitude: 50.90, longitude: -1.41);
+const home = PlaceSelection(
+  address: '14 Bedford Place, Southampton',
+  placeId: 'home',
+  latitude: 50.91,
+  longitude: -1.40,
+);
+const heathrow = PlaceSelection(
+  address: 'Heathrow Airport',
+  latitude: 51.47,
+  longitude: -0.45,
+);
+const gatwick = PlaceSelection(
+  address: 'Gatwick Airport',
+  latitude: 51.15,
+  longitude: -0.18,
+);
+const cruise = PlaceSelection(
+  address: 'Southampton Cruise Terminals',
+  latitude: 50.90,
+  longitude: -1.41,
+);
 
 class _Device extends RecentPlaces {
   _Device(this.places);
@@ -27,10 +39,12 @@ Future<List<PlaceSelection>> goAgain({
   required List<PlaceSelection> synced,
   required List<PlaceSelection> device,
 }) async {
-  final container = ProviderContainer(overrides: [
-    customerPlacesProvider.overrideWith((ref) async => synced),
-    recentPlacesProvider.overrideWith(() => _Device(device)),
-  ]);
+  final container = ProviderContainer(
+    overrides: [
+      customerPlacesProvider.overrideWith((ref) async => synced),
+      recentPlacesProvider.overrideWith(() => _Device(device)),
+    ],
+  );
   addTearDown(container.dispose);
 
   // Both sources are async; let them settle before reading the merge.

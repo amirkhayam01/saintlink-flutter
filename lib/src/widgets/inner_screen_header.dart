@@ -18,9 +18,7 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
     this.curvedEdge = true,
   });
 
-  /// The surface-coloured curve along the bottom that begins the content
-  /// below. Off when the body is a map: the curve would float over it as a
-  /// white tab attached to nothing.
+  /// The curved edge that begins the content below; off when the body is a map.
   final bool curvedEdge;
 
   /// Brand gold gradient background for inner screen headers.
@@ -59,12 +57,7 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
           ? AppTheme.midnight
           : Colors.transparent,
       foregroundColor: effectiveTitleColor,
-      /*
-       * A transparent bar leaves Flutter guessing at the status bar icons, and
-       * it guesses from the transparent colour rather than the background
-       * behind it: white icons over gold. The title colour already knows which
-       * ground it sits on, so the overlay follows it.
-       */
+      // A transparent bar makes Flutter guess the status bar icons wrong; follow the title colour instead.
       systemOverlayStyle: effectiveTitleColor == Colors.white
           ? SystemUiOverlayStyle.light
           : SystemUiOverlayStyle.dark,

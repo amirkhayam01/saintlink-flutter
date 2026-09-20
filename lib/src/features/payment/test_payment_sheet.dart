@@ -4,12 +4,11 @@ import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../domain/payment_sheet_details.dart';
 
-/// The stand-in for Stripe's sheet while the backend runs the fake driver.
-///
-/// Deliberately unlike a real card form — no card fields, a warning banner,
-/// "Test payment" in the title — so nobody watching a demo, or a tester with
-/// the wrong build, could mistake it for one. Returns true if Pay was tapped.
-Future<bool> showTestPaymentSheet(BuildContext context, PaymentSheetDetails details) async {
+/// The stand-in for Stripe's sheet, deliberately unlike a real card form.
+Future<bool> showTestPaymentSheet(
+  BuildContext context,
+  PaymentSheetDetails details,
+) async {
   final paid = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -30,12 +29,21 @@ class _TestPaymentSheet extends StatelessWidget {
     final colors = context.colors;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.paddingOf(context).bottom),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        0,
+        20,
+        20 + MediaQuery.paddingOf(context).bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Test payment', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'Test payment',
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
@@ -60,14 +68,27 @@ class _TestPaymentSheet extends StatelessWidget {
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(child: Text(details.merchantName, style: TextStyle(color: colors.inkMuted))),
-              Text(Formatting.money(details.amount, details.currency), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              Expanded(
+                child: Text(
+                  details.merchantName,
+                  style: TextStyle(color: colors.inkMuted),
+                ),
+              ),
+              Text(
+                Formatting.money(details.amount, details.currency),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Pay ${Formatting.money(details.amount, details.currency)} (test)'),
+            child: Text(
+              'Pay ${Formatting.money(details.amount, details.currency)} (test)',
+            ),
           ),
           const SizedBox(height: 8),
           OutlinedButton(

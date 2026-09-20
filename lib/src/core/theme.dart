@@ -1,17 +1,8 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
-/// The app's colours, taken from the website's design tokens rather than
-/// invented here.
-///
-/// The site's rule is one accent and one neutral: brand gold (the logo's own
-/// #facc15) against zinc, with midnight reserved for large dark surfaces. Gold
-/// on white fails contrast for text, so it is used as a surface with dark text
-/// on it — never as a text colour on a light ground.
-///
-/// Colours that mean the same thing on either ground live here as constants.
-/// Colours that depend on the ground — text, borders, cards — live in
-/// [AppColors] and are read through `context.colors`.
+/// The website's tokens: one accent (gold) and one neutral (zinc), midnight for large dark surfaces.
+/// Ground-dependent colours live in [AppColors]; gold is never text on a light ground.
 class AppTheme {
   const AppTheme._();
 
@@ -37,11 +28,7 @@ class AppTheme {
   static ThemeData _build(AppColors colors, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
 
-    /*
-     * The primary button is midnight on the light ground and gold on the dark
-     * one: midnight on midnight would vanish, and gold with dark text is the
-     * site's own dark-mode treatment of its call to action.
-     */
+    // Midnight on light, gold on dark: midnight on midnight would vanish.
     final primaryButton = isDark ? brand : midnight;
     final onPrimaryButton = isDark ? midnight : Colors.white;
     const buttonText = TextStyle(
@@ -219,10 +206,7 @@ class AppTheme {
     );
   }
 
-  /// The colour a booking status should read as.
-  ///
-  /// Red is reserved for things that are wrong, per the site's token rules, so
-  /// only a cancellation gets it — an unpaid booking is merely pending.
+  /// Red is reserved for what is wrong: only a cancellation gets it.
   static Color statusColor(String status) => switch (status) {
     'confirmed' || 'completed' => success,
     'cancelled' || 'refunded' => danger,
@@ -297,9 +281,7 @@ class AppColors extends ThemeExtension<AppColors> {
   /// cards and pills. Slightly stronger on the dark ground so it still reads.
   final Color tint;
 
-  /// Gold as a text and icon colour: the darker gold on white, where the logo
-  /// gold fails contrast, and the logo gold itself on midnight, where the
-  /// darker one goes dull.
+  /// Gold for text and icons: darker on white for contrast, the logo gold on midnight.
   final Color accent;
 
   /// The one shadow the app uses, on cards that float over the hero or the

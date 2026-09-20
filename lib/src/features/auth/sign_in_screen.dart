@@ -14,11 +14,7 @@ import '../../widgets/tiles.dart';
 import 'auth_controller.dart';
 import '../../domain/customer.dart';
 
-/// Sign in with a mobile number and a texted code.
-///
-/// Two steps on one screen, because the second step is only meaningful in the
-/// context of the first: the customer needs to see which number was texted to
-/// know whether to wait or go back and fix a typo.
+/// Sign in with a mobile number and a texted code, both steps on one screen.
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key, this.redirectTo});
 
@@ -204,10 +200,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         ),
                       ),
                     ),
-                    prefixIconConstraints: const BoxConstraints(
-                      minWidth: 0,
-                      minHeight: 0,
-                    ),
+                    prefixIconConstraints: const BoxConstraints(),
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
@@ -398,7 +391,7 @@ class _OtpBoxesState extends State<_OtpBoxes> {
     final focused = _focus.hasFocus;
 
     return GestureDetector(
-      onTap: () => _focus.requestFocus(),
+      onTap: _focus.requestFocus,
       child: Stack(
         children: [
           Row(

@@ -2,14 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 
-/// Full-bleed photography with the title set in white over a midnight
-/// gradient. Heads the home, service and contact screens so every landing
-/// page opens the same way.
-///
-/// [bottomInset] leaves room for an [OverlapSheet] to sit over the lower edge:
-/// the banner takes that much less room in layout while still painting its
-/// full height, so whatever follows it in a column starts on top of the photo.
-/// The title moves up by the same amount so it is never hidden.
+/// Full-bleed photo with a white title over a midnight gradient.
+/// [bottomInset] shortens the layout box, not the paint, so an [OverlapSheet] can ride over the photo.
 class HeroBanner extends StatelessWidget {
   const HeroBanner({
     super.key,
@@ -136,7 +130,7 @@ class HeroBanner extends StatelessWidget {
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerLeft,
-                        child: leading!,
+                        child: leading,
                       ),
                     )
                   else
@@ -179,10 +173,7 @@ class HeroIconButton extends StatelessWidget {
   }
 }
 
-/// A [HeroBanner] with an [OverlapSheet] riding up over its lower edge, as a
-/// single box. They have to share one box: a scroll view paints its slivers
-/// last-to-first, so a sheet in its own sliver would be painted under the
-/// photo and lose its rounded top.
+/// A [HeroBanner] and its [OverlapSheet] in one box; as separate slivers the sheet would paint under the photo.
 class HeroPage extends StatelessWidget {
   const HeroPage({super.key, required this.hero, required this.sheet});
 
@@ -198,9 +189,7 @@ class HeroPage extends StatelessWidget {
   }
 }
 
-/// The ground-coloured sheet that rides up over the bottom of a [HeroBanner].
-/// Pair with `HeroBanner(bottomInset: OverlapSheet.overlap)` inside a
-/// [HeroPage].
+/// The sheet that rides up over a [HeroBanner]; pair with `bottomInset: OverlapSheet.overlap`.
 class OverlapSheet extends StatelessWidget {
   const OverlapSheet({
     super.key,

@@ -32,7 +32,9 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
     final vehicles = ref.watch(bookingFlowProvider.select((s) => s.vehicles));
 
     void book(FixedRoute route) {
-      ref.read(bookingFlowProvider.notifier).updateJourney(
+      ref
+          .read(bookingFlowProvider.notifier)
+          .updateJourney(
             (j) => j.copyWith(
               pickup: PlaceSelection(address: route.from),
               dropoff: PlaceSelection(address: route.to),
@@ -47,8 +49,8 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
         slivers: [
           SliverToBoxAdapter(
             child: HeroPage(
-              hero: HeroBanner(
-                image: const AssetImage('assets/brand/hero-harbor.webp'),
+              hero: const HeroBanner(
+                image: AssetImage('assets/brand/hero-harbor.webp'),
                 height: 220,
                 bottomInset: OverlapSheet.overlap,
                 title: 'Routes & prices',
@@ -70,17 +72,29 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
                       eyebrow: 'Fixed price, every time',
                       headline: 'No meter',
                       body: 'Saloon car, one way. The exact price for your date and vehicle is shown before you book.',
-                      icon: Icons.verified_outlined,
                     ),
                     const SizedBox(height: 20),
                     Container(
-                      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
+                      decoration: BoxDecoration(
+                        color: colors.card,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: colors.inkFaint),
+                      ),
                       clipBehavior: Clip.antiAlias,
                       child: Column(
                         children: [
                           for (var i = 0; i < routes.length; i++) ...[
-                            if (i > 0) Divider(color: colors.inkFaint, height: 1, indent: 16, endIndent: 16),
-                            _RouteRow(route: routes[i], onTap: () => book(routes[i])),
+                            if (i > 0)
+                              Divider(
+                                color: colors.inkFaint,
+                                height: 1,
+                                indent: 16,
+                                endIndent: 16,
+                              ),
+                            _RouteRow(
+                              route: routes[i],
+                              onTap: () => book(routes[i]),
+                            ),
                           ],
                         ],
                       ),
@@ -88,19 +102,18 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'Prices are a guide for a saloon car. Larger vehicles, return journeys and out-of-hours travel are priced on your quote.',
-                      style: TextStyle(fontSize: 12, color: colors.inkMuted, height: 1.4),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.inkMuted,
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-          /*
-           * The fleet, beside the prices it explains. It used to close the
-           * home screen, where it was the longest section on a page whose job
-           * is to start a booking; the page about what things cost is where
-           * "and here is what you would be riding in" belongs.
-           */
+          // The fleet, beside the prices it explains.
           if (vehicles.isNotEmpty) ...[
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
             SliverToBoxAdapter(
@@ -108,7 +121,9 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
                 gutter: 20,
                 vehicles: vehicles,
                 onSelectVehicle: (v) {
-                  ref.read(bookingFlowProvider.notifier).updateJourney(
+                  ref
+                      .read(bookingFlowProvider.notifier)
+                      .updateJourney(
                         (j) => j.copyWith(vehicleCategorySlug: v.slug),
                       );
                   context.push('/book');
@@ -149,21 +164,51 @@ class _RouteRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(route.from, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: colors.inkMuted)),
+                  Text(
+                    route.from,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: colors.inkMuted),
+                  ),
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(Icons.arrow_forward, size: 13, color: colors.inkMuted),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 13,
+                        color: colors.inkMuted,
+                      ),
                       const SizedBox(width: 4),
-                      Flexible(child: Text(route.to, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: colors.ink))),
+                      Flexible(
+                        child: Text(
+                          route.to,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: colors.ink,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 12),
-            Text('from ', style: TextStyle(fontSize: 11, color: colors.inkMuted)),
-            Text(Formatting.money(route.fromPrice), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: colors.ink)),
+            Text(
+              'from ',
+              style: TextStyle(fontSize: 11, color: colors.inkMuted),
+            ),
+            Text(
+              Formatting.money(route.fromPrice),
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                color: colors.ink,
+              ),
+            ),
             const SizedBox(width: 2),
             Icon(Icons.chevron_right, color: colors.inkMuted, size: 20),
           ],

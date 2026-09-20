@@ -11,19 +11,22 @@ import 'package:saints_link/src/widgets/common.dart';
 
 import '../support/fakes.dart';
 
-/// Every screen must build on both grounds: a colour read from the wrong
-/// place shows up here as a missing theme extension or a const error, not on
-/// a customer's phone with dark mode on.
+/// Every screen must build on both grounds.
 void main() {
   Widget app(Widget home, ThemeData theme) => ProviderScope(
-        overrides: [
-          bookingRepositoryProvider.overrideWithValue(FakeBookingRepository()..vehicles = fixtureVehicles()),
-          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-        ],
-        child: MaterialApp(theme: theme, home: home),
-      );
+    overrides: [
+      bookingRepositoryProvider.overrideWithValue(
+        FakeBookingRepository()..vehicles = fixtureVehicles(),
+      ),
+      authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+    ],
+    child: MaterialApp(theme: theme, home: home),
+  );
 
-  for (final (name, theme) in [('light', AppTheme.light()), ('dark', AppTheme.dark())]) {
+  for (final (name, theme) in [
+    ('light', AppTheme.light()),
+    ('dark', AppTheme.dark()),
+  ]) {
     group(name, () {
       testWidgets('home screen', (tester) async {
         await tester.pumpWidget(app(const HomeScreen(), theme));
@@ -35,7 +38,9 @@ void main() {
         expect(find.textContaining('Good '), findsOneWidget);
 
         // The theme toggle sits on the hero and offers the other mode.
-        final toggle = theme.brightness == Brightness.dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded;
+        final toggle = theme.brightness == Brightness.dark
+            ? Icons.light_mode_rounded
+            : Icons.dark_mode_rounded;
         expect(find.byIcon(toggle), findsOneWidget);
       });
 
@@ -55,18 +60,22 @@ void main() {
       });
 
       testWidgets('shared widgets', (tester) async {
-        await tester.pumpWidget(app(
-          const Scaffold(
-            body: Column(children: [
-              ErrorNotice('Something went wrong'),
-              DetailRow('Total', '£125.00'),
-              StatusChip(label: 'Confirmed', status: 'confirmed'),
-              FilledButton(onPressed: null, child: ButtonSpinner()),
-            ]),
-            bottomNavigationBar: BottomAction(child: SizedBox(height: 40)),
+        await tester.pumpWidget(
+          app(
+            const Scaffold(
+              body: Column(
+                children: [
+                  ErrorNotice('Something went wrong'),
+                  DetailRow('Total', '£125.00'),
+                  StatusChip(label: 'Confirmed', status: 'confirmed'),
+                  FilledButton(onPressed: null, child: ButtonSpinner()),
+                ],
+              ),
+              bottomNavigationBar: BottomAction(child: SizedBox(height: 40)),
+            ),
+            theme,
           ),
-          theme,
-        ));
+        );
 
         expect(find.text('Something went wrong'), findsOneWidget);
       });

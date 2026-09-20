@@ -33,21 +33,11 @@ class LocationFix {
   final double longitude;
 }
 
-/// Where the phone is right now.
-///
-/// One method, on purpose: the app never watches location, only asks for it
-/// on a tap. Foreground permission only, requested at that moment and not
-/// before — a prompt on launch is the one most people refuse, and on iOS a
-/// refusal is close to permanent.
+/// Where the phone is right now. Asked for on a tap, never watched, never prompted at launch.
 abstract class LocationSource {
   Future<LocationFix> current();
 
-  /// Whether the app may already read location — a check, never a prompt.
-  ///
-  /// The route maps use it to decide whether to draw the "you are here" dot.
-  /// A customer who has once tapped "Use my current location" gets the dot
-  /// from then on; nobody is asked for anything on a screen with no reason
-  /// to ask.
+  /// A check, never a prompt; the maps use it for the location dot.
   Future<bool> isGranted();
 
   /// Sends the customer to the system settings page for this app, for the
@@ -82,20 +72,17 @@ class GeolocatorLocationSource implements LocationSource {
     }
 
     try {
-      /*
-       * A pickup address wants the house, not the street, so this asks for
-       * the best the device will give. The time limit is what stops a phone
-       * with no sky view from hanging the sheet: past it, the customer is
-       * told and can type instead.
-       */
+      // Best accuracy for a house-level pickup; the time limit stops a hang under no sky.
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.best,
           timeLimit: Duration(seconds: 12),
         ),
       );
 
-      return LocationFix(latitude: position.latitude, longitude: position.longitude);
+      return LocationFix(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
     } on LocationDeniedException {
       rethrow;
     } catch (_) {

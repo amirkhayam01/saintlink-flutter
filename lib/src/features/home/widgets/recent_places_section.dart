@@ -7,18 +7,7 @@ import '../../places/recent_places.dart';
 import '../../../widgets/common.dart';
 import '../../../widgets/list_row.dart';
 
-/// The places this customer keeps going back to, one tap from the front door.
-///
-/// Airport work repeats in a way city hailing does not: the same house to the
-/// same terminal, a few times a year. Those journeys were already remembered —
-/// [recentPlacesProvider] has kept the last few on the device all along — but
-/// they only appeared once the address field was opened, which is one screen
-/// and one tap too late to save anyone anything.
-///
-/// With no history yet there is nothing to show and the section stays out of
-/// the way: the chip row above already offers every shortcut, and repeating
-/// the same four airports as a list directly beneath it would be a copy, not
-/// a convenience.
+/// The places this customer keeps going back to. Hidden with no history: the chips above already offer every shortcut.
 class RecentPlacesSection extends ConsumerWidget {
   const RecentPlacesSection({
     super.key,

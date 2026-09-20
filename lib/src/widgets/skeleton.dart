@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
 /// A shimmering placeholder in the shape of the content that is coming.
-///
-/// Shown while a list loads instead of a spinner: the customer sees the page
-/// they are about to get, and the swap to real content is a fill-in rather
-/// than a jump.
 class Skeleton extends StatefulWidget {
   const Skeleton({super.key, required this.child});
 
@@ -17,8 +13,12 @@ class Skeleton extends StatefulWidget {
   State<Skeleton> createState() => _SkeletonState();
 }
 
-class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+class _SkeletonState extends State<Skeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat();
 
   @override
   void dispose() {
@@ -30,12 +30,16 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (context, child) => Opacity(opacity: 0.55 + 0.45 * (0.5 + 0.5 * -_cos(_controller.value)), child: child),
+      builder: (context, child) => Opacity(
+        opacity: 0.55 + 0.45 * (0.5 + 0.5 * -_cos(_controller.value)),
+        child: child,
+      ),
       child: widget.child,
     );
   }
 
-  static double _cos(double t) => (t * 2 - 1).abs() * 2 - 1; // triangle wave in [-1, 1]
+  static double _cos(double t) =>
+      (t * 2 - 1).abs() * 2 - 1; // triangle wave in [-1, 1]
 }
 
 class SkeletonBox extends StatelessWidget {
@@ -50,7 +54,10 @@ class SkeletonBox extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(color: context.colors.inkFaint, borderRadius: BorderRadius.circular(radius)),
+      decoration: BoxDecoration(
+        color: context.colors.inkFaint,
+        borderRadius: BorderRadius.circular(radius),
+      ),
     );
   }
 }
@@ -70,23 +77,39 @@ class TripListSkeleton extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (_, _) => Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: colors.inkFaint)),
-          child: Row(
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.inkFaint),
+          ),
+          child: const Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SkeletonBox(width: 56, height: 68, radius: 12),
-              const SizedBox(width: 14),
+              SkeletonBox(width: 56, height: 68, radius: 12),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Row(children: [SkeletonBox(width: 60, height: 16), Spacer(), SkeletonBox(width: 80, height: 22, radius: 999)]),
+                  children: [
+                    Row(
+                      children: [
+                        SkeletonBox(width: 60, height: 16),
+                        Spacer(),
+                        SkeletonBox(width: 80, height: 22, radius: 999),
+                      ],
+                    ),
                     SizedBox(height: 14),
                     SkeletonBox(width: 200),
                     SizedBox(height: 10),
                     SkeletonBox(width: 170),
                     SizedBox(height: 14),
-                    Row(children: [SkeletonBox(width: 120), Spacer(), SkeletonBox(width: 60, height: 16)]),
+                    Row(
+                      children: [
+                        SkeletonBox(width: 120),
+                        Spacer(),
+                        SkeletonBox(width: 60, height: 16),
+                      ],
+                    ),
                   ],
                 ),
               ),

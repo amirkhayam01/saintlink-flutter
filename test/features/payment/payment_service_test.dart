@@ -18,26 +18,35 @@ void main() {
 
   late FakeBookingRepository bookings;
 
-  setUp(() => bookings = FakeBookingRepository()
-    ..sheet = testSheet
-    ..nextBooking = bookingWith());
+  setUp(
+    () => bookings = FakeBookingRepository()
+      ..sheet = testSheet
+      ..nextBooking = bookingWith(),
+  );
 
-  test('a test sheet the customer accepts is confirmed with the server', () async {
-    PaymentSheetDetails? shown;
+  test(
+    'a test sheet the customer accepts is confirmed with the server',
+    () async {
+      PaymentSheetDetails? shown;
 
-    final outcome = await PaymentService(bookings).payForBooking('SL-TEST', presentTestSheet: (details) async {
-      shown = details;
+      final outcome = await PaymentService(bookings).payForBooking(
+        'SL-TEST',
+        presentTestSheet: (details) async {
+          shown = details;
 
-      return true;
-    });
+          return true;
+        },
+      );
 
-    expect(outcome, PaymentOutcome.paid);
-    expect(shown?.isTest, isTrue);
-    expect(bookings.confirmedTestPayments, ['SL-TEST']);
-  });
+      expect(outcome, PaymentOutcome.paid);
+      expect(shown?.isTest, isTrue);
+      expect(bookings.confirmedTestPayments, ['SL-TEST']);
+    },
+  );
 
   test('a test sheet the customer dismisses confirms nothing', () async {
-    final outcome = await PaymentService(bookings).payForBooking('SL-TEST', presentTestSheet: (_) async => false);
+    final outcome = await PaymentService(bookings)
+        .payForBooking('SL-TEST', presentTestSheet: (_) async => false);
 
     expect(outcome, PaymentOutcome.cancelled);
     expect(bookings.confirmedTestPayments, isEmpty);

@@ -30,9 +30,7 @@ void main() {
   });
 
   test('restores saved dark mode from SharedPreferences', () async {
-    SharedPreferences.setMockInitialValues({
-      'saintslink_theme_mode': 'dark',
-    });
+    SharedPreferences.setMockInitialValues({'saintslink_theme_mode': 'dark'});
 
     final container = ProviderContainer();
     addTearDown(container.dispose);

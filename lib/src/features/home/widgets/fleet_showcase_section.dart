@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme.dart';
+import '../../../widgets/tiles.dart';
 import '../../../domain/vehicle_category.dart';
 import '../../../widgets/common.dart';
 import '../../../widgets/vehicle_image.dart';
@@ -75,7 +76,7 @@ class _FleetCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: Container(
+          child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: colors.inkFaint),
@@ -112,14 +113,14 @@ class _FleetCard extends StatelessWidget {
                               spacing: 14,
                               runSpacing: 6,
                               children: [
-                                _Capacity(
+                                CapacityChip(
                                   icon: Icons.person_outline_rounded,
-                                  value: vehicle.passengerCapacity,
+                                  count: vehicle.passengerCapacity,
                                   label: 'passengers',
                                 ),
-                                _Capacity(
+                                CapacityChip(
                                   icon: Icons.luggage_outlined,
-                                  value: vehicle.luggageCapacity,
+                                  count: vehicle.luggageCapacity,
                                   label: 'large suitcases',
                                 ),
                               ],
@@ -140,40 +141,6 @@ class _FleetCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Capacity extends StatelessWidget {
-  const _Capacity({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
-  final IconData icon;
-  final int value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: '$value $label',
-      excludeSemantics: true,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: context.colors.inkMuted),
-          const SizedBox(width: 5),
-          Text(
-            '$value',
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.3,
-              color: context.colors.inkMuted,
-            ),
-          ),
-        ],
       ),
     );
   }

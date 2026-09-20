@@ -44,18 +44,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.dispose();
   }
 
-  /*
-   * The switch moves first so it feels immediate, which means a failed save
-   * has to put it back: leaving it flipped would tell the customer we hold a
-   * preference we never stored.
-   */
+  // Optimistic: the switch moves first, and a failed save puts it back.
   Future<void> _saveMarketing(bool consent) async {
     final customer = ref.read(authControllerProvider).customer;
     if (customer == null) return;
 
     setState(() => _marketingConsent = consent);
 
-    final saved = await ref.read(profileControllerProvider.notifier).save(
+    final saved = await ref
+        .read(profileControllerProvider.notifier)
+        .save(
           firstName: customer.firstName,
           lastName: customer.lastName ?? '',
           email: customer.email ?? '',
@@ -126,103 +124,106 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: InkWell(
                 onTap: () => _openEditSheet(customer),
                 child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      alignment: Alignment.center,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.brand,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        _initials(customer),
-                        style: const TextStyle(
-                          color: AppTheme.midnight,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w700,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.brand,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          _initials(customer),
+                          style: const TextStyle(
+                            color: AppTheme.midnight,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    // Details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            customer.name,
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              color: colors.ink,
+                      const SizedBox(width: 14),
+                      // Details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              customer.name,
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                color: colors.ink,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            customer.email?.isNotEmpty == true
-                                ? customer.email!
-                                : 'No email added',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colors.inkMuted,
+                            const SizedBox(height: 3),
+                            Text(
+                              customer.email?.isNotEmpty == true
+                                  ? customer.email!
+                                  : 'No email added',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colors.inkMuted,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            customer.phone.isNotEmpty
-                                ? customer.phone
-                                : customer.maskedPhone,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colors.inkMuted,
+                            const SizedBox(height: 2),
+                            Text(
+                              customer.phone.isNotEmpty
+                                  ? customer.phone
+                                  : customer.maskedPhone,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colors.inkMuted,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Your number is how you sign in. To change it, '
-                            'sign out and sign in with the new one.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              height: 1.3,
-                              color: colors.inkMuted,
+                            const SizedBox(height: 6),
+                            Text(
+                              'Your number is how you sign in. To change it, '
+                              'sign out and sign in with the new one.',
+                              style: TextStyle(
+                                fontSize: 11,
+                                height: 1.3,
+                                color: colors.inkMuted,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 22),
 
             // ── General Section ──
-            SectionTitle('General'),
+            const SectionTitle('General'),
             const SizedBox(height: 8),
             Card(
               clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
-                  ListRow(
+                  const ListRow(
                     icon: Icons.bookmark_rounded,
                     title: 'Favourite locations',
-                    trailing: const _ComingSoon(),
+                    trailing: _ComingSoon(),
                   ),
                   const ListRowDivider(),
-                  ListRow(
+                  const ListRow(
                     icon: Icons.format_size_rounded,
                     title: 'Font size',
-                    trailing: const _ComingSoon(),
+                    trailing: _ComingSoon(),
                   ),
                   const ListRowDivider(),
-                  ListRow(
+                  const ListRow(
                     icon: Icons.vpn_key_rounded,
                     title: 'Ride Pin',
-                    trailing: const _ComingSoon(),
+                    trailing: _ComingSoon(),
                   ),
                   const ListRowDivider(),
                   ListRow(
@@ -259,7 +260,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 22),
 
             // ── Socials Section ──
-            SectionTitle('Socials'),
+            const SectionTitle('Socials'),
             const SizedBox(height: 8),
             Card(
               clipBehavior: Clip.antiAlias,
@@ -286,10 +287,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     onTap: () => openLink(context, Env.facebookUrl),
                   ),
                   const ListRowDivider(),
-                  ListRow(
+                  const ListRow(
                     icon: Icons.share_outlined,
                     title: 'Invite friends',
-                    trailing: const _ComingSoon(),
+                    trailing: _ComingSoon(),
                   ),
                 ],
               ),
@@ -297,7 +298,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 22),
 
             // ── More Section ──
-            SectionTitle('More'),
+            const SectionTitle('More'),
             const SizedBox(height: 8),
             Card(
               clipBehavior: Clip.antiAlias,
@@ -308,10 +309,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     title: 'Call us',
                     trailing: Text(
                       Env.supportPhone,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colors.inkMuted,
-                      ),
+                      style: TextStyle(fontSize: 13, color: colors.inkMuted),
                     ),
                     onTap: () => openLink(
                       context,
@@ -324,12 +322,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     title: 'Email us',
                     trailing: Text(
                       Env.supportEmail,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colors.inkMuted,
-                      ),
+                      style: TextStyle(fontSize: 13, color: colors.inkMuted),
                     ),
-                    onTap: () => openLink(context, 'mailto:${Env.supportEmail}'),
+                    onTap: () =>
+                        openLink(context, 'mailto:${Env.supportEmail}'),
                   ),
                   const ListRowDivider(),
                   ListRow(
@@ -377,30 +373,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   static String _initials(Customer customer) {
-    final parts = [customer.firstName, customer.lastName ?? '']
-        .where((p) => p.isNotEmpty)
-        .map((p) => p[0].toUpperCase())
-        .take(2)
-        .join();
+    final parts = [
+      customer.firstName,
+      customer.lastName ?? '',
+    ].where((p) => p.isNotEmpty).map((p) => p[0].toUpperCase()).take(2).join();
     return parts.isEmpty ? '?' : parts;
   }
 }
 
-/// Marks a row the design shows but no feature stands behind yet. The row
-/// stays visible so the shape of the screen is settled, and stays inert so it
-/// never promises something tapping it cannot deliver.
+/// A row with no feature behind it yet: visible, inert.
 class _ComingSoon extends StatelessWidget {
   const _ComingSoon();
 
   @override
   Widget build(BuildContext context) => Text(
-        'Coming soon',
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: context.colors.inkMuted,
-        ),
-      );
+    'Coming soon',
+    style: TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      color: context.colors.inkMuted,
+    ),
+  );
 }
 
 /// Bottom sheet allowing user to edit their name and email.
@@ -429,7 +422,9 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final saved = await ref.read(profileControllerProvider.notifier).save(
+    final saved = await ref
+        .read(profileControllerProvider.notifier)
+        .save(
           firstName: widget.firstNameController.text,
           lastName: widget.lastNameController.text,
           email: widget.emailController.text,
@@ -496,8 +491,9 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
                   prefixIcon: const Icon(Icons.person_outline, size: 20),
                   errorText: state.fieldErrors['first_name']?.first,
                 ),
-                validator: (v) =>
-                    (v ?? '').trim().isEmpty ? 'Please enter your first name' : null,
+                validator: (v) => (v ?? '').trim().isEmpty
+                    ? 'Please enter your first name'
+                    : null,
               ),
               const SizedBox(height: 14),
 

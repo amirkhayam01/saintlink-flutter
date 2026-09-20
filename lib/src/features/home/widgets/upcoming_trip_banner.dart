@@ -7,11 +7,7 @@ import '../../../core/theme.dart';
 import '../../auth/auth_controller.dart';
 import '../../trips/trips_controller.dart';
 
-/// The customer's next booking as a card, or nothing at all.
-///
-/// Because it is often absent, it owns the gap beneath it: the column it sits
-/// in should not leave one, or the sections below would drift apart when
-/// there is no trip.
+/// The customer's next booking, or nothing. Owns its own spacing so nothing gaps when absent.
 class UpcomingTripBanner extends ConsumerWidget {
   const UpcomingTripBanner({
     super.key,
@@ -51,9 +47,6 @@ class UpcomingTripBanner extends ConsumerWidget {
 
         return Padding(
           padding: EdgeInsets.only(bottom: spacingBelow),
-          // The theme's card, like every other card in the sheet. This one
-          // used to float over the hero and carried the shadow for it; it
-          // sits among its neighbours now and should look like them.
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(16),

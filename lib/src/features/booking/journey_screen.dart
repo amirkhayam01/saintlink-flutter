@@ -16,19 +16,8 @@ import 'google_journey_map.dart';
 import 'journey_draft.dart';
 import 'journey_date_time_sheet.dart';
 
-/// The booking form, in two stages over a map.
-///
-/// First the route: pickup, any stops, destination — and the pins appear on
-/// the map behind the sheet as each one is chosen. Then, once both ends are
-/// named, when and who: date and time, a return, passengers and luggage —
-/// and "See prices". Two short screens instead of one long form, because
-/// the thing a customer wants is a price, and the fewer questions between
-/// them and it the better; the second stage asks only what the price
-/// depends on.
-///
-/// The fields mirror the website's search widget one for one, because the
-/// server validates both against the same rules — a journey the site would
-/// refuse is refused here for the same reason, with the same message.
+/// The booking form in two stages over a map: the route, then only what the price depends on.
+/// Fields mirror the website's search widget; the server validates both the same way.
 class JourneyScreen extends ConsumerStatefulWidget {
   const JourneyScreen({super.key});
 
@@ -39,11 +28,7 @@ class JourneyScreen extends ConsumerStatefulWidget {
 enum _Stage { route, when }
 
 class _JourneyScreenState extends ConsumerState<JourneyScreen> {
-  /*
-   * Always the route first, even when it arrived filled in from a fare card:
-   * the customer sees both ends on the map before being asked anything
-   * else, and a wrong preset is one tap from fixed rather than three.
-   */
+  // Always the route first, even when preset: the customer sees it on the map before anything else.
   _Stage _stage = _Stage.route;
 
   @override
@@ -442,11 +427,6 @@ class _RouteStop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    /*
-     * A caption above the field rather than a label that floats inside it:
-     * the one field style every form in the app now shares, and the one that
-     * has somewhere to put "optional" without crowding the value.
-     */
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

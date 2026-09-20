@@ -7,11 +7,14 @@ import 'common.dart';
 import 'route_timeline.dart';
 import 'vehicle_image.dart';
 
-/// A booking drawn as a ticket: gold stub with the reference, a perforated
-/// edge, then the journey. Used on the confirmation and the trip detail so a
-/// booking looks like the same object the moment it is made and weeks later.
+/// A booking drawn as a ticket, the same on the confirmation and weeks later on the trip.
 class TicketCard extends StatelessWidget {
-  const TicketCard({super.key, required this.booking, this.headline, this.paidOverride = false});
+  const TicketCard({
+    super.key,
+    required this.booking,
+    this.headline,
+    this.paidOverride = false,
+  });
 
   final Booking booking;
 
@@ -31,7 +34,11 @@ class TicketCard extends StatelessWidget {
     final slug = booking.vehicle == null ? null : _slugFor(booking.vehicle!);
 
     return Container(
-      decoration: BoxDecoration(color: colors.card, borderRadius: BorderRadius.circular(24), boxShadow: colors.floatingShadow),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: colors.floatingShadow,
+      ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,17 +53,41 @@ class TicketCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text((headline ?? booking.statusLabel).toUpperCase(), style: const TextStyle(color: AppTheme.midnight, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                      Text(
+                        (headline ?? booking.statusLabel).toUpperCase(),
+                        style: const TextStyle(
+                          color: AppTheme.midnight,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                        ),
+                      ),
                       const SizedBox(height: 6),
-                      Text(booking.reference, style: const TextStyle(color: AppTheme.midnight, fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 1.5, height: 1)),
+                      Text(
+                        booking.reference,
+                        style: const TextStyle(
+                          color: AppTheme.midnight,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
+                          height: 1,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Container(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(color: AppTheme.midnight, borderRadius: BorderRadius.circular(14)),
-                  child: Icon(paid ? Icons.verified : Icons.check, color: AppTheme.brand, size: 24),
+                  decoration: BoxDecoration(
+                    color: AppTheme.midnight,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    paid ? Icons.verified : Icons.check,
+                    color: AppTheme.brand,
+                    size: 24,
+                  ),
                 ),
               ],
             ),
@@ -72,17 +103,32 @@ class TicketCard extends StatelessWidget {
                     if (outbound != null) ...[
                       RoutePoint(
                         address: outbound.pickupAddress,
-                        label: outbound.pickupAt == null ? 'Pickup' : Formatting.dateAndTime(outbound.pickupAt!),
-                        detail: outbound.flight == null ? null : 'Flight ${outbound.flight!.number}${outbound.flight!.terminal == null ? '' : ' · ${outbound.flight!.terminal}'}',
+                        label: outbound.pickupAt == null
+                            ? 'Pickup'
+                            : Formatting.dateAndTime(outbound.pickupAt!),
+                        detail: outbound.flight == null
+                            ? null
+                            : 'Flight ${outbound.flight!.number}${outbound.flight!.terminal == null ? '' : ' · ${outbound.flight!.terminal}'}',
                       ),
-                      for (final stop in outbound.viaStops) RoutePoint(address: stop.address, label: 'Stop'),
+                      for (final stop in outbound.viaStops)
+                        RoutePoint(address: stop.address, label: 'Stop'),
                       RoutePoint(
                         address: outbound.dropoffAddress,
-                        label: returnLeg?.pickupAt == null ? 'Destination' : 'Return ${Formatting.dateAndTime(returnLeg!.pickupAt!)}',
+                        label: returnLeg?.pickupAt == null
+                            ? 'Destination'
+                            : 'Return ${Formatting.dateAndTime(returnLeg!.pickupAt!)}',
                       ),
                     ] else ...[
-                      RoutePoint(address: booking.pickupAddress ?? '', label: booking.pickupAt == null ? 'Pickup' : Formatting.dateAndTime(booking.pickupAt!)),
-                      RoutePoint(address: booking.dropoffAddress ?? '', label: 'Destination'),
+                      RoutePoint(
+                        address: booking.pickupAddress ?? '',
+                        label: booking.pickupAt == null
+                            ? 'Pickup'
+                            : Formatting.dateAndTime(booking.pickupAt!),
+                      ),
+                      RoutePoint(
+                        address: booking.dropoffAddress ?? '',
+                        label: 'Destination',
+                      ),
                     ],
                   ],
                 ),
@@ -92,21 +138,39 @@ class TicketCard extends StatelessWidget {
                 Row(
                   children: [
                     if (slug != null) ...[
-                      ClipRRect(borderRadius: BorderRadius.circular(10), child: SizedBox(width: 64, height: 44, child: VehicleImage(slug))),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          width: 64,
+                          height: 44,
+                          child: VehicleImage(slug),
+                        ),
+                      ),
                       const SizedBox(width: 12),
                     ],
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(booking.vehicle ?? 'Vehicle to be confirmed', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                          Text(
+                            booking.vehicle ?? 'Vehicle to be confirmed',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                          ),
                           Text(
                             [
-                              if (outbound != null) '${outbound.passengerCount} passenger${outbound.passengerCount == 1 ? '' : 's'}',
+                              if (outbound != null)
+                                '${outbound.passengerCount} passenger${outbound.passengerCount == 1 ? '' : 's'}',
                               if (booking.isReturn) 'return',
-                              if (outbound?.meetAndGreet == true) 'meet & greet',
+                              if (outbound?.meetAndGreet == true)
+                                'meet & greet',
                             ].join(' · '),
-                            style: TextStyle(color: colors.inkMuted, fontSize: 12),
+                            style: TextStyle(
+                              color: colors.inkMuted,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -114,8 +178,21 @@ class TicketCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(Formatting.money(booking.totalAmount, booking.currency), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20, letterSpacing: -0.3)),
-                        StatusChip(label: paid ? 'Paid' : booking.paymentStatusLabel, status: paid ? 'confirmed' : 'pending'),
+                        Text(
+                          Formatting.money(
+                            booking.totalAmount,
+                            booking.currency,
+                          ),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 20,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        StatusChip(
+                          label: paid ? 'Paid' : booking.paymentStatusLabel,
+                          status: paid ? 'confirmed' : 'pending',
+                        ),
                       ],
                     ),
                   ],
@@ -128,9 +205,7 @@ class TicketCard extends StatelessWidget {
     );
   }
 
-  /// The API sends the vehicle's display name on a booking, not its slug; the
-  /// photo is looked up by the name's slug form, which is how the fleet is
-  /// named on the server too.
+  /// Bookings carry the vehicle's display name; the photo is found by its slug form.
   String _slugFor(String name) {
     final lower = name.toLowerCase();
     if (lower.contains('minibus')) return 'minibus-8';
@@ -162,7 +237,10 @@ class _Perforation extends StatelessWidget {
             left: 24,
             right: 24,
             top: 11,
-            child: CustomPaint(size: const Size(double.infinity, 2), painter: _DashPainter(colors.inkFaint)),
+            child: CustomPaint(
+              size: const Size(double.infinity, 2),
+              painter: _DashPainter(colors.inkFaint),
+            ),
           ),
         ],
       ),
@@ -176,7 +254,11 @@ class _Notch extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Container(width: 24, height: 24, decoration: BoxDecoration(shape: BoxShape.circle, color: color));
+  Widget build(BuildContext context) => Container(
+    width: 24,
+    height: 24,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+  );
 }
 
 class _DashPainter extends CustomPainter {

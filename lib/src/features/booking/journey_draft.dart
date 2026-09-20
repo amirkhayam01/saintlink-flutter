@@ -5,18 +5,9 @@ import '../../domain/place.dart';
 
 part 'journey_draft.freezed.dart';
 
-/// The journey being built, and the single source of the request payload.
-///
-/// This is the most important object in the app, for a reason that is not
-/// obvious: the server fingerprints the journey when it prices it, and refuses
-/// the booking if the fingerprint no longer matches when the customer confirms.
-/// Whitespace, a changed passenger count, a re-typed address — any of it ends
-/// the match and costs the customer their quote.
-///
-/// So the payload is built here, once, and both the quote request and the
-/// booking request are derived from [_journeyFields]. Screens change this
-/// object; they never assemble a request of their own. If a field must be added
-/// to one call, it belongs in [_journeyFields] or in neither.
+/// The journey being built, and the single source of both request payloads.
+/// The server fingerprints what it priced and refuses a booking that differs, so
+/// every field goes through [_journeyFields] or nowhere.
 @freezed
 abstract class JourneyDraft with _$JourneyDraft {
   const JourneyDraft._();
@@ -62,10 +53,7 @@ abstract class JourneyDraft with _$JourneyDraft {
 
   bool get isAirportPickup => pickup.address.toLowerCase().contains('airport');
 
-  /// The journey fields, exactly as the server names them.
-  ///
-  /// Shared by both requests so the fingerprint the server computes at booking
-  /// time is the one it computed when it priced the quote.
+  /// The journey fields as the server names them, shared by both requests.
   Map<String, dynamic> _journeyFields() {
     return <String, dynamic>{
       'pickup_address': pickup.address.trim(),
@@ -108,11 +96,7 @@ abstract class JourneyDraft with _$JourneyDraft {
 
   Map<String, dynamic> toQuotePayload() => _journeyFields();
 
-  /// The booking request: the same journey, plus who is travelling.
-  ///
-  /// The vehicle is required here and absent from the quote, because the quote
-  /// prices every vehicle and the customer picks one afterwards. It is not part
-  /// of the fingerprint, so adding it does not invalidate the quote.
+  /// The booking request: the journey plus vehicle and passenger. The vehicle is outside the fingerprint.
   Map<String, dynamic> toBookingPayload({
     required String quoteToken,
     required String vehicleCategorySlug,
@@ -167,9 +151,7 @@ abstract class JourneyDraft with _$JourneyDraft {
   static bool _isFilled(String? value) =>
       value != null && value.trim().isNotEmpty;
 
-  /// Formatted by hand, not with intl: the server parses these in Europe/London
-  /// and expects a plain calendar date and wall-clock time, so a locale-aware
-  /// formatter is exactly the wrong tool.
+  /// Plain calendar date and wall-clock time; a locale-aware formatter is the wrong tool.
   static String _formatDate(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-'
       '${date.month.toString().padLeft(2, '0')}-'

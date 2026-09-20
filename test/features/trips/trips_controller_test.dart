@@ -17,7 +17,9 @@ void main() {
         [bookingWith(reference: 'SL-3'), bookingWith(reference: 'SL-2')],
         [bookingWith(reference: 'SL-1')],
       ];
-    container = ProviderContainer.test(overrides: [bookingRepositoryProvider.overrideWithValue(bookings)]);
+    container = ProviderContainer.test(
+      overrides: [bookingRepositoryProvider.overrideWithValue(bookings)],
+    );
     // autoDispose: hold a listener the way the screen does.
     keepAlive = container.listen(tripsProvider, (_, _) {});
   });
@@ -47,17 +49,20 @@ void main() {
     expect(bookings.pagesRequested, [1, 2]);
   });
 
-  test('a failed page keeps what was loaded and exposes the error to retry', () async {
-    bookings.pageError = const ApiException('You appear to be offline.');
-    await container.read(tripsProvider.future);
+  test(
+    'a failed page keeps what was loaded and exposes the error to retry',
+    () async {
+      bookings.pageError = const ApiException('You appear to be offline.');
+      await container.read(tripsProvider.future);
 
-    await container.read(tripsProvider.notifier).loadMore();
+      await container.read(tripsProvider.notifier).loadMore();
 
-    final state = container.read(tripsProvider).requireValue;
-    expect(state.bookings, hasLength(2));
-    expect(state.loadMoreError, 'You appear to be offline.');
-    expect(state.hasMore, isTrue);
-  });
+      final state = container.read(tripsProvider).requireValue;
+      expect(state.bookings, hasLength(2));
+      expect(state.loadMoreError, 'You appear to be offline.');
+      expect(state.hasMore, isTrue);
+    },
+  );
 
   test('invalidating reloads from the first page', () async {
     await container.read(tripsProvider.future);
@@ -73,8 +78,12 @@ void main() {
   test('upcoming and past are split from whatever is loaded', () async {
     bookings.pages = [
       [
-        bookingWith(reference: 'FUTURE').copyWith(pickupAt: DateTime.now().add(const Duration(days: 3))),
-        bookingWith(reference: 'DONE').copyWith(status: 'completed', pickupAt: DateTime.now().subtract(const Duration(days: 3))),
+        bookingWith(reference: 'FUTURE')
+            .copyWith(pickupAt: DateTime.now().add(const Duration(days: 3))),
+        bookingWith(reference: 'DONE').copyWith(
+          status: 'completed',
+          pickupAt: DateTime.now().subtract(const Duration(days: 3)),
+        ),
       ],
     ];
     container.invalidate(tripsProvider);

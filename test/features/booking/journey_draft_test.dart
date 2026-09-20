@@ -4,22 +4,22 @@ import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/domain/quote.dart';
 import 'package:saints_link/src/features/booking/journey_draft.dart';
 
-/*
- * The server fingerprints the journey fields when it prices a quote and refuses
- * a booking whose fields differ. These tests pin the payload shape: a change
- * here that passes silently would surface as "Journey details changed" for
- * every customer at the last step of checkout.
- */
+// The server fingerprints these fields; a silent change here would refuse every booking at checkout.
 JourneyDraft quotableDraft() => JourneyDraft(
-      pickup: const PlaceSelection(address: 'Southampton'),
-      dropoff: const PlaceSelection(address: 'Heathrow'),
-      pickupDate: DateTime(2026, 9, 12),
-      pickupTime: const TimeOfDay(hour: 9, minute: 5),
-    );
+  pickup: const PlaceSelection(address: 'Southampton'),
+  dropoff: const PlaceSelection(address: 'Heathrow'),
+  pickupDate: DateTime(2026, 9, 12),
+  pickupTime: const TimeOfDay(hour: 9, minute: 5),
+);
 
 void main() {
   final draft = JourneyDraft(
-    pickup: const PlaceSelection(address: '  Southampton Central  Station ', placeId: 'p1', latitude: 50.9, longitude: -1.4),
+    pickup: const PlaceSelection(
+      address: '  Southampton Central  Station ',
+      placeId: 'p1',
+      latitude: 50.9,
+      longitude: -1.4,
+    ),
     dropoff: const PlaceSelection(address: 'Heathrow Airport Terminal 5'),
     pickupDate: DateTime(2026, 9, 12),
     pickupTime: const TimeOfDay(hour: 9, minute: 5),
@@ -44,39 +44,49 @@ void main() {
     expect(payload['via_addresses'], isEmpty);
   });
 
-  test('booking payload carries every journey field unchanged plus the customer', () {
-    final quote = draft.toQuotePayload();
-    final booking = draft.toBookingPayload(
-      quoteToken: 'tok',
-      vehicleCategorySlug: 'saloon-car',
-      customerName: ' Alex Rivers ',
-      customerPhone: '07700 900123',
-      customerEmail: 'Alex@Example.com',
-    );
+  test(
+    'booking payload carries every journey field unchanged plus the customer',
+    () {
+      final quote = draft.toQuotePayload();
+      final booking = draft.toBookingPayload(
+        quoteToken: 'tok',
+        vehicleCategorySlug: 'saloon-car',
+        customerName: ' Alex Rivers ',
+        customerPhone: '07700 900123',
+        customerEmail: 'Alex@Example.com',
+      );
 
-    for (final entry in quote.entries) {
-      expect(booking[entry.key], entry.value, reason: entry.key);
-    }
-    expect(booking['quote_token'], 'tok');
-    expect(booking['vehicle_category'], 'saloon-car');
-    expect(booking['customer_name'], 'Alex Rivers');
-    expect(booking['customer_email'], 'alex@example.com');
-    expect(booking['terms_accepted'], isTrue);
-    expect(booking.containsKey('special_instructions'), isFalse);
-  });
+      for (final entry in quote.entries) {
+        expect(booking[entry.key], entry.value, reason: entry.key);
+      }
+      expect(booking['quote_token'], 'tok');
+      expect(booking['vehicle_category'], 'saloon-car');
+      expect(booking['customer_name'], 'Alex Rivers');
+      expect(booking['customer_email'], 'alex@example.com');
+      expect(booking['terms_accepted'], isTrue);
+      expect(booking.containsKey('special_instructions'), isFalse);
+    },
+  );
 
-  test('a return journey sends both legs and switching it off drops the dates', () {
-    final withReturn = draft.copyWith(isReturn: true, returnDate: DateTime(2026, 9, 14), returnTime: const TimeOfDay(hour: 18, minute: 30));
+  test(
+    'a return journey sends both legs and switching it off drops the dates',
+    () {
+      final withReturn = draft.copyWith(
+        isReturn: true,
+        returnDate: DateTime(2026, 9, 14),
+        returnTime: const TimeOfDay(hour: 18, minute: 30),
+      );
 
-    expect(withReturn.isQuotable, isTrue);
-    expect(withReturn.toQuotePayload()['journey_type'], 'return');
-    expect(withReturn.toQuotePayload()['return_date'], '2026-09-14');
-    expect(withReturn.toQuotePayload()['return_time'], '18:30');
+      expect(withReturn.isQuotable, isTrue);
+      expect(withReturn.toQuotePayload()['journey_type'], 'return');
+      expect(withReturn.toQuotePayload()['return_date'], '2026-09-14');
+      expect(withReturn.toQuotePayload()['return_time'], '18:30');
 
-    final without = withReturn.withoutReturn();
-    expect(without.returnDate, isNull);
-    expect(without.toQuotePayload().containsKey('return_time'), isFalse);
-  });
+      final without = withReturn.withoutReturn();
+      expect(without.returnDate, isNull);
+      expect(without.toQuotePayload().containsKey('return_time'), isFalse);
+    },
+  );
 
   test('is not quotable when the two ends are the same place or a return is incomplete', () {
     expect(draft.copyWith(dropoff: draft.pickup).isQuotable, isFalse);
@@ -117,23 +127,37 @@ void main() {
     });
 
     test('can be set and removed by index', () {
-      final draft = quotableDraft().addViaStop().addViaStop().setViaStop(1, const PlaceSelection(address: 'Winchester'));
+      final draft = quotableDraft().addViaStop().addViaStop().setViaStop(
+        1,
+        const PlaceSelection(address: 'Winchester'),
+      );
 
       expect(draft.via[1].address, 'Winchester');
       expect(draft.removeViaStop(0).via.single.address, 'Winchester');
     });
 
-    test('unfilled stops are left out of the payload, with waypoints kept aligned', () {
-      final payload = quotableDraft()
-          .addViaStop()
-          .addViaStop()
-          .setViaStop(1, const PlaceSelection(address: 'Winchester', placeId: 'w', latitude: 51.06, longitude: -1.31))
-          .toQuotePayload();
+    test(
+      'unfilled stops are left out of the payload, with waypoints kept aligned',
+      () {
+        final payload = quotableDraft()
+            .addViaStop()
+            .addViaStop()
+            .setViaStop(
+              1,
+              const PlaceSelection(
+                address: 'Winchester',
+                placeId: 'w',
+                latitude: 51.06,
+                longitude: -1.31,
+              ),
+            )
+            .toQuotePayload();
 
-      expect(payload['via_addresses'], ['Winchester']);
-      expect(payload['via_waypoints'], [
-        {'place_id': 'w', 'lat': 51.06, 'lng': -1.31},
-      ]);
-    });
+        expect(payload['via_addresses'], ['Winchester']);
+        expect(payload['via_waypoints'], [
+          {'place_id': 'w', 'lat': 51.06, 'lng': -1.31},
+        ]);
+      },
+    );
   });
 }

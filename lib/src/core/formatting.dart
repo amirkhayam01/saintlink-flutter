@@ -1,12 +1,6 @@
 import 'package:intl/intl.dart';
 
-/// Presentation formatting, kept in one place so a date reads the same on every
-/// screen.
-///
-/// All server times arrive as ISO 8601 and are converted to the device's local
-/// zone when parsed. The business runs on Europe/London, which for a UK customer
-/// is their own zone — the distinction only shows for someone booking from
-/// abroad, and showing them their own local time is the honest choice.
+/// Presentation formatting. Server times are already local by the time they get here.
 class Formatting {
   const Formatting._();
 

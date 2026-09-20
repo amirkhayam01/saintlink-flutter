@@ -10,11 +10,7 @@ import 'package:saints_link/src/router.dart';
 import '../support/fakes.dart';
 
 void main() {
-  /*
-   * The form is pushed over the shell, so the only way back to Home from
-   * inside it is the back arrow — there is no tab bar underneath to tap.
-   * Two doors in: the "Plan a journey" button, and a direct route push.
-   */
+  // The form pushes over the shell, so back is the only way home; two doors in.
   for (final viaButton in [true, false]) {
     testWidgets(
       'returning Home resets booking, entered via ${viaButton ? 'the button' : 'the route'}',
@@ -107,11 +103,7 @@ void main() {
     await tester.pumpAndSettle();
     final journey = container.read(bookingFlowProvider).journey;
     expect(journey.pickup.isEmpty, isTrue);
-    /*
-     * The server's own name for the place, from the one shortcut list, rather
-     * than a second hand-written spelling of it. The coordinates are the
-     * app's: the server places the name from its own catalogue.
-     */
+    // The server's own name for the place, from the one shortcut list.
     expect(journey.dropoff.address, 'Heathrow Airport');
     expect(journey.dropoff.isLocated, isTrue);
     expect(journey.pickupDate, isNull);

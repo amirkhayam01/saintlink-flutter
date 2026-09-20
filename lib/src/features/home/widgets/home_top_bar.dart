@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
 import '../../auth/auth_controller.dart';
 
-/// The account affordance in the hero's top-right corner: the customer's
-/// initial and first name when signed in, a gold "Sign in" pill otherwise.
-/// Translucent so it sits on the photo like [HeroIconButton] does.
+/// The account chip in the hero: initial and first name, or a "Sign in" pill.
 class HomeAccountChip extends StatelessWidget {
   const HomeAccountChip({
     super.key,

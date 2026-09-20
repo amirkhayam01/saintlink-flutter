@@ -21,20 +21,13 @@ abstract class TripsState with _$TripsState {
 
   bool get hasMore => page.hasMore;
 
-  /*
-   * The split into tabs is done here, not on the server. The list is newest
-   * first, so a booking made long ago for a date still to come can sit on a
-   * later page — "load more" is how the customer reaches it.
-   */
+  // Split into tabs here; the server lists newest first, so an old booking for a future date can be on a later page.
   List<Booking> get upcoming => bookings.where((b) => b.isUpcoming).toList();
 
   List<Booking> get past => bookings.where((b) => !b.isUpcoming).toList();
 }
 
-/// The signed-in customer's bookings, a page at a time.
-///
-/// Invalidating the provider (after a payment or a cancellation) reloads from
-/// the first page; [loadMore] appends the next one.
+/// The customer's bookings, a page at a time. Invalidate to reload; [loadMore] appends.
 class TripsController extends AsyncNotifier<TripsState> {
   @override
   Future<TripsState> build() async {

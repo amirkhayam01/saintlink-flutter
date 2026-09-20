@@ -15,13 +15,7 @@ import '../payment/test_payment_sheet.dart';
 import '../../domain/booking.dart';
 import 'booking_flow_controller.dart';
 
-/// The booking exists. Now take payment, if payments are on.
-///
-/// The booking is created before the card is asked for, so a customer who
-/// abandons the payment sheet still has a booking the office can chase — and
-/// still has the confirmation email. `can_pay` from the server decides whether
-/// a pay button appears at all; while payments are disabled the office confirms
-/// and takes payment on the day.
+/// The booking exists; take payment if the server says it can be paid now.
 class ConfirmationScreen extends ConsumerStatefulWidget {
   const ConfirmationScreen({super.key});
 

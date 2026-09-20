@@ -102,116 +102,6 @@ class ServiceTile extends StatelessWidget {
   }
 }
 
-/// A tappable form row: small uppercase label over the value, leading icon,
-/// trailing chevron. Every picker in the journey form is one of these, so the
-/// form reads as a list of decisions rather than a stack of text boxes.
-class FieldTile extends StatelessWidget {
-  const FieldTile({
-    super.key,
-    required this.icon,
-    required this.label,
-    this.value,
-    required this.placeholder,
-    required this.onTap,
-    this.trailing,
-    this.error,
-    this.dense = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String? value;
-  final String placeholder;
-  final VoidCallback onTap;
-  final Widget? trailing;
-  final String? error;
-
-  /// Half-width tiles (date beside time) drop the chevron to save room.
-  final bool dense;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final hasValue = value != null && value!.isNotEmpty;
-    final hasError = error != null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Material(
-          color: colors.card,
-          borderRadius: BorderRadius.circular(14),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: Container(
-              padding: EdgeInsets.fromLTRB(14, 12, dense ? 12 : 10, 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: hasError ? AppTheme.danger : colors.inkFaint,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    icon,
-                    size: 20,
-                    color: hasValue ? colors.accent : colors.inkMuted,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          label.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.6,
-                            color: colors.inkMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          hasValue ? value! : placeholder,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: hasValue
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                            color: hasValue ? colors.ink : colors.placeholder,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (trailing != null)
-                    trailing!
-                  else if (!dense)
-                    Icon(Icons.chevron_right, color: colors.inkMuted),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (hasError)
-          Padding(
-            padding: const EdgeInsets.only(left: 14, top: 6),
-            child: Text(
-              error!,
-              style: const TextStyle(color: AppTheme.danger, fontSize: 12),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 /// A pill-shaped two-or-three-way switch, for Upcoming / Past and the price
 /// list filters.
 class SegmentedTabs extends StatelessWidget {
@@ -443,9 +333,7 @@ class FieldLabel extends StatelessWidget {
   }
 }
 
-/// The same small-caps label a field wears, over a group of rows in a list —
-/// "Airports and ports", "Recent". One voice for "here is what follows",
-/// whether what follows is an input or a list.
+/// The field caption's small-caps style, over a group of rows.
 class GroupLabel extends StatelessWidget {
   const GroupLabel(this.text, {super.key});
 
@@ -464,4 +352,36 @@ class GroupLabel extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// "4 passengers" as an icon and a number, read out in full.
+class CapacityChip extends StatelessWidget {
+  const CapacityChip({
+    super.key,
+    required this.icon,
+    required this.count,
+    required this.label,
+  });
+
+  final IconData icon;
+  final int count;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = context.colors.inkMuted;
+
+    return Semantics(
+      label: '$count $label',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: muted),
+          const SizedBox(width: 4),
+          Text('$count', style: TextStyle(fontSize: 13, color: muted)),
+        ],
+      ),
+    );
+  }
 }

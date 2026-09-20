@@ -5,11 +5,7 @@ import '../../../domain/place.dart';
 import '../../places/place_autocomplete_field.dart';
 import '../../places/recent_places.dart';
 
-/// The "Where can we take you?" bar that opens the booking form, with a row
-/// of popular destinations under it that preset the form in one tap.
-///
-/// The chip row scrolls edge to edge, so the launcher takes the screen's
-/// [gutter] and applies it itself rather than living inside a padded column.
+/// The "Where can we take you?" bar and the shortcut chips. Applies its own [gutter] so the chips can bleed to the edge.
 class SearchLauncher extends StatelessWidget {
   const SearchLauncher({
     super.key,
@@ -22,20 +18,10 @@ class SearchLauncher extends StatelessWidget {
   final ValueChanged<PlaceSelection> onSelectHub;
   final double gutter;
 
-  /*
-   * The chips are the shortcut list itself rather than a second copy of it.
-   * They used to carry their own hand-written address strings — "London
-   * Heathrow Airport (LHR)" — beside a list that already held the server's
-   * own name for the same place. One source now. Note the coordinates are for
-   * the app's benefit only: the server places a name like "Heathrow Airport"
-   * from its own catalogue and, rightly, discards any position it did not
-   * verify against Google itself.
-   */
+  // The chips are `shortcutPlaces` itself, so the server's names are the only spelling.
   static const _hubIcon = Icons.flight_takeoff_rounded;
 
-  /// The codes travellers actually recognise, kept beside the chip rather than
-  /// inside the place: an IATA code belongs to an airport, not to one end of
-  /// somebody's journey.
+  /// IATA codes for the chip labels; they belong to the airport, not the place.
   static const _codes = {
     'Heathrow Airport': 'LHR',
     'Gatwick Airport': 'LGW',

@@ -41,9 +41,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation.startsWith('/trips') ||
           state.matchedLocation.startsWith('/profile');
 
-      // Until the stored session has been checked, nobody is sent anywhere:
-      // bouncing a signed-in customer to the sign-in screen for half a second
-      // on every launch is exactly the flicker this avoids.
+      // No redirects until the stored session is checked, or every launch flickers past sign-in.
       if (auth.isRestoring) return null;
 
       if (needsSignIn && !auth.isSignedIn) {
@@ -119,12 +117,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      /*
-       * The booking form is a task the customer steps into and back out of,
-       * not a place they live: it pushes over the shell with a back arrow
-       * rather than occupying a tab. Every door into it — the search bar, a
-       * shortcut chip, Go again, a service tile, a fare card — lands here.
-       */
+      // The booking form pushes over the shell rather than living in a tab.
       GoRoute(
         path: '/book',
         parentNavigatorKey: _rootNavigatorKey,

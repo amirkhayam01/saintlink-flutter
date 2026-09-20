@@ -20,7 +20,8 @@ abstract class PaymentSheetDetails with _$PaymentSheetDetails {
     required String currency,
   }) = _PaymentSheetDetails;
 
-  factory PaymentSheetDetails.fromJson(Map<String, dynamic> json) => _$PaymentSheetDetailsFromJson(json);
+  factory PaymentSheetDetails.fromJson(Map<String, dynamic> json) =>
+      _$PaymentSheetDetailsFromJson(json);
 
   bool get isTest => provider == 'fake';
 }

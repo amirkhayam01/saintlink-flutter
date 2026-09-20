@@ -1,9 +1,4 @@
-/// A failure the customer can be shown.
-///
-/// The API answers a refused request with a `message` already written for a
-/// customer to read — an expired quote, a wrong code, a journey that cannot be
-/// priced — so the app's job is to display it, not to invent its own wording.
-/// Anything without one gets a neutral fallback rather than a stack trace.
+/// A failure with a message the customer can be shown, as the API wrote it.
 class ApiException implements Exception {
   const ApiException(
     this.message, {

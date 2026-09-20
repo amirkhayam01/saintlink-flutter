@@ -11,15 +11,24 @@ void main() {
     expect(quote.expiresAt.isUtc, isFalse);
     expect(quote.distanceMiles, 68.9);
     expect(quote.estimatedDurationMinutes, 117);
-    expect(quote.fares.keys, ['saloon-car', 'estate-car', 'executive-saloon', 'mpv-6', 'minibus-8']);
+    expect(quote.fares.keys, [
+      'saloon-car',
+      'estate-car',
+      'executive-saloon',
+      'mpv-6',
+      'minibus-8',
+    ]);
   });
 
-  test('whole-number fares arrive as JSON integers and are read as doubles', () {
-    final saloon = quote.fareFor('saloon-car')!;
+  test(
+    'whole-number fares arrive as JSON integers and are read as doubles',
+    () {
+      final saloon = quote.fareFor('saloon-car')!;
 
-    expect(saloon.single, 125.0);
-    expect(saloon.returnTotal, 250.0);
-  });
+      expect(saloon.single, 125.0);
+      expect(saloon.returnTotal, 250.0);
+    },
+  );
 
   test('a vehicle the engine could not price is not available', () {
     expect(quote.isAvailable('minibus-8'), isTrue);

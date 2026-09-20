@@ -11,13 +11,11 @@ abstract class PlaceSuggestion with _$PlaceSuggestion {
     required String description,
   }) = _PlaceSuggestion;
 
-  factory PlaceSuggestion.fromJson(Map<String, dynamic> json) => _$PlaceSuggestionFromJson(json);
+  factory PlaceSuggestion.fromJson(Map<String, dynamic> json) =>
+      _$PlaceSuggestionFromJson(json);
 }
 
-/// One end of a journey, as the customer chose it.
-///
-/// Built from `/places/details` when a suggestion is picked, or from typed
-/// text alone when it is not.
+/// One end of a journey: a picked suggestion, or typed text alone.
 @freezed
 abstract class PlaceSelection with _$PlaceSelection {
   const PlaceSelection._();
@@ -29,17 +27,13 @@ abstract class PlaceSelection with _$PlaceSelection {
     double? longitude,
   }) = _PlaceSelection;
 
-  factory PlaceSelection.fromJson(Map<String, dynamic> json) => _$PlaceSelectionFromJson(json);
+  factory PlaceSelection.fromJson(Map<String, dynamic> json) =>
+      _$PlaceSelectionFromJson(json);
 
   static const empty = PlaceSelection(address: '');
 
   bool get isEmpty => address.trim().isEmpty;
 
-  /// Whether the pricing engine can measure from this rather than guess.
-  ///
-  /// An address typed by hand and never picked from the suggestions has no
-  /// coordinates. It can still be priced — the server falls back to matching
-  /// the text against its own known locations — but far less precisely, so the
-  /// form nudges the customer to choose a suggestion.
+  /// Typed-only addresses have no coordinates and are priced by text matching; the form nudges toward a suggestion.
   bool get isLocated => latitude != null && longitude != null;
 }

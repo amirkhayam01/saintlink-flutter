@@ -18,15 +18,8 @@ import 'widgets/services_grid.dart';
 import 'widgets/trust_strip.dart';
 import 'widgets/upcoming_trip_banner.dart';
 
-/// The front door, and where a booking starts.
-///
-/// Photo hero with the greeting, then a sheet that rides up over it. What a
-/// returning customer needs sits at the top, in the order they need it: the
-/// trip they already have, where to next, the places they keep going back
-/// to, and a plain door into the full form. The four service tiles, the
-/// trust promises and the popular fares follow for anyone still deciding.
-/// The booking form itself lives on /book, pushed over this screen; every
-/// tile here just presets it.
+/// The front door. What a returning customer needs sits at the top; the marketing follows.
+/// Every tile presets the form on /book, pushed over this screen.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -126,7 +119,6 @@ class HomeScreen extends ConsumerWidget {
                         child: UpcomingTripBanner(auth: auth, spacingBelow: 16),
                       ),
                       SearchLauncher(
-                        gutter: gutter,
                         onSelectPlace: (place) =>
                             presetAndBook((j) => j.copyWith(dropoff: place)),
                         onSelectHub: (place) =>
@@ -144,19 +136,16 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               spacingBelow: 18,
                             ),
-                            /*
-                             * The one explicit door into the whole form, for
-                             * someone who wants to set the pickup, the date or
-                             * a return before naming a destination. The Book
-                             * tab used to be this; a button under the search
-                             * is where a hand already is.
-                             */
+                            // The one explicit door into the full form, replacing the old Book tab.
                             FilledButton.icon(
                               onPressed: () {
                                 bookingController.reset();
                                 context.push('/book');
                               },
-                              icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+                              icon: const Icon(
+                                Icons.edit_calendar_outlined,
+                                size: 18,
+                              ),
                               label: const Text('Plan a journey'),
                             ),
                             const SizedBox(height: sectionGap),
@@ -189,7 +178,6 @@ class HomeScreen extends ConsumerWidget {
             const SliverToBoxAdapter(child: SizedBox(height: sectionGap)),
             SliverToBoxAdapter(
               child: PopularFaresSection(
-                gutter: gutter,
                 onSelectFare: (from, to) => presetAndBook(
                   (j) => j.copyWith(
                     pickup: PlaceSelection(address: from),

@@ -55,58 +55,6 @@ Future<PlaceSelection?> showAddressSearchSheet(
   );
 }
 
-/// An address field that opens the shared search sheet.
-class AddressField extends StatelessWidget {
-  const AddressField({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    this.icon = Icons.place_outlined,
-  });
-
-  final String label;
-  final PlaceSelection value;
-  final ValueChanged<PlaceSelection> onChanged;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () async {
-        final selection = await showAddressSearchSheet(
-          context,
-          title: label,
-          initial: value,
-        );
-
-        if (selection != null && context.mounted) onChanged(selection);
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon),
-          suffixIcon: value.isEmpty
-              ? null
-              : Icon(
-                  value.isLocated ? Icons.check_circle : Icons.info_outline,
-                  color: value.isLocated
-                      ? AppTheme.success
-                      : context.colors.accent,
-                ),
-        ),
-        isEmpty: value.isEmpty,
-        child: Text(
-          value.address,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    );
-  }
-}
-
 class AddressSearchScreen extends ConsumerStatefulWidget {
   const AddressSearchScreen({
     super.key,
@@ -219,12 +167,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
     }
   }
 
-  /*
-   * Two steps, and either can fail for a reason the customer can act on: the
-   * phone has to produce a fix, then the server has to name it. The prompt
-   * for permission happens inside the first step, on this tap and not
-   * before — a request at launch is the one most people refuse.
-   */
+  // Two steps: the phone gives a fix, the server names it. Permission is asked here, on the tap.
   Future<void> _useCurrentLocation() async {
     if (_locating || _resolving) return;
     _debounce?.cancel();
@@ -249,22 +192,16 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
       setState(() {
         _offerSettings = error.denial == LocationDenial.deniedForever;
         _selectionError = switch (error.denial) {
-          LocationDenial.servicesOff =>
-            'Location is switched off on this device. Turn it on, or search for your address instead.',
-          LocationDenial.denied =>
-            'We need your permission to use your location. You can search for your address instead.',
-          LocationDenial.deniedForever =>
-            'Location access is off for Saints Link. You can turn it on in Settings, or search for your address instead.',
-          LocationDenial.unavailable =>
-            'We could not find your location just now. Please try again, or search for your address instead.',
+          LocationDenial.servicesOff => 'Location is switched off on this device. Turn it on, or search for your address instead.',
+          LocationDenial.denied => 'We need your permission to use your location. You can search for your address instead.',
+          LocationDenial.deniedForever => 'Location access is off for Saints Link. You can turn it on in Settings, or search for your address instead.',
+          LocationDenial.unavailable => 'We could not find your location just now. Please try again, or search for your address instead.',
         };
       });
     } catch (error) {
       if (!mounted) return;
       setState(
-        () => _selectionError = error is ApiException
-            ? error.message
-            : 'We could not find an address at your location. Please search for it instead.',
+        () => _selectionError = error is ApiException ? error.message : 'We could not find an address at your location. Please search for it instead.',
       );
     } finally {
       if (mounted) setState(() => _locating = false);
@@ -375,7 +312,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
                     subtitle: _locating ? 'Finding your address…' : null,
                     onTap: _useCurrentLocation,
                   ),
-                GroupLabel('Airports and ports'),
+                const GroupLabel('Airports and ports'),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
                   child: Wrap(
@@ -408,7 +345,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
                   ),
                 ),
                 if (recents.isNotEmpty) ...[
-                  GroupLabel('Recent'),
+                  const GroupLabel('Recent'),
                   for (final place in recents)
                     ListRow(
                       icon: Icons.history,

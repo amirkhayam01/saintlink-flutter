@@ -5,7 +5,9 @@ import '../../fixtures/fixtures.dart';
 
 void main() {
   final data = loadFixture('vehicle_categories')['data'] as List<dynamic>;
-  final vehicles = data.map((item) => VehicleCategory.fromJson(item as Map<String, dynamic>)).toList();
+  final vehicles = data
+      .map((item) => VehicleCategory.fromJson(item as Map<String, dynamic>))
+      .toList();
 
   test('parses the live camelCase response with real capacities', () {
     final saloon = vehicles.firstWhere((v) => v.slug == 'saloon-car');
@@ -31,8 +33,14 @@ void main() {
   test('fits() respects both limits', () {
     final minibus = vehicles.firstWhere((v) => v.slug == 'minibus-8');
 
-    expect(minibus.fits(passengers: 8, luggage: minibus.luggageCapacity), isTrue);
+    expect(
+      minibus.fits(passengers: 8, luggage: minibus.luggageCapacity),
+      isTrue,
+    );
     expect(minibus.fits(passengers: 9, luggage: 0), isFalse);
-    expect(minibus.fits(passengers: 1, luggage: minibus.luggageCapacity + 1), isFalse);
+    expect(
+      minibus.fits(passengers: 1, luggage: minibus.luggageCapacity + 1),
+      isFalse,
+    );
   });
 }

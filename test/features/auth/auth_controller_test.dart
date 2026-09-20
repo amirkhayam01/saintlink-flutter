@@ -12,7 +12,9 @@ void main() {
 
   setUp(() {
     auth = FakeAuthRepository();
-    container = ProviderContainer.test(overrides: [authRepositoryProvider.overrideWithValue(auth)]);
+    container = ProviderContainer.test(
+      overrides: [authRepositoryProvider.overrideWithValue(auth)],
+    );
   });
 
   Future<AuthState> restored() async {

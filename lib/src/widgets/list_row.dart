@@ -3,11 +3,6 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
 /// One row in a list: an icon, a title, and whatever sits at the end.
-///
-/// The account screen, the address search sheet and the home screen's recents
-/// each grew their own version of this. One row means one height, one icon
-/// column, one text style — and a divider that lines up from screen to
-/// screen.
 class ListRow extends StatelessWidget {
   const ListRow({
     super.key,
@@ -81,7 +76,11 @@ class ListRow extends StatelessWidget {
             ?trailing,
             if (chevron) ...[
               const SizedBox(width: 4),
-              Icon(Icons.chevron_right_rounded, size: 20, color: colors.inkMuted),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: colors.inkMuted,
+              ),
             ],
           ],
         ),

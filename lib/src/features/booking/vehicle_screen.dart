@@ -7,17 +7,14 @@ import 'package:go_router/go_router.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/tiles.dart';
 import '../../widgets/inner_screen_header.dart';
 import '../../widgets/vehicle_image.dart';
 import 'booking_flow_controller.dart';
 import 'booking_screen_header.dart';
 import '../../domain/vehicle_category.dart';
 
-/// Step two: pick a vehicle at a price that is already final.
-///
-/// Every fare shown here is held on the server against the quote token; the
-/// app cannot alter it and does not send it back. What the customer taps is a
-/// vehicle, and the server prices that vehicle from its own record.
+/// Step two: pick a vehicle. Prices are the server's, held against the quote token.
 class VehicleScreen extends ConsumerStatefulWidget {
   const VehicleScreen({super.key});
 
@@ -122,13 +119,7 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
   }
 }
 
-/// One vehicle in the list.
-///
-/// The chosen one is shown in full — photo, capacities, the "best value"
-/// tag — because that is the one the customer is about to pay for. The rest
-/// fold to a single line of name and price, so the whole fleet fits on one
-/// screen and choosing is a glance down a column of prices rather than a
-/// scroll through five identical panels. Tapping a folded card opens it.
+/// One vehicle: the chosen one in full, the rest folded to name and price so the fleet fits on one screen.
 class _VehicleCard extends StatelessWidget {
   const _VehicleCard({
     required this.vehicle,
@@ -149,22 +140,6 @@ class _VehicleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-
-    Widget capacity(IconData icon, int count, String label) => Semantics(
-      label: '$count $label',
-      excludeSemantics: true,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: colors.inkMuted),
-          const SizedBox(width: 4),
-          Text(
-            '$count',
-            style: TextStyle(color: colors.inkMuted, fontSize: 13),
-          ),
-        ],
-      ),
-    );
 
     // Full when chosen, or when it cannot be chosen and has to say why.
     final open = selected || !fits;
@@ -215,7 +190,6 @@ class _VehicleCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(open ? 10 : 8),
@@ -230,7 +204,7 @@ class _VehicleCard extends StatelessWidget {
                                   Positioned(
                                     top: 4,
                                     left: 4,
-                                    child: Container(
+                                    child: DecoratedBox(
                                       decoration: BoxDecoration(
                                         color: colors.card,
                                         shape: BoxShape.circle,
@@ -268,9 +242,7 @@ class _VehicleCard extends StatelessWidget {
                                               height: 1.25,
                                             ),
                                           ),
-                                          // Folded, the tag still has to say
-                                          // "best value" — it is the one thing
-                                          // that helps someone pick.
+                                          // The tag stays visible folded; it helps someone pick.
                                           if (!open && tagPill != null) ...[
                                             const SizedBox(height: 4),
                                             tagPill,
@@ -311,21 +283,21 @@ class _VehicleCard extends StatelessWidget {
                                   runSpacing: 4,
                                   crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
-                                    capacity(
-                                      Icons.person_outline,
-                                      vehicle.passengerCapacity,
-                                      'passengers',
+                                    CapacityChip(
+                                      icon: Icons.person_outline,
+                                      count: vehicle.passengerCapacity,
+                                      label: 'passengers',
                                     ),
-                                    capacity(
-                                      Icons.luggage_outlined,
-                                      vehicle.luggageCapacity,
-                                      'suitcases',
+                                    CapacityChip(
+                                      icon: Icons.luggage_outlined,
+                                      count: vehicle.luggageCapacity,
+                                      label: 'suitcases',
                                     ),
                                     if (vehicle.handLuggageCapacity > 0)
-                                      capacity(
-                                        Icons.shopping_bag_outlined,
-                                        vehicle.handLuggageCapacity,
-                                        'hand luggage items',
+                                      CapacityChip(
+                                        icon: Icons.shopping_bag_outlined,
+                                        count: vehicle.handLuggageCapacity,
+                                        label: 'hand luggage items',
                                       ),
                                     ?tagPill,
                                   ],

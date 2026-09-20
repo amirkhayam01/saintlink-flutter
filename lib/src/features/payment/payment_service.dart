@@ -10,27 +10,20 @@ import '../booking/booking_repository.dart';
 /// The outcome of a payment attempt, as the screen needs to react to it.
 enum PaymentOutcome { paid, cancelled, failed }
 
-/// Shows the customer a test-payment sheet and returns whether they tapped Pay.
-///
-/// Supplied by the screen, because presenting anything needs a BuildContext
-/// the service does not have. Only called while the backend runs the fake
-/// payment driver.
+/// Shows the test-payment sheet; only used while the backend runs the fake driver.
 typedef PresentTestSheet = Future<bool> Function(PaymentSheetDetails details);
 
-/// Taking a card in the app with Stripe's native payment sheet.
-///
-/// The server creates the PaymentIntent and hands back a client secret; the
-/// sheet completes it directly with Stripe; the server learns the outcome from
-/// Stripe's webhook, not from this app. That last point matters: the app's
-/// "paid" is optimistic, and the booking's real paid state is whatever the
-/// server says the next time it is fetched — see [PaymentController].
+/// Stripe's native payment sheet. The server learns the outcome from the webhook, not from this app.
 class PaymentService {
   PaymentService(this._bookings);
 
   final BookingRepository _bookings;
   String? _configuredKey;
 
-  Future<PaymentOutcome> payForBooking(String reference, {required PresentTestSheet presentTestSheet}) async {
+  Future<PaymentOutcome> payForBooking(
+    String reference, {
+    required PresentTestSheet presentTestSheet,
+  }) async {
     final details = await _bookings.paymentIntent(reference);
 
     if (details.isTest) {
@@ -56,7 +49,10 @@ class PaymentService {
         merchantDisplayName: details.merchantName,
         style: ThemeMode.light,
         applePay: const PaymentSheetApplePay(merchantCountryCode: 'GB'),
-        googlePay: const PaymentSheetGooglePay(merchantCountryCode: 'GB', currencyCode: 'GBP'),
+        googlePay: const PaymentSheetGooglePay(
+          merchantCountryCode: 'GB',
+          currencyCode: 'GBP',
+        ),
       ),
     );
 
@@ -65,9 +61,13 @@ class PaymentService {
 
       return PaymentOutcome.paid;
     } on StripeException catch (error) {
-      if (error.error.code == FailureCode.Canceled) return PaymentOutcome.cancelled;
+      if (error.error.code == FailureCode.Canceled) {
+        return PaymentOutcome.cancelled;
+      }
 
-      throw ApiException(error.error.localizedMessage ?? 'Your payment could not be taken.');
+      throw ApiException(
+        error.error.localizedMessage ?? 'Your payment could not be taken.',
+      );
     }
   }
 }

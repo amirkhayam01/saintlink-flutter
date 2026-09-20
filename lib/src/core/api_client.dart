@@ -5,30 +5,23 @@ import 'env.dart';
 import 'error_reporter.dart';
 import 'token_store.dart';
 
-/// The single way this app talks to Saints Link.
-///
-/// Every response shape and every failure mode is normalised here, so screens
-/// deal in models and [ApiException] rather than in status codes and raw maps.
+/// The single way this app talks to Saints Link; every failure becomes an [ApiException].
 class ApiClient {
-  ApiClient({required TokenStore tokens, required ErrorReporter errors, Dio? dio})
-      : _tokens = tokens, // ignore: prefer_initializing_formals
-        _errors = errors, // ignore: prefer_initializing_formals
-        _dio = dio ?? Dio() {
+  ApiClient({
+    required TokenStore tokens,
+    required ErrorReporter errors,
+    Dio? dio,
+  }) : _tokens = tokens, // ignore: prefer_initializing_formals
+       _errors = errors, // ignore: prefer_initializing_formals
+       _dio = dio ?? Dio() {
     _dio.options
       ..baseUrl = Env.apiBaseUrl
       ..connectTimeout = const Duration(seconds: 15)
       ..receiveTimeout = const Duration(seconds: 30)
       ..headers['Accept'] = 'application/json'
-      /*
-       * Laravel decides between a redirect and a JSON error from this header.
-       * Without it a validation failure on an unauthenticated route comes back
-       * as an HTML login redirect, which the app cannot read at all.
-       */
+      // Without this Laravel answers validation failures with an HTML redirect.
       ..headers['X-Requested-With'] = 'XMLHttpRequest'
-      // Any HTTP status is an answer, not a transport failure. A 422 carries
-      // the validation message; a 503 from the payment route carries "your
-      // booking is saved, try again shortly". Both are written for the
-      // customer to read, so neither is thrown away for a generic one.
+      // Every status is an answer with a customer-readable message; only the network throws.
       ..validateStatus = (status) => status != null;
 
     _dio.interceptors.add(
@@ -48,8 +41,10 @@ class ApiClient {
   final TokenStore _tokens;
   final ErrorReporter _errors;
 
-  Future<Map<String, dynamic>> get(String path, {Map<String, dynamic>? query}) =>
-      _send(() => _dio.get<dynamic>(path, queryParameters: query));
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, dynamic>? query,
+  }) => _send(() => _dio.get<dynamic>(path, queryParameters: query));
 
   Future<Map<String, dynamic>> post(String path, {Object? body}) =>
       _send(() => _dio.post<dynamic>(path, data: body));
@@ -60,7 +55,9 @@ class ApiClient {
   Future<Map<String, dynamic>> delete(String path) =>
       _send(() => _dio.delete<dynamic>(path));
 
-  Future<Map<String, dynamic>> _send(Future<Response<dynamic>> Function() request) async {
+  Future<Map<String, dynamic>> _send(
+    Future<Response<dynamic>> Function() request,
+  ) async {
     late final Response<dynamic> response;
 
     try {
@@ -68,7 +65,11 @@ class ApiClient {
     } on DioException catch (error, stack) {
       // Every status passes validateStatus, so anything caught here is the
       // network itself — never something the customer did.
-      await _errors.report(error, stack, context: _describe(error.requestOptions));
+      await _errors.report(
+        error,
+        stack,
+        context: _describe(error.requestOptions),
+      );
 
       throw ApiException(_transportMessage(error));
     }
@@ -76,6 +77,20 @@ class ApiClient {
     final body = response.data;
     final map = body is Map<String, dynamic> ? body : <String, dynamic>{};
     final status = response.statusCode!;
+
+    // A non-JSON success is a proxy or captive portal answering for the server.
+    final empty = body == null || body == '' || status == 204;
+    if (status < 400 && !empty && body is! Map<String, dynamic>) {
+      await _errors.report(
+        'HTTP $status: non-JSON body',
+        StackTrace.current,
+        context: _describe(response.requestOptions),
+      );
+
+      throw const ApiException(
+        'We could not reach Saints Link. Please try again shortly.',
+      );
+    }
 
     if (status >= 500) {
       await _errors.report(
@@ -87,7 +102,8 @@ class ApiClient {
 
     if (status >= 400) {
       throw ApiException(
-        (map['message'] as String?) ?? 'Something went wrong. Please try again.',
+        (map['message'] as String?) ??
+            'Something went wrong. Please try again.',
         statusCode: response.statusCode,
         fieldErrors: _fieldErrors(map['errors']),
       );
@@ -96,7 +112,8 @@ class ApiClient {
     return map;
   }
 
-  String _describe(RequestOptions request) => 'api ${request.method} ${request.path}';
+  String _describe(RequestOptions request) =>
+      'api ${request.method} ${request.path}';
 
   /// Validation errors arrive as `{"field": ["message", ...]}`.
   Map<String, List<String>> _fieldErrors(Object? errors) {
@@ -105,7 +122,9 @@ class ApiClient {
     return errors.map(
       (key, value) => MapEntry(
         key.toString(),
-        value is List ? value.map((item) => item.toString()).toList() : <String>[value.toString()],
+        value is List
+            ? value.map((item) => item.toString()).toList()
+            : <String>[value.toString()],
       ),
     );
   }

@@ -13,10 +13,7 @@ import '../auth/auth_controller.dart';
 import 'booking_flow_controller.dart';
 import 'booking_screen_header.dart';
 
-/// Step three: who is travelling, and the terms.
-///
-/// Prefilled from the signed-in customer when there is one, but every field is
-/// editable — the person booking is not always the person travelling.
+/// Step three: who is travelling. Prefilled but editable; the booker is not always the passenger.
 class DetailsScreen extends ConsumerStatefulWidget {
   const DetailsScreen({super.key});
 
@@ -242,9 +239,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   }
 }
 
-/// Consent by action, the way the large booking apps do it: confirming is
-/// accepting, and the terms are one tap away rather than behind a checkbox
-/// most people tick without reading.
+/// Consent by action: confirming is accepting, with the terms one tap away.
 class _TermsLine extends StatelessWidget {
   const _TermsLine({required this.onTerms, required this.onPrivacy});
 

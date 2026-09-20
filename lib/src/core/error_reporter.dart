@@ -2,15 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 
-/// Where unexpected failures go.
-///
-/// A seam, not a service: nothing in the app knows whether reports end up in
-/// Sentry, Crashlytics or the debug console. Swapping the destination is one
-/// provider override in `main.dart`, and no screen or repository changes.
-///
-/// What counts as reportable: a failure the customer could not have caused.
-/// A 422 is the customer's to fix and is never reported; a 5xx, a timeout, or
-/// an exception the framework caught is ours to know about.
+/// Where failures the customer could not have caused go. Swap the destination in `main.dart`.
 abstract class ErrorReporter {
   Future<void> report(Object error, StackTrace? stackTrace, {String? context});
 
@@ -32,7 +24,11 @@ abstract class ErrorReporter {
 /// The default: prints to the console and does nothing else.
 class ConsoleErrorReporter extends ErrorReporter {
   @override
-  Future<void> report(Object error, StackTrace? stackTrace, {String? context}) async {
+  Future<void> report(
+    Object error,
+    StackTrace? stackTrace, {
+    String? context,
+  }) async {
     developer.log(
       context == null ? '$error' : '[$context] $error',
       name: 'saints_link',

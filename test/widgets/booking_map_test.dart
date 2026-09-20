@@ -7,6 +7,7 @@ import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/features/booking/booking_screen_header.dart';
 import 'package:saints_link/src/features/booking/google_journey_map.dart';
 import 'package:saints_link/src/features/places/current_location.dart';
+import 'package:saints_link/src/widgets/route_timeline.dart';
 
 import '../support/fakes.dart';
 import '../support/platform_views.dart';
@@ -21,17 +22,17 @@ Widget scoped(Widget app, {bool granted = false}) => ProviderScope(
 void main() {
   setUp(stubPlatformViews);
 
-  /*
-   * A pin for every end of the journey that has a position, lettered in
-   * travel order — and no pin for a typed address, because a guessed one
-   * would sit somewhere the driver is not going.
-   */
+  // Pins for located places in travel order; none for a typed address.
   testWidgets('pins located places in travel order and skips typed ones', (
     tester,
   ) async {
     final journey = quotableJourney.copyWith(
       via: const [
-        PlaceSelection(address: 'Winchester', latitude: 51.06, longitude: -1.31),
+        PlaceSelection(
+          address: 'Winchester',
+          latitude: 51.06,
+          longitude: -1.31,
+        ),
         PlaceSelection(address: 'somewhere typed, never picked'),
       ],
       dropoff: const PlaceSelection(
@@ -41,21 +42,24 @@ void main() {
       ),
     );
     await tester.pumpWidget(
-      scoped(MaterialApp(
-        theme: AppTheme.light(),
-        home: SizedBox.expand(
-          child: GoogleJourneyMap(journey: journey, topPadding: 86),
+      scoped(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: SizedBox.expand(
+            child: GoogleJourneyMap(journey: journey, topPadding: 86),
+          ),
         ),
-      )),
+      ),
     );
     await tester.pump();
 
     final map = tester.widget<GoogleMap>(find.byType(GoogleMap));
     expect(map.markers.map((m) => m.markerId.value), ['A', '1', 'B']);
-    expect(
-      map.markers.map((m) => m.infoWindow.title),
-      [journey.pickup.address, 'Winchester', 'Heathrow Airport'],
-    );
+    expect(map.markers.map((m) => m.infoWindow.title), [
+      journey.pickup.address,
+      'Winchester',
+      'Heathrow Airport',
+    ]);
     // The header's route card floats over the top; the framing stays clear of it.
     expect(map.padding, const EdgeInsets.only(top: 86));
     // A preview, not a map to explore.
@@ -70,17 +74,19 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      scoped(MaterialApp(
-        theme: AppTheme.light(),
-        home: SizedBox.expand(
-          child: GoogleJourneyMap(
-            journey: quotableJourney.copyWith(
-              pickup: const PlaceSelection(address: 'typed'),
-              dropoff: const PlaceSelection(address: 'also typed'),
+      scoped(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: SizedBox.expand(
+            child: GoogleJourneyMap(
+              journey: quotableJourney.copyWith(
+                pickup: const PlaceSelection(address: 'typed'),
+                dropoff: const PlaceSelection(address: 'also typed'),
+              ),
             ),
           ),
         ),
-      )),
+      ),
     );
     await tester.pump();
 
@@ -92,12 +98,18 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      scoped(MaterialApp(
-        theme: AppTheme.dark(),
-        home: SizedBox.expand(
-          child: GoogleJourneyMap(journey: quotableJourney, interactive: true),
+      scoped(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: SizedBox.expand(
+            child: GoogleJourneyMap(
+              journey: quotableJourney,
+              interactive: true,
+            ),
+          ),
         ),
-      ), granted: true),
+        granted: true,
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -127,26 +139,28 @@ void main() {
         ),
       );
       await tester.pumpWidget(
-        scoped(MaterialApp(
-          theme: dark ? AppTheme.dark() : AppTheme.light(),
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(textScaler: TextScaler.linear(2)),
-            child: child!,
-          ),
-          home: Scaffold(
-            appBar: BookingScreenHeader(
-              title: 'Choose your vehicle',
-              journey: journey,
-              expandable: true,
+        scoped(
+          MaterialApp(
+            theme: dark ? AppTheme.dark() : AppTheme.light(),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
             ),
-            body: const Text('Form'),
+            home: Scaffold(
+              appBar: BookingScreenHeader(
+                title: 'Choose your vehicle',
+                journey: journey,
+                expandable: true,
+              ),
+              body: const Text('Form'),
+            ),
           ),
-        )),
+        ),
       );
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.trip_origin_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.location_on_rounded), findsOneWidget);
+      // The route card over the map is the shared timeline, not its own thing.
+      expect(find.byType(RouteTimeline), findsOneWidget);
       expect(find.text(journey.pickup.address), findsOneWidget);
       expect(find.text(journey.dropoff.address), findsOneWidget);
       expect(tester.takeException(), isNull);

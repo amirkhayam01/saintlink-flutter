@@ -25,15 +25,12 @@ abstract class PaymentState with _$PaymentState {
 
 /// How long to give Stripe's webhook to reach the server before the booking
 /// is refetched. Overridden to zero in tests.
-final paymentWebhookGraceProvider = Provider<Duration>((_) => const Duration(seconds: 2));
+final paymentWebhookGraceProvider = Provider<Duration>(
+  (_) => const Duration(seconds: 2),
+);
 
-/// Paying for one booking, shared by every screen that offers a pay button.
-///
-/// Keyed by booking reference so the confirmation screen and the trip detail
-/// screen see the same state if the customer moves between them mid-payment.
-/// After a successful sheet the booking is refetched: the app's "paid" is
-/// optimistic and the server's payment status, set by the webhook, is the one
-/// that counts.
+/// Paying for one booking, keyed by reference so every screen sees the same state.
+/// "Paid" is refetched from the server; the webhook decides, not the app.
 class PaymentController extends Notifier<PaymentState> {
   PaymentController(this.reference);
 
@@ -42,11 +39,15 @@ class PaymentController extends Notifier<PaymentState> {
   @override
   PaymentState build() => const PaymentState();
 
-  Future<PaymentOutcome> pay({required PresentTestSheet presentTestSheet}) async {
+  Future<PaymentOutcome> pay({
+    required PresentTestSheet presentTestSheet,
+  }) async {
     state = const PaymentState(status: PaymentStatus.paying);
 
     try {
-      final outcome = await ref.read(paymentServiceProvider).payForBooking(reference, presentTestSheet: presentTestSheet);
+      final outcome = await ref
+          .read(paymentServiceProvider)
+          .payForBooking(reference, presentTestSheet: presentTestSheet);
 
       switch (outcome) {
         case PaymentOutcome.paid:
@@ -55,7 +56,9 @@ class PaymentController extends Notifier<PaymentState> {
         case PaymentOutcome.cancelled:
           state = const PaymentState();
         case PaymentOutcome.failed:
-          state = const PaymentState(error: 'Your payment could not be taken. Please try again.');
+          state = const PaymentState(
+            error: 'Your payment could not be taken. Please try again.',
+          );
       }
 
       return outcome;
@@ -66,9 +69,7 @@ class PaymentController extends Notifier<PaymentState> {
     }
   }
 
-  /// The webhook can land a moment after the sheet closes. A short wait before
-  /// refetching means the screen usually shows "Paid" first time rather than
-  /// making the customer pull to refresh.
+  /// A short wait so the webhook usually lands before the refetch.
   Future<void> _refreshBooking() async {
     await Future<void>.delayed(ref.read(paymentWebhookGraceProvider));
     ref.invalidate(tripDetailProvider(reference));
@@ -77,4 +78,6 @@ class PaymentController extends Notifier<PaymentState> {
 }
 
 final paymentControllerProvider =
-    NotifierProvider.family<PaymentController, PaymentState, String>(PaymentController.new);
+    NotifierProvider.family<PaymentController, PaymentState, String>(
+      PaymentController.new,
+    );

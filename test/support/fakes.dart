@@ -14,11 +14,7 @@ import 'package:saints_link/src/features/payment/payment_service.dart';
 
 import '../fixtures/fixtures.dart';
 
-/*
- * Hand-rolled fakes rather than a mocking library: the repositories have a
- * handful of methods each, and a fake that records calls and returns what the
- * test scripted is easier to read than mockito stubs.
- */
+// Hand-rolled fakes: a few methods each, easier to read than mockito stubs.
 
 const customer = Customer(
   id: 1,
@@ -32,9 +28,14 @@ const customer = Customer(
 );
 
 final quotableJourney = JourneyDraft(
-  pickup: const PlaceSelection(address: 'Southampton Central Station', placeId: 'p1', latitude: 50.9, longitude: -1.4),
+  pickup: const PlaceSelection(
+    address: 'Southampton Central Station',
+    placeId: 'p1',
+    latitude: 50.9,
+    longitude: -1.4,
+  ),
   dropoff: const PlaceSelection(address: 'Heathrow Airport Terminal 5'),
-  pickupDate: DateTime(2026, 10, 1),
+  pickupDate: DateTime(2026, 10),
   pickupTime: const TimeOfDay(hour: 9, minute: 0),
   passengerCount: 2,
   luggageCount: 1,
@@ -42,13 +43,16 @@ final quotableJourney = JourneyDraft(
 
 /// The live quote fixture, with its expiry moved so the test controls it.
 Quote quoteExpiringIn(Duration duration) =>
-    Quote.fromJson(loadFixture('quote')).copyWith(expiresAt: DateTime.now().add(duration));
+    Quote.fromJson(loadFixture('quote'))
+        .copyWith(expiresAt: DateTime.now().add(duration));
 
-List<VehicleCategory> fixtureVehicles() => (loadFixture('vehicle_categories')['data'] as List<dynamic>)
-    .map((item) => VehicleCategory.fromJson(item as Map<String, dynamic>))
-    .toList();
+List<VehicleCategory> fixtureVehicles() =>
+    (loadFixture('vehicle_categories')['data'] as List<dynamic>)
+        .map((item) => VehicleCategory.fromJson(item as Map<String, dynamic>))
+        .toList();
 
-Booking bookingWith({String reference = 'SL-TEST', bool canPay = true}) => Booking(
+Booking bookingWith({String reference = 'SL-TEST', bool canPay = true}) =>
+    Booking(
       reference: reference,
       status: 'awaiting_payment',
       statusLabel: 'Awaiting payment',
@@ -98,14 +102,16 @@ class FakeBookingRepository implements BookingRepository {
     String? customerEmail,
     String? specialInstructions,
   }) async {
-    bookingRequests.add(journey.toBookingPayload(
-      quoteToken: quoteToken,
-      vehicleCategorySlug: vehicleCategorySlug,
-      customerName: customerName,
-      customerPhone: customerPhone,
-      customerEmail: customerEmail,
-      specialInstructions: specialInstructions,
-    ));
+    bookingRequests.add(
+      journey.toBookingPayload(
+        quoteToken: quoteToken,
+        vehicleCategorySlug: vehicleCategorySlug,
+        customerName: customerName,
+        customerPhone: customerPhone,
+        customerEmail: customerEmail,
+        specialInstructions: specialInstructions,
+      ),
+    );
     if (bookingError != null) throw bookingError!;
 
     return nextBooking!;
@@ -115,11 +121,19 @@ class FakeBookingRepository implements BookingRepository {
   Future<Paginated<Booking>> myBookings({int page = 1}) async {
     pagesRequested.add(page);
     if (pageError != null && page > 1) throw pageError!;
-    final all = pages ?? [[?nextBooking]];
+    final all =
+        pages ??
+        [
+          [?nextBooking],
+        ];
 
     return Paginated(
       items: all[page - 1],
-      meta: PageMeta(currentPage: page, lastPage: all.length, total: all.fold(0, (n, p) => n + p.length)),
+      meta: PageMeta(
+        currentPage: page,
+        lastPage: all.length,
+        total: all.fold(0, (n, p) => n + p.length),
+      ),
     );
   }
 
@@ -127,8 +141,12 @@ class FakeBookingRepository implements BookingRepository {
   Future<Booking> booking(String reference) async => nextBooking!;
 
   @override
-  Future<Booking> requestCancellation({required String reference, required String reason, String scope = 'booking', int? bookingLegId}) async =>
-      nextBooking!;
+  Future<Booking> requestCancellation({
+    required String reference,
+    required String reason,
+    String scope = 'booking',
+    int? bookingLegId,
+  }) async => nextBooking!;
 
   PaymentSheetDetails? sheet;
   final confirmedTestPayments = <String>[];
@@ -168,15 +186,30 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<SignInCodeRequest> requestCode(String phone) async => throw UnimplementedError();
-
-  @override
-  Future<Customer> verifyCode({required String phone, required String code, String? name, String deviceName = 'mobile'}) async =>
+  Future<SignInCodeRequest> requestCode(String phone) async =>
       throw UnimplementedError();
 
   @override
-  Future<Customer> updateProfile({String? firstName, String? lastName, String? email, bool? marketingConsent}) async {
-    profileUpdates.add({'first_name': firstName, 'last_name': lastName, 'email': email, 'marketing_consent': marketingConsent});
+  Future<Customer> verifyCode({
+    required String phone,
+    required String code,
+    String? name,
+    String deviceName = 'mobile',
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<Customer> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? email,
+    bool? marketingConsent,
+  }) async {
+    profileUpdates.add({
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'marketing_consent': marketingConsent,
+    });
     if (updateError != null) throw updateError!;
 
     return customer.copyWith(
@@ -197,7 +230,10 @@ class FakePaymentService implements PaymentService {
   final paidReferences = <String>[];
 
   @override
-  Future<PaymentOutcome> payForBooking(String reference, {required PresentTestSheet presentTestSheet}) async {
+  Future<PaymentOutcome> payForBooking(
+    String reference, {
+    required PresentTestSheet presentTestSheet,
+  }) async {
     if (error != null) throw error!;
     paidReferences.add(reference);
 

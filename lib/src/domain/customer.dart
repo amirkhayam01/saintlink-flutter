@@ -6,9 +6,6 @@ part 'customer.freezed.dart';
 part 'customer.g.dart';
 
 /// The signed-in customer, as `AuthController::presentCustomer` sends it.
-///
-/// There is no password anywhere in this model: identity is a verified phone
-/// number, and the token in secure storage is the only credential.
 @freezed
 abstract class Customer with _$Customer {
   const factory Customer({
@@ -22,7 +19,8 @@ abstract class Customer with _$Customer {
     required bool marketingConsent,
   }) = _Customer;
 
-  factory Customer.fromJson(Map<String, dynamic> json) => _$CustomerFromJson(json);
+  factory Customer.fromJson(Map<String, dynamic> json) =>
+      _$CustomerFromJson(json);
 }
 
 /// The outcome of asking for a sign-in code.
@@ -34,5 +32,6 @@ abstract class SignInCodeRequest with _$SignInCodeRequest {
     required int resendAfterSeconds,
   }) = _SignInCodeRequest;
 
-  factory SignInCodeRequest.fromJson(Map<String, dynamic> json) => _$SignInCodeRequestFromJson(json);
+  factory SignInCodeRequest.fromJson(Map<String, dynamic> json) =>
+      _$SignInCodeRequestFromJson(json);
 }

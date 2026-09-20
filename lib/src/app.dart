@@ -20,7 +20,8 @@ class SaintsLinkApp extends ConsumerWidget {
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
       routerConfig: ref.watch(routerProvider),
-      builder: (_, child) => SplashOverlay(child: child ?? const SizedBox.shrink()),
+      builder: (_, child) =>
+          SplashOverlay(child: child ?? const SizedBox.shrink()),
     );
   }
 }

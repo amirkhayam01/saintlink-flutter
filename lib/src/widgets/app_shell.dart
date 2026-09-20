@@ -24,7 +24,7 @@ class AppBottomNavBar extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeColor = colors.accent;
 
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.card,
         border: Border(top: BorderSide(color: colors.inkFaint, width: 0.8)),

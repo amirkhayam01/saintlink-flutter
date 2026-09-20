@@ -16,10 +16,7 @@ abstract class ProfileState with _$ProfileState {
   }) = _ProfileState;
 }
 
-/// Editing the signed-in customer's details.
-///
-/// The phone number is not here on purpose: it is the customer's identity, and
-/// changing it is a re-verification (a new sign-in), not a profile edit.
+/// Editing the customer's details. The phone number is their identity and is not editable here.
 class ProfileController extends Notifier<ProfileState> {
   @override
   ProfileState build() => const ProfileState();
@@ -35,7 +32,9 @@ class ProfileController extends Notifier<ProfileState> {
     state = const ProfileState(isSaving: true);
 
     try {
-      final customer = await ref.read(authRepositoryProvider).updateProfile(
+      final customer = await ref
+          .read(authRepositoryProvider)
+          .updateProfile(
             firstName: firstName.trim(),
             lastName: lastName.trim().isEmpty ? null : lastName.trim(),
             email: email.trim().isEmpty ? null : email.trim().toLowerCase(),
@@ -46,11 +45,15 @@ class ProfileController extends Notifier<ProfileState> {
 
       return true;
     } on ApiException catch (error) {
-      state = ProfileState(error: error.message, fieldErrors: error.fieldErrors);
+      state = ProfileState(
+        error: error.message,
+        fieldErrors: error.fieldErrors,
+      );
 
       return false;
     }
   }
 }
 
-final profileControllerProvider = NotifierProvider<ProfileController, ProfileState>(ProfileController.new);
+final profileControllerProvider =
+    NotifierProvider<ProfileController, ProfileState>(ProfileController.new);

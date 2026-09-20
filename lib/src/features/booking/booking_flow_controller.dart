@@ -11,12 +11,7 @@ import 'journey_draft.dart';
 
 part 'booking_flow_controller.freezed.dart';
 
-/// Everything the booking screens share, from the first address to the
-/// confirmed booking.
-///
-/// One object rather than per-screen state so that going back a step never
-/// loses what was typed, and so that the quote and the journey it was priced
-/// for can never drift apart — see [JourneyDraft] for why that matters.
+/// Everything the booking screens share, so a quote and the journey it priced never drift apart.
 @freezed
 abstract class BookingFlowState with _$BookingFlowState {
   const BookingFlowState._();
@@ -101,9 +96,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
       final vehicles = await ref
           .read(bookingRepositoryProvider)
           .vehicleCategories();
-      // Read `state` only after the await: the receiver of `state.copyWith`
-      // would otherwise be captured before the request and overwrite a quote
-      // that arrived while the fleet was still loading.
+      // `state` must be read after the await, or a quote that arrived meanwhile is overwritten.
       state = state.copyWith(vehicles: vehicles);
     } on ApiException {
       if (force) rethrow;
@@ -112,9 +105,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     }
   }
 
-  /// Change the journey. Any existing quote is discarded, because it was priced
-  /// for a journey that no longer exists — keeping it would let the customer
-  /// reach checkout with a fingerprint the server will refuse.
+  /// Any change discards the quote: the server fingerprints the journey it priced.
   void updateJourney(JourneyDraft Function(JourneyDraft) update) {
     _resetGeneration++;
     state = state.copyWith(

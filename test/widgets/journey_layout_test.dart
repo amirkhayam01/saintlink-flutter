@@ -10,9 +10,7 @@ import 'package:saints_link/src/features/booking/journey_screen.dart';
 
 import '../support/fakes.dart';
 
-/// The field a caption names. Captions sit above their fields now, so the
-/// tappable control carries the caption as its semantics label — which is
-/// also what a screen reader announces for it.
+/// The field a caption names, via the control's semantics label.
 Finder fieldNamed(String label) => find.descendant(
   of: find.byWidgetPredicate(
     (w) => w is Semantics && w.properties.label == label,
@@ -84,103 +82,117 @@ void main() {
     }
   }
 
-  testWidgets(
-    'the form asks for the route first and the date second',
-    (tester) async {
-      phoneSized(tester);
-      final container = ProviderContainer(
-        overrides: [
-          bookingRepositoryProvider.overrideWithValue(
-            FakeBookingRepository()..vehicles = fixtureVehicles(),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AppTheme.light(),
-            home: const JourneyScreen(),
-          ),
+  testWidgets('the form asks for the route first and the date second', (
+    tester,
+  ) async {
+    phoneSized(tester);
+    final container = ProviderContainer(
+      overrides: [
+        bookingRepositoryProvider.overrideWithValue(
+          FakeBookingRepository()..vehicles = fixtureVehicles(),
         ),
-      );
-      await tester.pumpAndSettle();
-      // Stage one: the route, and nothing else. No date yet, no way on
-      // until both ends are named.
-      expect(find.text('Plan your journey'), findsOneWidget);
-      expect(find.text('PICKUP DATE & TIME'), findsNothing);
-      for (final label in ['Pickup address', 'Destination']) {
-        final field = fieldNamed(label);
-        expect(tester.widget<InputDecorator>(field).isEmpty, isTrue);
-        expect(find.text(label.toUpperCase()), findsOneWidget);
-      }
-      expect(tester.widget<FilledButton>(find.byType(FilledButton)).enabled, isFalse);
-
-      container
-          .read(bookingFlowProvider.notifier)
-          .updateJourney(
-            (j) => j.copyWith(
-              pickup: quotableJourney.pickup,
-              dropoff: quotableJourney.dropoff,
-            ),
-          );
-      await tester.pumpAndSettle();
-      expect(tester.widget<FilledButton>(find.byType(FilledButton)).enabled, isTrue);
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-
-      // Stage two: the route as a summary, and what the price depends on.
-      expect(find.text('When are you travelling?'), findsOneWidget);
-      expect(find.text('PICKUP ADDRESS'), findsNothing);
-      expect(find.text(quotableJourney.pickup.address), findsOneWidget);
-      expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
-      final dateField = fieldNamed('Pickup date & time');
-      expect(tester.widget<InputDecorator>(dateField).isEmpty, isTrue);
-      expect(find.text('See prices'), findsOneWidget);
-      expect(tester.widget<FilledButton>(find.byType(FilledButton)).enabled, isFalse);
-      await tester.tap(dateField);
-      await tester.pumpAndSettle();
-      expect(find.byType(BottomSheet), findsOneWidget);
-      await tester.tap(find.byTooltip('Close date and time'));
-      await tester.pumpAndSettle();
-      expect(tester.widget<InputDecorator>(dateField).isEmpty, isTrue);
-      final selected = DateTime.now().add(const Duration(days: 2));
-      container
-          .read(bookingFlowProvider.notifier)
-          .updateJourney(
-            (j) => j.copyWith(
-              pickupDate: DateUtils.dateOnly(selected),
-              pickupTime: const TimeOfDay(hour: 15, minute: 5),
-            ),
-          );
-      await tester.pumpAndSettle();
-      expect(tester.widget<InputDecorator>(dateField).isEmpty, isFalse);
-      // A date makes it quotable, and the way on lights up.
-      expect(tester.widget<FilledButton>(find.byType(FilledButton)).enabled, isTrue);
-
-      // Edit goes back to the route, with everything kept.
-      await tester.tap(find.text('Edit'));
-      await tester.pumpAndSettle();
-      expect(find.text('Plan your journey'), findsOneWidget);
-      for (final label in ['Pickup address', 'Destination']) {
-        expect(tester.widget<InputDecorator>(fieldNamed(label)).isEmpty, isFalse);
-      }
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      expect(tester.widget<InputDecorator>(fieldNamed('Pickup date & time')).isEmpty, isFalse);
-      expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
-      expect(
-        find.text(
-          Formatting.journeyDateAndTime(
-            DateTime(selected.year, selected.month, selected.day, 15, 5),
-          ),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const JourneyScreen(),
         ),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-    },
-  );
+      ),
+    );
+    await tester.pumpAndSettle();
+    // Stage one: the route, and nothing else. No date yet, no way on
+    // until both ends are named.
+    expect(find.text('Plan your journey'), findsOneWidget);
+    expect(find.text('PICKUP DATE & TIME'), findsNothing);
+    for (final label in ['Pickup address', 'Destination']) {
+      final field = fieldNamed(label);
+      expect(tester.widget<InputDecorator>(field).isEmpty, isTrue);
+      expect(find.text(label.toUpperCase()), findsOneWidget);
+    }
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).enabled,
+      isFalse,
+    );
+
+    container
+        .read(bookingFlowProvider.notifier)
+        .updateJourney(
+          (j) => j.copyWith(
+            pickup: quotableJourney.pickup,
+            dropoff: quotableJourney.dropoff,
+          ),
+        );
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).enabled,
+      isTrue,
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Stage two: the route as a summary, and what the price depends on.
+    expect(find.text('When are you travelling?'), findsOneWidget);
+    expect(find.text('PICKUP ADDRESS'), findsNothing);
+    expect(find.text(quotableJourney.pickup.address), findsOneWidget);
+    expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
+    final dateField = fieldNamed('Pickup date & time');
+    expect(tester.widget<InputDecorator>(dateField).isEmpty, isTrue);
+    expect(find.text('See prices'), findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).enabled,
+      isFalse,
+    );
+    await tester.tap(dateField);
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsOneWidget);
+    await tester.tap(find.byTooltip('Close date and time'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<InputDecorator>(dateField).isEmpty, isTrue);
+    final selected = DateTime.now().add(const Duration(days: 2));
+    container
+        .read(bookingFlowProvider.notifier)
+        .updateJourney(
+          (j) => j.copyWith(
+            pickupDate: DateUtils.dateOnly(selected),
+            pickupTime: const TimeOfDay(hour: 15, minute: 5),
+          ),
+        );
+    await tester.pumpAndSettle();
+    expect(tester.widget<InputDecorator>(dateField).isEmpty, isFalse);
+    // A date makes it quotable, and the way on lights up.
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).enabled,
+      isTrue,
+    );
+
+    // Edit goes back to the route, with everything kept.
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Plan your journey'), findsOneWidget);
+    for (final label in ['Pickup address', 'Destination']) {
+      expect(tester.widget<InputDecorator>(fieldNamed(label)).isEmpty, isFalse);
+    }
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<InputDecorator>(fieldNamed('Pickup date & time')).isEmpty,
+      isFalse,
+    );
+    expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
+    expect(
+      find.text(
+        Formatting.journeyDateAndTime(
+          DateTime(selected.year, selected.month, selected.day, 15, 5),
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('swapping a route reverses stops and invalidates its price', (
     tester,
@@ -285,9 +297,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(
-        fieldNamed('Pickup address'),
-      );
+      await tester.tap(fieldNamed('Pickup address'));
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsOneWidget);
       await tester.tap(find.byTooltip('Close address search'));
@@ -296,16 +306,12 @@ void main() {
         container.read(bookingFlowProvider).journey.pickup.isEmpty,
         isTrue,
       );
-      await tester.tap(
-        fieldNamed('Pickup address'),
-      );
+      await tester.tap(fieldNamed('Pickup address'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Southampton Airport'));
       await tester.tap(find.text('Southampton Airport'));
       await tester.pumpAndSettle();
-      await tester.tap(
-        fieldNamed('Destination'),
-      );
+      await tester.tap(fieldNamed('Destination'));
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsOneWidget);
       await tester.tap(find.text('Heathrow Airport'));

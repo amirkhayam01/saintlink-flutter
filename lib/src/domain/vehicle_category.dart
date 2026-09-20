@@ -3,14 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'vehicle_category.freezed.dart';
 part 'vehicle_category.g.dart';
 
-/// A vehicle class the business sells, with the limits the quote engine
-/// enforces. Capacities are shown up front so a party of six is not offered a
-/// saloon and then told it does not fit.
-///
-/// `/vehicle-categories` serialises in camelCase — it is the same array the
-/// website's fleet pages render (`VehicleCatalogue::forPublicPages`), unlike
-/// the rest of the API. `test/fixtures` pins the live shape: a capacity that
-/// silently read as 0 once marked every vehicle "too small".
+/// A vehicle class with the limits the quote engine enforces.
+/// Unlike the rest of the API this endpoint is camelCase; `test/fixtures` pins the shape.
 @freezed
 abstract class VehicleCategory with _$VehicleCategory {
   const VehicleCategory._();
@@ -34,7 +28,8 @@ abstract class VehicleCategory with _$VehicleCategory {
     @JsonKey(name: 'image') String? imagePath,
   }) = _VehicleCategory;
 
-  factory VehicleCategory.fromJson(Map<String, dynamic> json) => _$VehicleCategoryFromJson(json);
+  factory VehicleCategory.fromJson(Map<String, dynamic> json) =>
+      _$VehicleCategoryFromJson(json);
 
   bool fits({required int passengers, required int luggage}) =>
       passengers <= passengerCapacity && luggage <= luggageCapacity;

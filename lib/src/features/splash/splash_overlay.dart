@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
 
-/// The brand over the harbour for a moment at launch, then a fade into the
-/// app. Sits above the router rather than inside it so the navigation stack
-/// starts where the deep link says, not on a splash route.
+/// A moment of brand at launch. Above the router, so a deep link still lands where it says.
 class SplashOverlay extends StatefulWidget {
-  const SplashOverlay({super.key, required this.child, this.hold = const Duration(milliseconds: 1400)});
+  const SplashOverlay({
+    super.key,
+    required this.child,
+    this.hold = const Duration(milliseconds: 1400),
+  });
 
   final Widget child;
   final Duration hold;
@@ -68,13 +70,21 @@ class _Splash extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset('assets/brand/hero-harbor.webp', fit: BoxFit.cover, alignment: const Alignment(0.2, 0)),
+          Image.asset(
+            'assets/brand/hero-harbor.webp',
+            fit: BoxFit.cover,
+            alignment: const Alignment(0.2, 0),
+          ),
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xCC020617), Color(0x66020617), Color(0xF2020617)],
+                colors: [
+                  Color(0xCC020617),
+                  Color(0x66020617),
+                  Color(0xF2020617),
+                ],
                 stops: [0, 0.5, 1],
               ),
             ),
@@ -86,7 +96,12 @@ class _Splash extends StatelessWidget {
               const SizedBox(height: 18),
               const Text(
                 'Airport, cruise and private hire transfers',
-                style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: 0.2),
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
               ),
             ],
           ),

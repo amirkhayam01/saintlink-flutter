@@ -14,7 +14,8 @@ abstract class PageMeta with _$PageMeta {
     required int total,
   }) = _PageMeta;
 
-  factory PageMeta.fromJson(Map<String, dynamic> json) => _$PageMetaFromJson(json);
+  factory PageMeta.fromJson(Map<String, dynamic> json) =>
+      _$PageMetaFromJson(json);
 
   bool get hasMore => currentPage < lastPage;
 }

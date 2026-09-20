@@ -1,10 +1,7 @@
 import '../../core/api_client.dart';
 import '../../domain/place.dart';
 
-/// Address search, proxied through Saints Link.
-///
-/// The app never holds a Google key: the server keeps it, which is what allows
-/// it to be restricted and what keeps the billed calls throttleable.
+/// Address search, proxied so the Google key stays on the server.
 class PlacesRepository {
   PlacesRepository(this._api);
 
@@ -36,13 +33,7 @@ class PlacesRepository {
     return description.isEmpty ? place : place.copyWith(address: description);
   }
 
-  /// The address at a position, as a place the engine will trust.
-  ///
-  /// A GPS fix is coordinates, and coordinates are neither something the
-  /// customer can read back nor somewhere a driver can be sent. The server
-  /// turns them into a verified place id and a postal address — the same
-  /// thing picking a suggestion produces — so "use my current location"
-  /// prices exactly as a typed-and-picked address would.
+  /// The address at a position, with a verified place id the engine will trust.
   Future<PlaceSelection> reverse({
     required double latitude,
     required double longitude,
@@ -55,10 +46,7 @@ class PlacesRepository {
     return PlaceSelection.fromJson(response);
   }
 
-  /// The signed-in customer's most-used places, most frequent first.
-  ///
-  /// Kept by the server from their bookings, so it survives a reinstall and
-  /// follows them to a new phone — which the device-side recents cannot.
+  /// The customer's most-used places, kept by the server from their bookings.
   Future<List<PlaceSelection>> recent() async {
     final response = await _api.get('/places/recent');
 

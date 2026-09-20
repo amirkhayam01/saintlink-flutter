@@ -11,13 +11,7 @@ import 'package:saints_link/src/features/places/current_location.dart';
 import 'package:saints_link/src/features/places/places_repository.dart';
 import 'package:saints_link/src/features/places/recent_places.dart';
 
-/*
- * "Use my current location" is two steps — the phone gives a fix, the server
- * names it — and each has failures the customer can act on. These pin down
- * that the button is only offered for a pickup, that success returns a place
- * the engine will trust, and that every refusal says something useful and
- * leaves the search usable.
- */
+// Pickup only; success gives a trusted place; every refusal says something useful.
 
 class FakeLocation implements LocationSource {
   FakeLocation({this.fix, this.denial});
@@ -44,11 +38,16 @@ class ReverseApi implements ApiClient {
   bool outsideUk = false;
 
   @override
-  Future<Map<String, dynamic>> get(String path, {Map<String, dynamic>? query}) async {
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, dynamic>? query,
+  }) async {
     if (path == '/places/recent') return {'data': <dynamic>[]};
     expect(path, '/places/reverse');
     lastQuery = query;
-    if (outsideUk) throw const ApiException('We only pick up within the United Kingdom.');
+    if (outsideUk) {
+      throw const ApiException('We only pick up within the United Kingdom.');
+    }
     return {
       'place_id': 'ChIJ-bedford-place',
       'address': '14 Bedford Pl, Southampton SO15 2DB, UK',
@@ -74,44 +73,50 @@ Future<PlaceSelection?> Function() pumpSheet(
   required ApiClient api,
   bool allowCurrentLocation = true,
 }) {
-  final container = ProviderContainer(overrides: [
-    locationSourceProvider.overrideWithValue(location),
-    placesRepositoryProvider.overrideWithValue(PlacesRepository(api)),
-    recentPlacesProvider.overrideWith(_NoRecents.new),
-    customerPlacesProvider.overrideWith((ref) async => const <PlaceSelection>[]),
-  ]);
+  final container = ProviderContainer(
+    overrides: [
+      locationSourceProvider.overrideWithValue(location),
+      placesRepositoryProvider.overrideWithValue(PlacesRepository(api)),
+      recentPlacesProvider.overrideWith(_NoRecents.new),
+      customerPlacesProvider.overrideWith(
+        (ref) async => const <PlaceSelection>[],
+      ),
+    ],
+  );
   addTearDown(container.dispose);
 
   PlaceSelection? result;
   var closed = false;
 
   return () async {
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: container,
-      // A fresh key each time: re-pumping the same widget types would update
-      // the existing Navigator and leave a previous sheet open underneath.
-      child: MaterialApp(
-        key: UniqueKey(),
-        theme: AppTheme.light(),
-        home: Builder(
-          builder: (context) => Scaffold(
-            body: Center(
-              child: ElevatedButton(
-                onPressed: () async {
-                  result = await showAddressSearchSheet(
-                    context,
-                    title: 'Pickup address',
-                    allowCurrentLocation: allowCurrentLocation,
-                  );
-                  closed = true;
-                },
-                child: const Text('open'),
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        // A fresh key each time: re-pumping the same widget types would update
+        // the existing Navigator and leave a previous sheet open underneath.
+        child: MaterialApp(
+          key: UniqueKey(),
+          theme: AppTheme.light(),
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    result = await showAddressSearchSheet(
+                      context,
+                      title: 'Pickup address',
+                      allowCurrentLocation: allowCurrentLocation,
+                    );
+                    closed = true;
+                  },
+                  child: const Text('open'),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     return closed ? result : null;
@@ -127,18 +132,29 @@ void main() {
       ..devicePixelRatio = 1;
   });
 
-  testWidgets('the button is offered for a pickup and not otherwise', (tester) async {
-    final open = pumpSheet(tester, location: FakeLocation(), api: ReverseApi(), allowCurrentLocation: false);
+  testWidgets('the button is offered for a pickup and not otherwise', (
+    tester,
+  ) async {
+    final open = pumpSheet(
+      tester,
+      location: FakeLocation(),
+      api: ReverseApi(),
+      allowCurrentLocation: false,
+    );
     await open();
 
     expect(find.text('Use my current location'), findsNothing);
   });
 
-  testWidgets('a fix becomes a verified pickup and closes the sheet', (tester) async {
+  testWidgets('a fix becomes a verified pickup and closes the sheet', (
+    tester,
+  ) async {
     final api = ReverseApi();
     final open = pumpSheet(
       tester,
-      location: FakeLocation(fix: const LocationFix(latitude: 50.91071, longitude: -1.40549)),
+      location: FakeLocation(
+        fix: const LocationFix(latitude: 50.91071, longitude: -1.40549),
+      ),
       api: api,
     );
     await open();
@@ -151,7 +167,9 @@ void main() {
     expect(api.lastQuery, {'lat': 50.91071, 'lng': -1.40549});
   });
 
-  testWidgets('a permanent refusal explains itself and offers settings', (tester) async {
+  testWidgets('a permanent refusal explains itself and offers settings', (
+    tester,
+  ) async {
     final location = FakeLocation(denial: LocationDenial.deniedForever);
     final open = pumpSheet(tester, location: location, api: ReverseApi());
     await open();
@@ -166,18 +184,28 @@ void main() {
     expect(find.byType(TextField), findsOneWidget);
   });
 
-  testWidgets('a one-off refusal and a missing fix each say what to do next', (tester) async {
+  testWidgets('a one-off refusal and a missing fix each say what to do next', (
+    tester,
+  ) async {
     for (final (denial, expected) in [
       (LocationDenial.denied, 'We need your permission'),
       (LocationDenial.servicesOff, 'switched off on this device'),
       (LocationDenial.unavailable, 'could not find your location'),
     ]) {
-      final open = pumpSheet(tester, location: FakeLocation(denial: denial), api: ReverseApi());
+      final open = pumpSheet(
+        tester,
+        location: FakeLocation(denial: denial),
+        api: ReverseApi(),
+      );
       await open();
       await tester.tap(find.text('Use my current location'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining(expected), findsOneWidget, reason: denial.name);
+      expect(
+        find.textContaining(expected),
+        findsOneWidget,
+        reason: denial.name,
+      );
       expect(find.text('Open settings'), findsNothing, reason: denial.name);
     }
   });
@@ -185,7 +213,9 @@ void main() {
   testWidgets("the server's refusal is shown in its own words", (tester) async {
     final open = pumpSheet(
       tester,
-      location: FakeLocation(fix: const LocationFix(latitude: 48.86, longitude: 2.34)),
+      location: FakeLocation(
+        fix: const LocationFix(latitude: 48.86, longitude: 2.34),
+      ),
       api: ReverseApi()..outsideUk = true,
     );
     await open();
@@ -193,6 +223,9 @@ void main() {
     await tester.tap(find.text('Use my current location'));
     await tester.pumpAndSettle();
 
-    expect(find.text('We only pick up within the United Kingdom.'), findsOneWidget);
+    expect(
+      find.text('We only pick up within the United Kingdom.'),
+      findsOneWidget,
+    );
   });
 }

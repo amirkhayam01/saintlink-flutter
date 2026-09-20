@@ -18,11 +18,7 @@ abstract class Fare with _$Fare {
   factory Fare.fromJson(Map<String, dynamic> json) => _$FareFromJson(json);
 }
 
-/// A priced journey, held on the server and good until it expires.
-///
-/// The token is what the booking is made against — the app never sends a price,
-/// and could not make one stick if it did. Only vehicles the engine could price
-/// are in [fares]; the server drops unavailable options before responding.
+/// A priced journey, held on the server against its token until it expires. The app never sends a price.
 @freezed
 abstract class Quote with _$Quote {
   const Quote._();
