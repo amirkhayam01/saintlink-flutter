@@ -5,8 +5,9 @@
 > covers the *flow* rather than the screens: where booking starts, how fast a
 > customer reaches a price, and how the map behaves.
 >
-> **Progress:** Phase 0 complete (20 Sep 2026). Phase 1 not started — it is an
-> ops task with a lead time and gates Phase 4, so it should be raised now.
+> **Progress:** Phase 0 and Phase 2A complete (20 Sep 2026). Phase 1 in
+> progress — SDKs enabled, keys still to be created and restricted. Phase 2B
+> decided (implicit frequency list) and next up.
 
 Spans two repositories:
 
@@ -99,6 +100,34 @@ SDKs cannot use that kind of key — they need a Maps SDK for Android key
 (restricted by package name + SHA-1) and a Maps SDK for iOS key (restricted by
 bundle ID). **This is the long-lead item in the whole plan.**
 
+**Update, 20 Sep:** both SDKs enabled in the console. Keys not yet created.
+The restriction values, found in the project — and easy to get wrong because
+this project has three different-looking identifiers:
+
+| Key | Restriction | Value |
+|---|---|---|
+| Android | Package name | `uk.co.saintslink.app` — the **applicationId**, *not* the Gradle `namespace` `uk.co.saintslink.saints_link`. The wrong one gives grey tiles with no error. |
+| Android | SHA-1 (debug, this machine) | `83:C0:9D:A0:C1:8D:D5:4E:2F:36:EC:12:BC:51:AF:B9:09:58:AD:8B` — each developer's debug keystore differs; add Talha's too. |
+| iOS | Bundle ID | `uk.co.saintslink.saintsLink` |
+
+Neither existing key can be reused. A Google key has exactly one
+application-restriction type — HTTP referrer, IP, Android app, iOS app — and
+they are mutually exclusive. `VITE_GOOGLE_MAPS_API_KEY` is referrer-restricted
+for the website; `GOOGLE_PLACES_API_KEY` is the server key the proxy exists to
+protect. Two new keys, restricted by API to the two Maps SDKs only.
+
+**Release-signing hazard:** `android/app/build.gradle.kts:54` still signs
+release builds with the debug keystore (Flutter's `TODO` is intact). The day a
+real release keystore is created for the Play Store, its SHA-1 must be added
+to the Android key first or **the map goes blank in production**. Put it on
+the release checklist now.
+
+Delivery: mirror the existing `mapsBrowserKey` chain — `android/local.properties`
+(already gitignored) → env var → sibling `.env` — as `googleMapsAndroidKey`,
+injected into the standard `com.google.android.geo.API_KEY` manifest tag. The
+Android SDK reads that itself; no MethodChannel needed. iOS:
+`GMSServices.provideAPIKey()` in `AppDelegate.swift`.
+
 ### B5 — Bug: `PATCH /api/v1/me` can 500 on a cleared last name — **FIXED**
 
 `customers.last_name` is declared `$table->string('last_name')` — **NOT NULL**
@@ -172,38 +201,63 @@ Prerequisite for everything; all later phases touch these files.
       clean, **120/120** app tests, **331/331** backend tests (2,401
       assertions).
 
-### Phase 1 — Provision native map keys (ops, 1–5 days elapsed)
+### Phase 1 — Provision native map keys — **IN PROGRESS** (ops)
 
-Blocks Phase 4 entirely. No code.
+Blocks Phase 4 entirely. No code. Values and hazards are under **B4** above.
 
-- Google Cloud console: enable **Maps SDK for Android** and **Maps SDK for iOS**
-- Android key restricted by package name + release **and** debug SHA-1
-- iOS key restricted by bundle ID
-- Decide delivery: `--dart-define` at build time, or extend the existing
-  `uk.co.saintslink/maps` MethodChannel that already serves the browser key
-- Set a billing budget alert before the first build ships
+- [x] Google Cloud console: enable **Maps SDK for Android** and **Maps SDK for iOS**
+- [ ] Create the Android key, restricted to package `uk.co.saintslink.app` +
+      debug SHA-1(s); API-restricted to Maps SDK for Android
+- [ ] Create the iOS key, restricted to bundle `uk.co.saintslink.saintsLink`;
+      API-restricted to Maps SDK for iOS
+- [ ] Put both in `android/local.properties` / iOS config — not in chat, not
+      in the backend `.env`
+- [ ] Set a billing budget alert before the first build ships
+- [ ] Add "register release SHA-1 on the Android key" to the release checklist
 
-### Phase 2 — Surface recents, then make them real (app 1 day, backend 1 day)
+### Phase 2 — Surface recents, then make them real
 
 Cheapest visible win. The data layer already exists.
 
-**App first, no backend needed:** `recentPlacesProvider` and the curated
-shortcut list (airports and cruise terminals, with server-matched coordinates)
-are already built and persisted — they are simply only visible *after* the
-address search field is opened. Surface both on Home.
+#### 2A — App — **DONE** (20 Sep 2026, `b118351`)
 
-**Then backend, resolving B3:**
+- [x] "Go again" section on Home directly under the search bar, from the
+      existing `recentPlacesProvider`. Hidden until there is real history —
+      the chip row already offers every shortcut, so a fallback list would be
+      a copy of the row above it.
+- [x] **Found and fixed while there:** the shortcut chips sent a bare address
+      string with no coordinates, so `isLocated` was false and the engine
+      matched the fare by text instead of measuring it — despite
+      `shortcutPlaces` holding the server's own name and position for the
+      same airport (verified against `TaxiOperationsSeeder`). The chips are
+      now the shortcut list itself. IATA codes kept on the labels.
+- [x] `home with recents` added to the screenshot harness via a fake
+      notifier; the real one reads SharedPreferences, whose channel never
+      answers in a widget test. `booking_home_reset_test` now asserts
+      `dropoff.isLocated`.
+
+#### 2B — Backend, resolving B3 (1 day) — **NEXT**
+
+**Decided: implicit frequency list.** No labels, no naming UI. The backend
+records each located place a signed-in customer books to or from, and returns
+the most frequently used. Simpler table, and it means the app's "Go again" is
+identical for a synced customer and a device-only guest — the source just
+changes.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/v1/places/saved` | The customer's saved places |
-| `POST /api/v1/places/saved` | Save one (label, address, place_id, lat, lng) |
-| `DELETE /api/v1/places/saved/{id}` | Remove one |
+| `GET /api/v1/places/recent` | The customer's most-used places, most frequent first |
+| `DELETE /api/v1/places/recent/{id}` | Forget one |
 
-New `customer_saved_places` table. Device recents stay as the offline fallback
-and as the guest experience — saved places sync for signed-in customers. This
-is also what finally backs the "Favourite locations" row, currently marked
-*Coming soon* on the account screen.
+No `POST`: a booking *is* the signal. `BookingService` upserts a row for each
+located pickup and dropoff when a signed-in customer books, bumping a
+`use_count` and `last_used_at`. New `customer_places` table
+(`customer_id, address, place_id, latitude, longitude, use_count,
+last_used_at`), unique on `(customer_id, place_id)`.
+
+Device recents stay as the offline fallback and as the guest experience. This
+also backs the "Favourite locations" row, currently *Coming soon* on the
+account screen — as a list of most-used places rather than a pinning UI.
 
 ### Phase 3 — Current location (backend ½ day, app 1 day)
 
@@ -286,9 +340,10 @@ pricing, capacity display or the sticky `Continue · £155.00` bar.
 ## Sequencing
 
 ```
-Day 1     ├── Phase 1 (ops: request map keys) ──────────────┐ elapsed  ← NEXT
+Day 1     ├── Phase 1 (ops: request map keys) ────── 🔶 SDKs on, keys pending
 Day 1     └── Phase 0 (merge amir, fix B5)          ✅ DONE │
-Days 2–3      Phase 2 (recents on Home, then saved places)  │
+Days 2–3      Phase 2A (recents on Home)            ✅ DONE │
+              Phase 2B (customer_places, backend)   ← NEXT  │
 Days 4–5      Phase 3 (current location)                    │
 Days 6–8      Phase 4 (native map) ◄────────────────────────┘ unblocked
 Days 9–12     Phase 5 (Home as booking entry)
@@ -337,9 +392,9 @@ New coverage worth writing:
 1. **Phase 4(b): approve a Google Routes integration?** Real recurring cost.
    Decide alongside whether the 1.22 multiplier should keep pricing
    off-catalogue journeys.
-2. **Saved places — labelled or implicit?** "Home" / "Work" with a label, or
-   just an unlabelled frequency list? Affects the table shape in Phase 2.
-3. **Who owns the Google Cloud project**, and how quickly can Phase 1 keys be
-   issued? This gates Phase 4.
+2. ~~**Saved places — labelled or implicit?**~~ **Decided: implicit.** A
+   frequency list, no labels. Table shape in Phase 2B reflects this.
+3. ~~**Who owns the Google Cloud project**~~ SDKs enabled 20 Sep; keys still
+   to be created against the values under B4.
 4. **Does dropping the `Book` tab need sign-off?** It is the most visible change
    in the plan to anyone already using the app.
