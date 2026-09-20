@@ -198,7 +198,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Plan your journey'), findsOneWidget);
-    expect(find.text('Book a transfer'), findsNothing);
+    expect(find.text('Plan a journey'), findsNothing);
     expect(find.textContaining('Tell us where and when'), findsNothing);
     await tester.tap(find.text('Add a stop'));
     await tester.pumpAndSettle();

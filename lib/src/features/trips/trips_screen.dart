@@ -67,7 +67,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                         state: state,
                         emptyTitle: 'No upcoming trips',
                         emptyBody:
-                            'Book a transfer and it will appear here, ready for the day.',
+                            'Plan a journey and it will appear here, ready for the day.',
                       )
                     : _TripList(
                         state.past,
@@ -85,7 +85,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/book'),
         icon: const Icon(Icons.add),
-        label: const Text('Book a transfer'),
+        label: const Text('Plan a journey'),
       ),
     );
   }
