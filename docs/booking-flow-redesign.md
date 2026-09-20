@@ -5,8 +5,9 @@
 > covers the *flow* rather than the screens: where booking starts, how fast a
 > customer reaches a price, and how the map behaves.
 >
-> **Progress:** Phases 0 and 2 complete (20 Sep 2026). Phase 1 in progress —
-> SDKs enabled, keys still to be created and restricted. Phase 3 next.
+> **Progress:** Phases 0, 2 and 3 complete (20 Sep 2026). Phase 1 in
+> progress — SDKs enabled, keys still to be created and restricted. Phase 4
+> (native map) is next and is blocked on those keys.
 
 Spans two repositories:
 
@@ -77,7 +78,7 @@ Note this is mostly a *display* concern, not a pricing one. Catalogue routes
 1.22 estimate only drives off-catalogue journeys. Whether that estimate is good
 enough for pricing is a separate business question and out of scope here.
 
-### B2 — No reverse geocoding endpoint
+### B2 — No reverse geocoding endpoint — **RESOLVED** (Phase 3)
 
 `PlacesController` exposes `autocomplete` and `details` only. "Use my current
 location" produces a lat/lng, and a lat/lng needs turning into an address a
@@ -272,28 +273,34 @@ Device recents stay as the offline fallback and as the guest experience.
 still *Coming soon*. It now has a real source — a most-used list with a
 forget action — and is a small follow-up rather than part of this phase.
 
-### Phase 3 — Current location (backend ½ day, app 1 day)
+### Phase 3 — Current location — **DONE** (20 Sep 2026; backend `d1f070e`, app `d860897`)
 
-**Backend, resolving B2:** `GET /api/v1/places/reverse?lat=&lng=`, throttled
-like its siblings, returning the same shape as `places/details` so the app maps
-it into the existing `PlaceSelection`. Keeping it server-side matches the
-established pattern and keeps the key off the device.
+- [x] **Backend, resolving B2:** `GET /api/v1/places/reverse?lat=&lng=` in
+      the throttled places group, same shape as `places/details`. Google
+      Geocoding API, rooftop result types first, cached on the position to
+      four decimals so a double tap is billed once. 422 with a message
+      outside the UK or where there is nothing to name; 503 the app can
+      retry on a Google failure. Six tests. Documented in `mobile-api.md`.
+- [x] **App:** `geolocator` behind a one-method `LocationSource`, so the
+      flow is testable without a device and the app cannot grow a location
+      watcher by accident. `ACCESS_COARSE/FINE_LOCATION` in the manifest,
+      `NSLocationWhenInUseUsageDescription` in `Info.plist`.
+- [x] "Use my current location" row at the top of the **pickup** search
+      only, threaded as `allowCurrentLocation` from `_RouteStop`. Prompt on
+      that tap, never at launch; foreground only.
+- [x] Every failure says something actionable and leaves the search usable:
+      services off, refused once, refused for good (with an **Open settings**
+      action — the app can no longer ask), no fix within 12 s, or the
+      server's refusal in its own words. Five widget tests. App **128/128**,
+      screenshots 24/24, backend **342/342**.
 
-**App:** `geolocator`, plus `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`
-in the Android manifest (only `INTERNET` is declared today) and
-`NSLocationWhenInUseUsageDescription` in `Info.plist`.
+**Needs from ops:** the server key (`GOOGLE_PLACES_API_KEY`) must have the
+**Geocoding API** enabled alongside Places, or `/places/reverse` returns 503.
 
-Two rules:
-
-- **When-in-use only.** A pre-booked transfer app has no business asking for
-  background location, and asking invites an App Store review rejection.
-- **Never prompt on launch.** Prompt on a deliberate tap of "Use my current
-  location" in the pickup field. A cold prompt gets denied, and on iOS a denial
-  is close to permanent — the feature is then dead for that user.
-
-A GPS fix gives coordinates, so `PlaceSelection.isLocated` is true and the
-journey prices precisely. The reverse geocode is what gives the customer a
-readable address and the driver somewhere to arrive.
+**Correction to the original text above:** a GPS fix on its own would *not*
+have priced precisely — `secureJourney` discards unverified client
+coordinates. It is the reverse geocode's verified `place_id` that makes the
+engine trust the position, which is why the endpoint returns one.
 
 ### Phase 4 — Native map (app 2–3 days, blocked on Phase 1)
 
@@ -357,8 +364,8 @@ Day 1     ├── Phase 1 (ops: request map keys) ────── 🔶 SDKs
 Day 1     └── Phase 0 (merge amir, fix B5)          ✅ DONE │
 Days 2–3      Phase 2A (recents on Home)            ✅ DONE │
               Phase 2B (customer_places + sync)     ✅ DONE │
-Days 4–5      Phase 3 (current location)            ← NEXT  │
-Days 6–8      Phase 4 (native map) ◄────────────────────────┘ unblocked
+Days 4–5      Phase 3 (current location)            ✅ DONE │
+Days 6–8      Phase 4 (native map) ◄─── ← NEXT, blocked on keys ┘
 Days 9–12     Phase 5 (Home as booking entry)
 Days 13–14    Phase 6 (split journey form)
 Day 15        Phase 7 (vehicle list)
@@ -367,8 +374,8 @@ Day 15        Phase 7 (vehicle list)
 Phases 2, 3, 6 and 7 are independent of the key provisioning and can absorb any
 delay in Phase 1.
 
-**Backend total: ~½ day remaining** (reverse geocode; B5 and the places
-list are done).
+**Backend: done** for every phase except the optional Routes API integration
+in Phase 4(b).
 Larger only if the Routes API integration in Phase 4(b) is approved.
 
 ---
@@ -393,10 +400,10 @@ of bug that keeps appearing.
 
 New coverage worth writing:
 
-- Location permission denied, and permission permanently denied
-- Reverse geocode failure — the pickup field must stay usable
+- ~~Location permission denied, and permission permanently denied~~ done
+- ~~Reverse geocode failure — the pickup field must stay usable~~ done
 - Map unavailable, with and without a network
-- Guest vs signed-in recents (device-only vs synced)
+- ~~Guest vs signed-in recents (device-only vs synced)~~ done
 
 ---
 
