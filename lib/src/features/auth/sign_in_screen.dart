@@ -140,6 +140,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     return Scaffold(
       backgroundColor: colors.surface,
       body: CustomScrollView(
+        // No bounce: an over-scroll would pull the photo down off the top.
+        physics: const ClampingScrollPhysics(),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         slivers: [
           SliverToBoxAdapter(

@@ -72,39 +72,48 @@ class ServiceScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: HeroPage(
-              hero: HeroBanner(
-                image: AssetImage(kind.image),
-                height: 240,
-                bottomInset: OverlapSheet.overlap,
-                title: kind.title,
-                showBack: true,
-              ),
-              sheet: OverlapSheet(
-                padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SectionTitle(kind.listTitle, subtitle: kind.listSubtitle),
-                    const SizedBox(height: 14),
-                    for (final destination in kind.destinations) ...[
-                      _DestinationRow(
-                        destination: destination,
-                        icon: kind.icon,
-                        onTap: () => quoteFor(destination),
-                      ),
-                      const SizedBox(height: 10),
+      body: RefreshIndicator(
+        color: context.colors.accent,
+        backgroundColor: context.colors.card,
+        edgeOffset: MediaQuery.paddingOf(context).top,
+        onRefresh: () => ref
+            .read(bookingFlowProvider.notifier)
+            .loadVehicles(force: true)
+            .catchError((_) {}),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: HeroPage(
+                hero: HeroBanner(
+                  image: AssetImage(kind.image),
+                  height: 240,
+                  bottomInset: OverlapSheet.overlap,
+                  title: kind.title,
+                  showBack: true,
+                ),
+                sheet: OverlapSheet(
+                  padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SectionTitle(kind.listTitle, subtitle: kind.listSubtitle),
+                      const SizedBox(height: 14),
+                      for (final destination in kind.destinations) ...[
+                        _DestinationRow(
+                          destination: destination,
+                          icon: kind.icon,
+                          onTap: () => quoteFor(destination),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: BottomAction(
         child: FilledButton(
