@@ -8,15 +8,16 @@ import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../domain/place.dart';
 import '../../widgets/common.dart';
+import '../../widgets/hero_banner.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/inner_screen_header.dart';
 import '../../widgets/route_timeline.dart';
 import '../places/address_search_field.dart';
 import '../places/current_location.dart';
 import 'booking_flow_controller.dart';
-import 'booking_screen_header.dart';
 import 'google_journey_map.dart';
 import 'journey_draft.dart';
+import 'details_screen.dart';
 import 'journey_date_time_sheet.dart';
 import 'vehicle_screen.dart';
 
@@ -32,7 +33,7 @@ class JourneyScreen extends ConsumerStatefulWidget {
   ConsumerState<JourneyScreen> createState() => _JourneyScreenState();
 }
 
-enum JourneyStage { route, when, vehicles }
+enum JourneyStage { route, when, vehicles, details }
 
 class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   // Always the route first, even when preset: the customer sees it on the map before anything else.
@@ -42,6 +43,7 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   /// The sheet's height as a fraction of the body, as it moves. Only the map
   /// listens, so a drag rebuilds the map and nothing else.
   final _sheetExtent = ValueNotifier<double>(0.56);
+  final _details = GlobalKey<DetailsStageState>();
 
   @override
   void initState() {
@@ -57,14 +59,21 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
     super.dispose();
   }
 
+  /// As high as the sheet may go: just under the buttons floating over the
+  /// map. Set from the layout, since it depends on the status bar.
+  double _maxExtent = 0.9;
+
   void _go(JourneyStage stage) {
     setState(() => _stage = stage);
     _sheetExtent.value = _initialExtent(stage);
     _syncTicker();
   }
 
-  static double _initialExtent(JourneyStage stage) =>
-      stage == JourneyStage.route ? 0.56 : 0.72;
+  double _initialExtent(JourneyStage stage) => switch (stage) {
+    JourneyStage.route => 0.56,
+    JourneyStage.when || JourneyStage.vehicles => 0.72,
+    JourneyStage.details => _maxExtent,
+  };
 
   // The quote lasts thirty minutes; while the vehicles show, tick so its expiry is noticed.
   void _syncTicker() {
@@ -107,149 +116,201 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
         selectedFits &&
         state.totalDue != null;
 
+    final title = switch (stage) {
+      JourneyStage.route => 'Plan your journey',
+      JourneyStage.when => 'When are you travelling?',
+      JourneyStage.vehicles => 'Choose your vehicle',
+      JourneyStage.details => 'Your details',
+    };
+    // Back walks the stages; only the first leaves the form.
+    final VoidCallback onBack = switch (stage) {
+      JourneyStage.route => () => context.pop(),
+      JourneyStage.when => () => _go(JourneyStage.route),
+      JourneyStage.vehicles => () => _go(JourneyStage.when),
+      JourneyStage.details => () => _go(JourneyStage.vehicles),
+    };
+    final topInset = MediaQuery.paddingOf(context).top;
+
     return Scaffold(
-      appBar: BookingScreenHeader(
-        journey: journey,
-        curvedEdge: false,
-        title: switch (stage) {
-          JourneyStage.route => 'Plan your journey',
-          JourneyStage.when => 'When are you travelling?',
-          JourneyStage.vehicles => 'Choose your vehicle',
-        },
-        // Back walks the stages; only the first leaves the form.
-        onBack: switch (stage) {
-          JourneyStage.route => () => context.pop(),
-          JourneyStage.when => () => _go(JourneyStage.route),
-          JourneyStage.vehicles => () => _go(JourneyStage.when),
-        },
-        actions: [
-          if (!journey.pickup.isEmpty ||
-              !journey.dropoff.isEmpty ||
-              journey.pickupDate != null)
-            IconButton(
-              tooltip: 'Clear journey',
-              onPressed: () {
-                controller.reset();
-                _go(JourneyStage.route);
-              },
-              icon: const Icon(Icons.restart_alt_rounded),
-            ),
-        ],
-      ),
+      // The map is the ground for the whole booking: it runs under the
+      // status bar, and the only chrome is two buttons floating over it.
       body: LayoutBuilder(
-        builder: (context, constraints) => Stack(
-          fit: StackFit.expand,
-          children: [
-            ValueListenableBuilder<double>(
-              valueListenable: _sheetExtent,
-              builder: (context, extent, _) => GoogleJourneyMap(
-                journey: journey,
-                interactive: true,
-                regionWhenEmpty: true,
-                bottomPadding: extent * constraints.maxHeight,
+        builder: (context, constraints) {
+          _maxExtent = 1 - (topInset + 70) / constraints.maxHeight;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              ValueListenableBuilder<double>(
+                valueListenable: _sheetExtent,
+                builder: (context, extent, _) => GoogleJourneyMap(
+                  journey: journey,
+                  interactive: true,
+                  regionWhenEmpty: true,
+                  topPadding: (topInset + 64).round(),
+                  bottomPadding: extent * constraints.maxHeight,
+                ),
               ),
-            ),
-            NotificationListener<DraggableScrollableNotification>(
-              onNotification: (n) {
-                _sheetExtent.value = n.extent;
-                return false;
-              },
-              child: DraggableScrollableSheet(
-                key: ValueKey(stage),
-                initialChildSize: _initialExtent(stage),
-                minChildSize: 0.4,
-                maxChildSize: 0.94,
-                snap: true,
-                builder: (context, scroll) => Material(
-                  color: colors.surface,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      const _DragHandle(),
-                      Expanded(
-                        child: ListView(
-                          controller: scroll,
-                          keyboardDismissBehavior:
-                              ScrollViewKeyboardDismissBehavior.onDrag,
-                          padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
-                          children: [
-                            BookingProgress(
-                              step: stage == JourneyStage.vehicles ? 1 : 0,
-                            ),
-                            const SizedBox(height: 20),
-                            switch (stage) {
-                              JourneyStage.route => _RouteEditor(
-                                journey: journey,
-                                controller: controller,
-                              ),
-                              JourneyStage.when => _WhenAndWho(
-                                journey: journey,
-                                controller: controller,
-                                onEditRoute: () => _go(JourneyStage.route),
-                              ),
-                              JourneyStage.vehicles => const VehicleStage(),
-                            },
-                            if (stage == JourneyStage.when &&
-                                state.quoteError != null) ...[
-                              const SizedBox(height: 16),
-                              ErrorNotice(state.quoteError!),
-                            ],
-                          ],
-                        ),
-                      ),
-                      BottomAction(
-                        verticalPadding: 8,
-                        child: switch (stage) {
-                          JourneyStage.route => FilledButton(
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                            ),
-                            onPressed: journey.hasRoute
-                                ? () => _go(JourneyStage.when)
-                                : null,
-                            child: const Text('Continue'),
-                          ),
-                          JourneyStage.when => FilledButton(
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                            ),
-                            onPressed: journey.isQuotable && !state.isQuoting
-                                ? () async {
-                                    if (await controller.requestQuote() &&
-                                        mounted) {
-                                      _go(JourneyStage.vehicles);
-                                    }
-                                  }
-                                : null,
-                            child: state.isQuoting
-                                ? const ButtonSpinner()
-                                : const Text('See prices'),
-                          ),
-                          JourneyStage.vehicles => FilledButton(
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                            ),
-                            onPressed: canContinue
-                                ? () => context.push('/book/details')
-                                : null,
-                            child: Text(
-                              canContinue
-                                  ? 'Continue · ${Formatting.money(state.totalDue!)}'
-                                  : 'Select a vehicle',
-                            ),
-                          ),
+              Positioned(
+                top: topInset + 10,
+                left: 14,
+                right: 14,
+                child: Row(
+                  children: [
+                    HeroIconButton(
+                      icon: Icons.arrow_back_rounded,
+                      semanticLabel: 'Back',
+                      onPressed: onBack,
+                    ),
+                    const Spacer(),
+                    if (!journey.pickup.isEmpty ||
+                        !journey.dropoff.isEmpty ||
+                        journey.pickupDate != null)
+                      HeroIconButton(
+                        icon: Icons.restart_alt_rounded,
+                        semanticLabel: 'Clear journey',
+                        onPressed: () {
+                          controller.reset();
+                          _go(JourneyStage.route);
                         },
                       ),
-                    ],
+                  ],
+                ),
+              ),
+              NotificationListener<DraggableScrollableNotification>(
+                onNotification: (n) {
+                  _sheetExtent.value = n.extent;
+                  return false;
+                },
+                child: DraggableScrollableSheet(
+                  key: ValueKey(stage),
+                  initialChildSize: _initialExtent(stage),
+                  minChildSize: 0.4,
+                  maxChildSize: _maxExtent,
+                  snap: true,
+                  builder: (context, scroll) => Material(
+                    color: colors.surface,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        const _DragHandle(),
+                        Expanded(
+                          child: ListView(
+                            controller: scroll,
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
+                                  color: colors.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              BookingProgress(
+                                step: switch (stage) {
+                                  JourneyStage.route || JourneyStage.when => 0,
+                                  JourneyStage.vehicles => 1,
+                                  JourneyStage.details => 2,
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              switch (stage) {
+                                JourneyStage.route => _RouteEditor(
+                                  journey: journey,
+                                  controller: controller,
+                                ),
+                                JourneyStage.when => _WhenAndWho(
+                                  journey: journey,
+                                  controller: controller,
+                                  onEditRoute: () => _go(JourneyStage.route),
+                                ),
+                                JourneyStage.vehicles => const VehicleStage(),
+                                JourneyStage.details => DetailsStage(
+                                  key: _details,
+                                ),
+                              },
+                              if (stage == JourneyStage.when &&
+                                  state.quoteError != null) ...[
+                                const SizedBox(height: 16),
+                                ErrorNotice(state.quoteError!),
+                              ],
+                            ],
+                          ),
+                        ),
+                        BottomAction(
+                          verticalPadding: 8,
+                          child: switch (stage) {
+                            JourneyStage.route => FilledButton(
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                              ),
+                              onPressed: journey.hasRoute
+                                  ? () => _go(JourneyStage.when)
+                                  : null,
+                              child: const Text('Continue'),
+                            ),
+                            JourneyStage.when => FilledButton(
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                              ),
+                              onPressed: journey.isQuotable && !state.isQuoting
+                                  ? () async {
+                                      if (await controller.requestQuote() &&
+                                          mounted) {
+                                        _go(JourneyStage.vehicles);
+                                      }
+                                    }
+                                  : null,
+                              child: state.isQuoting
+                                  ? const ButtonSpinner()
+                                  : const Text('See prices'),
+                            ),
+                            JourneyStage.vehicles => FilledButton(
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                              ),
+                              onPressed: canContinue
+                                  ? () => _go(JourneyStage.details)
+                                  : null,
+                              child: Text(
+                                canContinue
+                                    ? 'Continue · ${Formatting.money(state.totalDue!)}'
+                                    : 'Select a vehicle',
+                              ),
+                            ),
+                            JourneyStage.details => FilledButton(
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size.fromHeight(48),
+                              ),
+                              onPressed: state.isBooking
+                                  ? null
+                                  : () => _details.currentState?.submit(),
+                              child: state.isBooking
+                                  ? const ButtonSpinner()
+                                  : Text(
+                                      state.totalDue == null
+                                          ? 'Confirm booking'
+                                          : 'Confirm booking · ${Formatting.money(state.totalDue!)}',
+                                    ),
+                            ),
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }

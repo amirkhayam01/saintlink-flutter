@@ -166,8 +166,9 @@ class HeroIconButton extends StatelessWidget {
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: IconButton(
+        tooltip: semanticLabel,
         onPressed: onPressed ?? () => Navigator.of(context).maybePop(),
-        icon: Icon(icon, color: Colors.white, semanticLabel: semanticLabel),
+        icon: Icon(icon, color: Colors.white),
       ),
     );
   }

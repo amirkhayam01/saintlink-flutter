@@ -6,7 +6,6 @@ import 'features/auth/auth_controller.dart';
 import 'features/auth/sign_in_screen.dart';
 import 'features/booking/booking_flow_controller.dart';
 import 'features/booking/confirmation_screen.dart';
-import 'features/booking/details_screen.dart';
 import 'features/booking/journey_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/profile/profile_screen.dart';
@@ -122,11 +121,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (_, _) => const JourneyScreen(),
         routes: [
-          GoRoute(
-            path: 'details',
-            parentNavigatorKey: _rootNavigatorKey,
-            builder: (_, _) => const DetailsScreen(),
-          ),
           GoRoute(
             path: 'confirmed',
             parentNavigatorKey: _rootNavigatorKey,

@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:saints_link/src/core/providers.dart';
 import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/features/booking/booking_flow_controller.dart';
-import 'package:saints_link/src/features/booking/details_screen.dart';
+import 'package:saints_link/src/features/booking/journey_screen.dart';
 
 import '../support/fakes.dart';
 
@@ -38,7 +38,7 @@ void main() {
         routes: [
           GoRoute(
             path: '/book/details',
-            builder: (_, _) => const DetailsScreen(),
+            builder: (_, _) => const JourneyScreen(initialStage: JourneyStage.details),
           ),
           GoRoute(
             path: '/book/confirmed',
@@ -146,7 +146,7 @@ void main() {
                   .copyWith(textScaler: const TextScaler.linear(2)),
               child: child!,
             ),
-            home: const DetailsScreen(),
+            home: const JourneyScreen(initialStage: JourneyStage.details),
           ),
         ),
       );

@@ -9,7 +9,6 @@ import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/features/auth/sign_in_screen.dart';
 import 'package:saints_link/src/features/booking/booking_flow_controller.dart';
-import 'package:saints_link/src/features/booking/details_screen.dart';
 import 'package:saints_link/src/features/booking/journey_screen.dart';
 import 'package:saints_link/src/features/booking/route_line_provider.dart';
 import 'package:saints_link/src/features/booking/journey_date_time_sheet.dart';
@@ -364,7 +363,7 @@ void main() {
   );
   testWidgets(
     'details',
-    (t) => shot(t, 'details', const DetailsScreen(), prime: primeQuote),
+    (t) => shot(t, 'details', const JourneyScreen(initialStage: JourneyStage.details), prime: primeQuote),
   );
   testWidgets('sign in', (t) => shot(t, 'sign_in', const SignInScreen()));
   testWidgets(

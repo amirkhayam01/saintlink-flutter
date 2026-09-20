@@ -3,26 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/env.dart';
-import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../core/links.dart';
 import '../../widgets/common.dart';
-import '../../widgets/inner_screen_header.dart';
-import '../../widgets/route_timeline.dart';
 import '../../widgets/tiles.dart';
 import '../auth/auth_controller.dart';
 import 'booking_flow_controller.dart';
-import 'booking_screen_header.dart';
 
 /// Step three: who is travelling. Prefilled but editable; the booker is not always the passenger.
-class DetailsScreen extends ConsumerStatefulWidget {
-  const DetailsScreen({super.key});
+class DetailsStage extends ConsumerStatefulWidget {
+  const DetailsStage({super.key});
 
   @override
-  ConsumerState<DetailsScreen> createState() => _DetailsScreenState();
+  ConsumerState<DetailsStage> createState() => DetailsStageState();
 }
 
-class _DetailsScreenState extends ConsumerState<DetailsScreen> {
+/// The form's content for the journey sheet's last stage. The sheet's button
+/// calls [submit]; on success the confirmation is pushed over everything.
+class DetailsStageState extends ConsumerState<DetailsStage> {
   final _form = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _phone;
@@ -54,7 +52,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> submit() async {
     if (!_form.currentState!.validate()) return;
 
     final booking = await ref
@@ -75,176 +73,143 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(bookingFlowProvider);
     final journey = state.journey;
-    final total = state.totalDue;
     final fieldError = state.fieldErrors;
 
-    return Scaffold(
-      appBar: BookingScreenHeader(title: 'Your details', journey: journey),
-      body: Form(
-        key: _form,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          children: [
-            const BookingProgress(step: 2),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                child: RouteTimeline(
-                  dense: true,
-                  points: [
-                    RoutePoint(address: journey.pickup.address),
-                    for (final stop in journey.via)
-                      if (!stop.isEmpty) RoutePoint(address: stop.address),
-                    RoutePoint(address: journey.dropoff.address),
-                  ],
-                ),
-              ),
+    return Form(
+      key: _form,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SectionTitle('Lead passenger'),
+          const SizedBox(height: 14),
+          const FieldLabel('Full name'),
+          TextFormField(
+            controller: _name,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              hintText: 'e.g. Ada Lovelace',
+              prefixIcon: const Icon(Icons.person_outline, size: 20),
+              errorText: fieldError['customer_name']?.first,
             ),
-            const SizedBox(height: 24),
-            const SectionTitle('Lead passenger'),
-            const SizedBox(height: 14),
-            const FieldLabel('Full name'),
-            TextFormField(
-              controller: _name,
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                hintText: 'e.g. Ada Lovelace',
-                prefixIcon: const Icon(Icons.person_outline, size: 20),
-                errorText: fieldError['customer_name']?.first,
-              ),
-              validator: (v) =>
-                  (v ?? '').trim().isEmpty ? 'Please enter a name' : null,
+            validator: (v) =>
+                (v ?? '').trim().isEmpty ? 'Please enter a name' : null,
+          ),
+          const SizedBox(height: 14),
+          const FieldLabel('Mobile number'),
+          TextFormField(
+            controller: _phone,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              hintText: '07700 900123',
+              prefixIcon: const Icon(Icons.phone_iphone, size: 20),
+              errorText: fieldError['customer_phone']?.first,
             ),
-            const SizedBox(height: 14),
-            const FieldLabel('Mobile number'),
-            TextFormField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                hintText: '07700 900123',
-                prefixIcon: const Icon(Icons.phone_iphone, size: 20),
-                errorText: fieldError['customer_phone']?.first,
-              ),
-              validator: (v) => (v ?? '').trim().length < 10
-                  ? 'Please enter a valid mobile number'
-                  : null,
+            validator: (v) => (v ?? '').trim().length < 10
+                ? 'Please enter a valid mobile number'
+                : null,
+          ),
+          const SizedBox(height: 14),
+          const FieldLabel('Email', optional: true),
+          TextFormField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autocorrect: false,
+            decoration: InputDecoration(
+              hintText: 'you@example.com',
+              prefixIcon: const Icon(Icons.mail_outline, size: 20),
+              errorText: fieldError['customer_email']?.first,
             ),
-            const SizedBox(height: 14),
-            const FieldLabel('Email', optional: true),
-            TextFormField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              autocorrect: false,
-              decoration: InputDecoration(
-                hintText: 'you@example.com',
-                prefixIcon: const Icon(Icons.mail_outline, size: 20),
-                errorText: fieldError['customer_email']?.first,
-              ),
-              validator: (v) {
-                final text = (v ?? '').trim();
-                if (text.isEmpty) return null;
+            validator: (v) {
+              final text = (v ?? '').trim();
+              if (text.isEmpty) return null;
 
-                return text.contains('@') && text.contains('.')
+              return text.contains('@') && text.contains('.')
+                  ? null
+                  : 'Please enter a valid email address';
+            },
+          ),
+          const SizedBox(height: 24),
+          if (journey.touchesAirport) ...[
+            const SectionTitle('Flight details'),
+            const SizedBox(height: 14),
+            const FieldLabel('Flight number', optional: true),
+            TextFormField(
+              controller: _flight,
+              textCapitalization: TextCapitalization.characters,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                hintText: 'e.g. BA123',
+                prefixIcon: const Icon(Icons.flight_takeoff, size: 20),
+                errorText: fieldError['outbound_flight_number']?.first,
+              ),
+              validator: (value) {
+                final text = (value ?? '').trim().toUpperCase();
+                if (text.isEmpty) return null;
+                return RegExp(r'^[A-Z0-9]{2,4}\s?\d{1,4}[A-Z]?$')
+                            .hasMatch(text) &&
+                        text.length <= 20
                     ? null
-                    : 'Please enter a valid email address';
+                    : 'Please enter a valid flight number';
               },
+              onChanged: (value) => ref
+                  .read(bookingFlowProvider.notifier)
+                  .updateFlightDetails(
+                    flightNumber: value.trim().toUpperCase(),
+                  ),
+            ),
+            const SizedBox(height: 14),
+            const FieldLabel('Terminal', optional: true),
+            TextFormField(
+              controller: _terminal,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                hintText: 'e.g. T5',
+                errorText: fieldError['outbound_terminal']?.first,
+              ),
+              validator: (value) => (value ?? '').trim().length > 100
+                  ? 'Terminal is too long'
+                  : null,
+              onChanged: (value) => ref
+                  .read(bookingFlowProvider.notifier)
+                  .updateFlightDetails(terminal: value.trim()),
             ),
             const SizedBox(height: 24),
-            if (journey.touchesAirport) ...[
-              const SectionTitle('Flight details'),
-              const SizedBox(height: 14),
-              const FieldLabel('Flight number', optional: true),
-              TextFormField(
-                controller: _flight,
-                textCapitalization: TextCapitalization.characters,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  hintText: 'e.g. BA123',
-                  prefixIcon: const Icon(Icons.flight_takeoff, size: 20),
-                  errorText: fieldError['outbound_flight_number']?.first,
-                ),
-                validator: (value) {
-                  final text = (value ?? '').trim().toUpperCase();
-                  if (text.isEmpty) return null;
-                  return RegExp(r'^[A-Z0-9]{2,4}\s?\d{1,4}[A-Z]?$')
-                              .hasMatch(text) &&
-                          text.length <= 20
-                      ? null
-                      : 'Please enter a valid flight number';
-                },
-                onChanged: (value) => ref
-                    .read(bookingFlowProvider.notifier)
-                    .updateFlightDetails(
-                      flightNumber: value.trim().toUpperCase(),
-                    ),
-              ),
-              const SizedBox(height: 14),
-              const FieldLabel('Terminal', optional: true),
-              TextFormField(
-                controller: _terminal,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  hintText: 'e.g. T5',
-                  errorText: fieldError['outbound_terminal']?.first,
-                ),
-                validator: (value) => (value ?? '').trim().length > 100
-                    ? 'Terminal is too long'
-                    : null,
-                onChanged: (value) => ref
-                    .read(bookingFlowProvider.notifier)
-                    .updateFlightDetails(terminal: value.trim()),
-              ),
-              const SizedBox(height: 24),
-            ],
-            const SectionTitle('For your driver'),
-            const SizedBox(height: 14),
-            const FieldLabel('Notes', optional: true),
-            TextFormField(
-              controller: _notes,
-              minLines: 2,
-              maxLines: 4,
-              maxLength: 2000,
-              buildCounter: (
-                _, {
-                required currentLength,
-                required isFocused,
-                maxLength,
-              }) => null,
-              decoration: const InputDecoration(
-                hintText: 'Add a note for your driver',
-                prefixIcon: Padding(
-                  padding: EdgeInsets.only(bottom: 22),
-                  child: Icon(Icons.chat_bubble_outline, size: 20),
-                ),
-              ),
-            ),
-            if (state.bookingError != null) ...[
-              const SizedBox(height: 16),
-              ErrorNotice(state.bookingError!),
-            ],
-            const SizedBox(height: 20),
-            _TermsLine(
-              onTerms: () => openLink(context, Env.termsUrl),
-              onPrivacy: () => openLink(context, Env.privacyUrl),
-            ),
           ],
-        ),
-      ),
-      bottomNavigationBar: BottomAction(
-        child: FilledButton(
-          onPressed: state.isBooking ? null : _submit,
-          child: state.isBooking
-              ? const ButtonSpinner()
-              : Text(
-                  total == null
-                      ? 'Confirm booking'
-                      : 'Confirm booking · ${Formatting.money(total)}',
-                ),
-        ),
+          const SectionTitle('For your driver'),
+          const SizedBox(height: 14),
+          const FieldLabel('Notes', optional: true),
+          TextFormField(
+            controller: _notes,
+            minLines: 2,
+            maxLines: 4,
+            maxLength: 2000,
+            buildCounter: (
+              _, {
+              required currentLength,
+              required isFocused,
+              maxLength,
+            }) => null,
+            decoration: const InputDecoration(
+              hintText: 'Add a note for your driver',
+              prefixIcon: Padding(
+                padding: EdgeInsets.only(bottom: 22),
+                child: Icon(Icons.chat_bubble_outline, size: 20),
+              ),
+            ),
+          ),
+          if (state.bookingError != null) ...[
+            const SizedBox(height: 16),
+            ErrorNotice(state.bookingError!),
+          ],
+          const SizedBox(height: 20),
+          _TermsLine(
+            onTerms: () => openLink(context, Env.termsUrl),
+            onPrivacy: () => openLink(context, Env.privacyUrl),
+          ),
+        ],
       ),
     );
   }
