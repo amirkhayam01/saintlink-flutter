@@ -68,12 +68,6 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
                       onChanged: (i) => setState(() => _group = i),
                     ),
                     const SizedBox(height: 20),
-                    const CalloutCard(
-                      eyebrow: 'Fixed price, every time',
-                      headline: 'No meter',
-                      body: 'Saloon car, one way. The exact price for your date and vehicle is shown before you book.',
-                    ),
-                    const SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
                         color: colors.card,
