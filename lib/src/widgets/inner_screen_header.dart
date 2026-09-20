@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../core/theme.dart';
 
@@ -23,10 +24,7 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFACC15), // AppTheme.brand
-                Color(0xFFEAB308), // darker gold
-              ],
+              colors: [AppTheme.brand, AppTheme.brandDark],
             ),
           ),
         ),
@@ -54,6 +52,15 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
           ? AppTheme.midnight
           : Colors.transparent,
       foregroundColor: effectiveTitleColor,
+      /*
+       * A transparent bar leaves Flutter guessing at the status bar icons, and
+       * it guesses from the transparent colour rather than the background
+       * behind it: white icons over gold. The title colour already knows which
+       * ground it sits on, so the overlay follows it.
+       */
+      systemOverlayStyle: effectiveTitleColor == Colors.white
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       flexibleSpace: background == null
           ? null
           : SizedBox.expand(child: background),

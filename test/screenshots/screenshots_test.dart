@@ -194,6 +194,11 @@ void main() {
         c.read(authControllerProvider);
         await Future<void>.microtask(() {});
       }));
+  testWidgets('profile dark', (t) => shot(t, 'profile_dark', const ProfileScreen(), theme: AppTheme.dark(), prime: (c) async {
+        c.read(authControllerProvider);
+        await Future<void>.microtask(() {});
+      }));
+  testWidgets('trips dark', (t) => shot(t, 'trips_dark', const TripsScreen(), theme: AppTheme.dark()));
   testWidgets('trip detail', (t) => shot(t, 'trip_detail', const TripDetailScreen(reference: 'SL-8K2M'), prime: (c) async {
         bookings.nextBooking = sample('SL-8K2M');
       }));

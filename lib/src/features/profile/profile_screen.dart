@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../core/theme_controller.dart';
 import '../../domain/customer.dart';
 import '../../widgets/common.dart';
+import '../../widgets/inner_screen_header.dart';
 import '../auth/auth_controller.dart';
 import 'profile_controller.dart';
 
@@ -23,7 +24,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late final TextEditingController _lastName;
   late final TextEditingController _email;
   late bool _marketingConsent;
-  bool _ridePin = false;
 
   @override
   void initState() {
@@ -43,15 +43,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.dispose();
   }
 
+  /*
+   * The switch moves first so it feels immediate, which means a failed save
+   * has to put it back: leaving it flipped would tell the customer we hold a
+   * preference we never stored.
+   */
   Future<void> _saveMarketing(bool consent) async {
     final customer = ref.read(authControllerProvider).customer;
     if (customer == null) return;
-    await ref.read(profileControllerProvider.notifier).save(
+
+    setState(() => _marketingConsent = consent);
+
+    final saved = await ref.read(profileControllerProvider.notifier).save(
           firstName: customer.firstName,
           lastName: customer.lastName ?? '',
           email: customer.email ?? '',
           marketingConsent: consent,
         );
+
+    if (saved || !mounted) return;
+
+    setState(() => _marketingConsent = !consent);
+    showMessage(
+      context,
+      ref.read(profileControllerProvider).error ??
+          'We could not save that just now. Please try again.',
+    );
   }
 
   void _openEditSheet(Customer customer) {
@@ -85,36 +102,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: colors.surface,
+      appBar: InnerScreenHeader(
+        title: 'Account',
+        showBack: false,
+        background: InnerScreenHeader.brandBackground(),
+        actions: [
+          IconButton(
+            tooltip: 'Edit profile',
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            onPressed: () => _openEditSheet(customer),
+          ),
+        ],
+      ),
       body: SafeArea(
+        top: false,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
           children: [
-            // ── Account Header ──
-            Row(
-              children: [
-                Text(
-                  'Account',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: colors.ink,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  tooltip: 'Edit profile',
-                  icon: Icon(
-                    Icons.edit_outlined,
-                    size: 20,
-                    color: colors.ink,
-                  ),
-                  onPressed: () => _openEditSheet(customer),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
             // ── Account Identity Card ──
             _CardContainer(
               onTap: () => _openEditSheet(customer),
@@ -122,19 +126,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Row(
                   children: [
-                    // Green Avatar
                     Container(
                       width: 54,
                       height: 54,
                       alignment: Alignment.center,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF16A34A),
+                        color: AppTheme.brand,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
                         _initials(customer),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.midnight,
                           fontSize: 19,
                           fontWeight: FontWeight.w700,
                         ),
@@ -174,6 +177,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               color: colors.inkMuted,
                             ),
                           ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Your number is how you sign in. To change it, '
+                            'sign out and sign in with the new one.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              height: 1.3,
+                              color: colors.inkMuted,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -190,53 +203,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 children: [
                   _ProfileTile(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.bookmark_rounded,
                       size: 21,
-                      color: Color(0xFF18181B),
+                      color: colors.ink,
                     ),
-                    title: 'Favorite Locations',
-                    showChevron: true,
-                    onTap: () => showMessage(
-                      context,
-                      'Saved favourite locations will appear here.',
-                    ),
+                    title: 'Favourite locations',
+                    trailing: const _ComingSoon(),
                   ),
                   _tileDivider(colors),
                   _ProfileTile(
                     icon: const _FontSizeGlyph(),
                     title: 'Font size',
-                    trailing: Text(
-                      'Default',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: colors.inkMuted,
-                      ),
-                    ),
-                    showChevron: false,
-                    onTap: () => showMessage(
-                      context,
-                      'Font size follows system preferences.',
-                    ),
+                    trailing: const _ComingSoon(),
                   ),
                   _tileDivider(colors),
                   _ProfileTile(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.vpn_key_rounded,
                       size: 21,
-                      color: Color(0xFF18181B),
+                      color: colors.ink,
                     ),
                     title: 'Ride Pin',
-                    showChevron: false,
-                    trailing: Transform.scale(
-                      scale: 0.85,
-                      alignment: Alignment.centerRight,
-                      child: Switch.adaptive(
-                        value: _ridePin,
-                        activeTrackColor: AppTheme.brand,
-                        onChanged: (val) => setState(() => _ridePin = val),
-                      ),
-                    ),
+                    trailing: const _ComingSoon(),
                   ),
                   _tileDivider(colors),
                   _ProfileTile(
@@ -273,10 +262,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Switch.adaptive(
                         value: _marketingConsent,
                         activeTrackColor: AppTheme.brand,
-                        onChanged: (val) {
-                          setState(() => _marketingConsent = val);
-                          _saveMarketing(val);
-                        },
+                        onChanged: _saveMarketing,
                       ),
                     ),
                   ),
@@ -292,47 +278,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 children: [
                   _ProfileTile(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.camera_alt_outlined,
                       size: 21,
-                      color: Color(0xFF18181B),
+                      color: colors.ink,
                     ),
                     title: 'Instagram',
                     showChevron: true,
-                    onTap: () => openLink(context, 'https://instagram.com/saintslink'),
+                    onTap: () => openLink(context, Env.instagramUrl),
                   ),
                   _tileDivider(colors),
                   _ProfileTile(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.music_note_rounded,
                       size: 21,
-                      color: Color(0xFF18181B),
+                      color: colors.ink,
                     ),
                     title: 'TikTok',
                     showChevron: true,
-                    onTap: () => openLink(context, 'https://tiktok.com/@saintslink'),
+                    onTap: () => openLink(context, Env.tiktokUrl),
                   ),
                   _tileDivider(colors),
                   _ProfileTile(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.facebook_rounded,
                       size: 21,
-                      color: Color(0xFF18181B),
+                      color: colors.ink,
                     ),
                     title: 'Facebook',
                     showChevron: true,
-                    onTap: () => openLink(context, 'https://facebook.com/saintslink'),
+                    onTap: () => openLink(context, Env.facebookUrl),
                   ),
                   _tileDivider(colors),
                   _ProfileTile(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.share_outlined,
                       size: 20,
-                      color: Color(0xFF18181B),
+                      color: colors.ink,
                     ),
                     title: 'Invite friends',
-                    showChevron: true,
-                    onTap: () => openLink(context, Env.websiteUrl),
+                    trailing: const _ComingSoon(),
                   ),
                 ],
               ),
@@ -572,10 +557,10 @@ class _ProfileTile extends StatelessWidget {
             ?trailing,
             if (showChevron) ...[
               const SizedBox(width: 4),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: Color(0xFF9CA3AF),
+                color: colors.inkMuted,
               ),
             ],
           ],
@@ -583,6 +568,23 @@ class _ProfileTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Marks a row the design shows but no feature stands behind yet. The row
+/// stays visible so the shape of the screen is settled, and stays inert so it
+/// never promises something tapping it cannot deliver.
+class _ComingSoon extends StatelessWidget {
+  const _ComingSoon();
+
+  @override
+  Widget build(BuildContext context) => Text(
+        'Coming soon',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: context.colors.inkMuted,
+        ),
+      );
 }
 
 /// The "Aa" typography glyph seen in the screenshot.

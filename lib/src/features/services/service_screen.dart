@@ -18,7 +18,7 @@ enum ServiceKind {
   airport(
     title: 'Airport transfers',
     lead: 'Stress-free transfers to and from every major UK airport. We track your flight and meet you in arrivals.',
-    image: 'assets/brand/hero-airport.jpg',
+    image: 'assets/brand/hero-airport.webp',
     listTitle: 'Airports we serve',
     listSubtitle: 'From Southampton, one way, saloon car. Your quote is exact.',
     destinations: Content.airports,

@@ -43,6 +43,23 @@ class Env {
     defaultValue: 'https://saintslink.co.uk',
   );
 
+  /// The brand's social accounts, linked from the account screen. Defined here
+  /// rather than in the screen so a handle only ever changes in one place.
+  static const String instagramUrl = String.fromEnvironment(
+    'INSTAGRAM_URL',
+    defaultValue: 'https://instagram.com/saintslink',
+  );
+
+  static const String tiktokUrl = String.fromEnvironment(
+    'TIKTOK_URL',
+    defaultValue: 'https://tiktok.com/@saintslink',
+  );
+
+  static const String facebookUrl = String.fromEnvironment(
+    'FACEBOOK_URL',
+    defaultValue: 'https://facebook.com/saintslink',
+  );
+
   /// True when the app is pointed at something other than the live site, which
   /// the sign-in screen surfaces so a tester never wonders which backend a
   /// booking landed in.
