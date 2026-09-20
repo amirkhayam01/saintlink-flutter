@@ -50,3 +50,6 @@ test/screenshots/out/
 
 # Personal scratch notes
 push to *.txt
+
+# Kotlin build residue
+android/.kotlin/

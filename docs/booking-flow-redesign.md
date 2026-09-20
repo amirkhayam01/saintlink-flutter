@@ -1,0 +1,330 @@
+# Booking flow redesign — app + backend
+
+> Status: proposed, September 2026. Successor to `design-plan.md`, which covered
+> the screen-level rebuild and is now largely implemented. This plan covers the
+> *flow* rather than the screens: where booking starts, how fast a customer
+> reaches a price, and how the map behaves.
+
+Spans two repositories:
+
+- **App** — `saintslink-flutter` (Flutter, Riverpod, go_router, freezed)
+- **Backend** — `saintslink` (Laravel, `/api/v1`, shared with the website)
+
+The trigger was a comparison against inDrive. Read `Non-goals` first — the useful
+half of that comparison is small and specific, and the tempting half would do
+real damage.
+
+---
+
+## Non-goals
+
+inDrive is a **reverse-bidding marketplace**: the passenger proposes a fare and
+drivers accept, decline, or counter. Their entire interface serves that model —
+the `− Rs523 +` fare stepper, "Recommended fare", "Auto-accept offer", and the
+"Find offers" button that opens a negotiation.
+
+Saints Link sells the opposite product. `service_screen.dart` says it plainly:
+*"Your quote is exact."* The quote engine issues a signed `quote_token` with an
+`expires_at`, and `booking_flow_controller` refuses to book against an expired
+one. Price certainty is the differentiator.
+
+**Therefore, explicitly not doing:**
+
+- Any fare stepper, price negotiation, or "offers" vocabulary
+- On-demand hailing — every journey here is pre-booked for a pickup time
+- A driver-bidding or driver-matching surface; there are no driver fields on the
+  booking model, and dispatch is a back-office concern
+- A wholesale visual reskin. The gold/midnight palette, Figtree, the theme
+  tokens and `InnerScreenHeader` stay exactly as they are
+
+Also keep what we already do better than inDrive: vehicle photos, and passenger
+/ suitcase / hand-luggage capacity on every fare card. For an airport transfer,
+*will my luggage fit* is the actual question being asked.
+
+---
+
+## Backend review — findings
+
+Reviewed `routes/api.php`, the `Api\V1` controllers, `QuoteService`,
+`JourneyQuoteService`, `GooglePlacesService` and the customer migrations.
+
+The API is in good shape: versioned in the path, Sanctum on a named `customer`
+guard, throttles chosen per-endpoint for a real reason (SMS cost, Google
+billing), guest quoting and guest booking supported, and the Places key proxied
+server-side so it never ships in the binary. The doc comments explain intent
+rather than mechanics. Extending it is the right move; it does not need
+restructuring.
+
+Five findings matter for this plan.
+
+### B1 — There is no routing API. Distances are estimated, not routed
+
+`JourneyQuoteService` measures each leg with **haversine great-circle distance
+multiplied by a constant `ROAD_DISTANCE_MULTIPLIER = 1.22`**
+(`JourneyQuoteService.php:426`, `:1088`). There is no call to Google Directions,
+Routes, or Distance Matrix anywhere in `app/`.
+
+This corrects an earlier assumption in discussion: **the backend cannot "just
+return the route polyline with the quote," because it never computes a route.**
+Drawing a real route line means a new Google Routes API integration, with new
+per-request cost, not a field added to an existing response.
+
+Note this is mostly a *display* concern, not a pricing one. Catalogue routes
+(Southampton → Heathrow and friends) are priced from a fixed-rate table, so the
+1.22 estimate only drives off-catalogue journeys. Whether that estimate is good
+enough for pricing is a separate business question and out of scope here.
+
+### B2 — No reverse geocoding endpoint
+
+`PlacesController` exposes `autocomplete` and `details` only. "Use my current
+location" produces a lat/lng, and a lat/lng needs turning into an address a
+customer recognises and a driver can drive to. That endpoint does not exist yet.
+
+### B3 — Saved places do not exist server-side
+
+`recent_places.dart` keeps the last 5 located places in `SharedPreferences`, on
+the device. Nothing in `app/` or `database/migrations/` has any concept of a
+saved or favourite place. Consequences: recents are lost on reinstall, never
+reach a second device, and the "Favourite locations" row on the account screen
+has nothing to be wired to.
+
+### B4 — Only a browser Places key is configured
+
+`config/services.php` has `google.places_key` and nothing else. The map WebView
+obtains a *referrer-restricted browser key* over a `MethodChannel`. Native Maps
+SDKs cannot use that kind of key — they need a Maps SDK for Android key
+(restricted by package name + SHA-1) and a Maps SDK for iOS key (restricted by
+bundle ID). **This is the long-lead item in the whole plan.**
+
+### B5 — Bug: `PATCH /api/v1/me` can 500 on a cleared last name
+
+`customers.last_name` is declared `$table->string('last_name')` — **NOT NULL**
+(`2026_04_04_000050_create_customers_table.php:15`), and no later migration
+relaxes it. But `AuthController::updateMe` validates it as
+`['sometimes', 'nullable', 'string', 'max:255']`, and the app sends `null`
+whenever the field is empty:
+
+```dart
+// profile_controller.dart
+lastName: lastName.trim().isEmpty ? null : lastName.trim(),
+```
+
+A customer who clears their last name and saves hits a NOT NULL violation on
+MySQL in strict mode. Not caused by this redesign — worth fixing first because
+Phase 0 already touches that screen.
+
+---
+
+## Why the map loads, and theirs does not
+
+The single clearest UX gap, and it is architectural rather than cosmetic.
+
+`google_journey_map.dart` is **not a map**. It is a `WebViewController` running
+the Google Maps *JavaScript* SDK inside an HTML string. Every appearance pays:
+
+1. Fetch the browser key over a `MethodChannel`
+2. Instantiate a WebView
+3. `loadHtmlString`
+4. The page downloads the Maps JS SDK **over the network**
+5. Directions call
+6. Render, then `postMessage('ready')`
+
+Steps 4–5 are network round-trips on every single appearance. That is why the
+file carries a **25-second timeout** (`:116`), a spinner, and a "Retry map"
+button — all three exist because this genuinely hangs and fails.
+
+inDrive uses the native Maps SDK: compiled into the binary, tiles cached on
+disk, drawn as a platform view on the first frame. Nothing to download, nothing
+to fail, no spinner.
+
+`webview_flutter` is used in exactly one file, so the dependency can be dropped
+entirely with the swap.
+
+---
+
+## Phases
+
+Ordered by dependency, not by value. Phase 1 is an ops task with a lead time —
+**start it on day one regardless of where implementation begins.**
+
+### Phase 0 — Clear the decks (½ day)
+
+Prerequisite for everything; all later phases touch these files.
+
+1. Merge the `amir` branch (review fixes on top of `talha`: dark-mode icon
+   contrast, status-bar overlay style, the silent marketing-save failure,
+   restored SDK constraints, 1.55 MB → 221 KB of images).
+2. Fix **B5**: migration making `customers.last_name` nullable, with a
+   backfill decision for existing blank-ish rows.
+3. Confirm `flutter analyze` clean and 120 tests green on the merge result.
+
+### Phase 1 — Provision native map keys (ops, 1–5 days elapsed)
+
+Blocks Phase 4 entirely. No code.
+
+- Google Cloud console: enable **Maps SDK for Android** and **Maps SDK for iOS**
+- Android key restricted by package name + release **and** debug SHA-1
+- iOS key restricted by bundle ID
+- Decide delivery: `--dart-define` at build time, or extend the existing
+  `uk.co.saintslink/maps` MethodChannel that already serves the browser key
+- Set a billing budget alert before the first build ships
+
+### Phase 2 — Surface recents, then make them real (app 1 day, backend 1 day)
+
+Cheapest visible win. The data layer already exists.
+
+**App first, no backend needed:** `recentPlacesProvider` and the curated
+shortcut list (airports and cruise terminals, with server-matched coordinates)
+are already built and persisted — they are simply only visible *after* the
+address search field is opened. Surface both on Home.
+
+**Then backend, resolving B3:**
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/v1/places/saved` | The customer's saved places |
+| `POST /api/v1/places/saved` | Save one (label, address, place_id, lat, lng) |
+| `DELETE /api/v1/places/saved/{id}` | Remove one |
+
+New `customer_saved_places` table. Device recents stay as the offline fallback
+and as the guest experience — saved places sync for signed-in customers. This
+is also what finally backs the "Favourite locations" row, currently marked
+*Coming soon* on the account screen.
+
+### Phase 3 — Current location (backend ½ day, app 1 day)
+
+**Backend, resolving B2:** `GET /api/v1/places/reverse?lat=&lng=`, throttled
+like its siblings, returning the same shape as `places/details` so the app maps
+it into the existing `PlaceSelection`. Keeping it server-side matches the
+established pattern and keeps the key off the device.
+
+**App:** `geolocator`, plus `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`
+in the Android manifest (only `INTERNET` is declared today) and
+`NSLocationWhenInUseUsageDescription` in `Info.plist`.
+
+Two rules:
+
+- **When-in-use only.** A pre-booked transfer app has no business asking for
+  background location, and asking invites an App Store review rejection.
+- **Never prompt on launch.** Prompt on a deliberate tap of "Use my current
+  location" in the pickup field. A cold prompt gets denied, and on iOS a denial
+  is close to permanent — the feature is then dead for that user.
+
+A GPS fix gives coordinates, so `PlaceSelection.isLocated` is true and the
+journey prices precisely. The reverse geocode is what gives the customer a
+readable address and the driver somewhere to arrive.
+
+### Phase 4 — Native map (app 2–3 days, blocked on Phase 1)
+
+Replace `google_journey_map.dart` with `google_maps_flutter`; delete
+`webview_flutter`.
+
+- Markers for pickup, stops and dropoff; camera fitted to their bounds
+- A dark map style JSON, so the map stops being a light grey `#EAF0EF` panel in
+  dark mode
+- **The route line is a decision, not a given** (see B1). Options:
+  - *(a)* Ship markers and fitted bounds, no line. Cheapest, and honest —
+    nothing on screen then implies a routing accuracy we do not have.
+  - *(b)* New Google Routes integration in the backend, polyline returned with
+    the quote. Best looking, new recurring cost, and worth pairing with a review
+    of whether the 1.22 multiplier should keep pricing off-catalogue journeys.
+
+  **Recommendation: (a) now, (b) as its own piece of work** with the pricing
+  question attached, rather than smuggling a pricing change in behind a
+  cosmetic one.
+
+### Phase 5 — Home becomes the booking entry point (app 3–4 days)
+
+The largest change and the main prize.
+
+Today Home is a marketing page — greeting, hero, search field, services grid,
+trust strip, popular fares, fleet carousel — and booking lives in a *separate
+tab*. Good for a first-time visitor being convinced. Pure friction for the
+third-time customer going to Heathrow again.
+
+- Hero or map at top, `Where to?` and recents/saved immediately beneath
+- Services, trust strip, fleet demoted below the fold or moved into Services
+- **The `Book` tab becomes redundant** — bottom nav goes 4 items to 3
+  (Home / Trips / Profile), which needs a `router.dart` change and a redirect
+  for anything still pointing at `/book`
+- Keep the trust messaging on the page. It is the differentiator; it just does
+  not need to be on the critical path every single time
+
+### Phase 6 — Shorten time-to-first-price (app 2 days)
+
+`journey_screen` asks for pickup, destination, stops, date/time, return toggle,
+return date, passengers and suitcases — seven inputs before a single price
+appears. inDrive asks two, then shows prices.
+
+Split it: **route first**, then *when and who* as a second step. Surface an
+indicative price as early as the engine can give one. This is the metric worth
+optimising, and it is independent of Phase 5 — they can ship in either order.
+
+### Phase 7 — Vehicle list polish (app 1 day)
+
+`vehicle_screen` renders every fare card at full height; roughly three and a
+half fit on screen. Collapse unselected cards to a one-line summary and expand
+the selected one. Same information, far less scrolling, and no change to
+pricing, capacity display or the sticky `Continue · £155.00` bar.
+
+---
+
+## Sequencing
+
+```
+Day 1     ├── Phase 1 (ops: request map keys) ──────────────┐ elapsed
+Day 1     └── Phase 0 (merge amir, fix B5)                  │
+Days 2–3      Phase 2 (recents on Home, then saved places)  │
+Days 4–5      Phase 3 (current location)                    │
+Days 6–8      Phase 4 (native map) ◄────────────────────────┘ unblocked
+Days 9–12     Phase 5 (Home as booking entry)
+Days 13–14    Phase 6 (split journey form)
+Day 15        Phase 7 (vehicle list)
+```
+
+Phases 2, 3, 6 and 7 are independent of the key provisioning and can absorb any
+delay in Phase 1.
+
+**Backend total: ~2.5 days** (B5 migration, saved places, reverse geocode).
+Larger only if the Routes API integration in Phase 4(b) is approved.
+
+---
+
+## Testing
+
+The rule from `design-plan.md` still holds: **controllers, repositories and
+routes change only where a phase explicitly says so.** The existing 120 tests
+assert state, not pixels, and should stay green throughout.
+
+The screenshot harness is the tool for the visual work:
+
+```bash
+SCREENSHOTS=1 flutter test test/screenshots --update-goldens
+```
+
+`profile dark` and `trips dark` were added to it during the review — a dark
+render is what exposed six icons that were invisible against the dark card
+colour. **Every new or restructured screen in this plan gets a dark variant in
+that harness.** It is the cheapest regression net we have for exactly the class
+of bug that keeps appearing.
+
+New coverage worth writing:
+
+- Location permission denied, and permission permanently denied
+- Reverse geocode failure — the pickup field must stay usable
+- Map unavailable, with and without a network
+- Guest vs signed-in recents (device-only vs synced)
+
+---
+
+## Open questions
+
+1. **Phase 4(b): approve a Google Routes integration?** Real recurring cost.
+   Decide alongside whether the 1.22 multiplier should keep pricing
+   off-catalogue journeys.
+2. **Saved places — labelled or implicit?** "Home" / "Work" with a label, or
+   just an unlabelled frequency list? Affects the table shape in Phase 2.
+3. **Who owns the Google Cloud project**, and how quickly can Phase 1 keys be
+   issued? This gates Phase 4.
+4. **Does dropping the `Book` tab need sign-off?** It is the most visible change
+   in the plan to anyone already using the app.
