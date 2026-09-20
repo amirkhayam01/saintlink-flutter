@@ -46,6 +46,9 @@ class GoogleJourneyMap extends ConsumerStatefulWidget {
 }
 
 class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
+  /// Logical pixels of visible map below which bounds are no longer fitted.
+  static const _minRoomToFit = 220.0;
+
   GoogleMapController? _controller;
 
   /// One drawn marker per pin, keyed by its label letter.
@@ -72,8 +75,12 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
       icons[label] = await JourneyMarkers.of(
         kind,
         pixelRatio: dpr,
-        // The start and the stops in the route's blue; the destination in ink.
-        ink: kind == JourneyMarkerKind.dropoff ? colors.ink : colors.route,
+        // Green start, ink destination; the stops take the route's blue.
+        ink: switch (kind) {
+          JourneyMarkerKind.pickup => colors.start,
+          JourneyMarkerKind.stop => colors.route,
+          JourneyMarkerKind.dropoff => colors.ink,
+        },
         onInk: colors.card,
         card: colors.card,
         onCard: colors.ink,
@@ -128,9 +135,20 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
+      // The strip of map left between the buttons and the sheet. Fitting
+      // the whole route into a sliver of it would zoom out to the continent;
+      // below this, the zoom is kept and the route is only re-centred.
+      final size = context.size;
+      final room = size == null
+          ? double.infinity
+          : size.height - widget.topPadding - widget.bottomPadding;
+      final fits = room >= _minRoomToFit;
+
       final CameraUpdate update;
       if (points.length == 1) {
-        update = CameraUpdate.newLatLngZoom(_latLng(points.single.$2), 14);
+        update = fits
+            ? CameraUpdate.newLatLngZoom(_latLng(points.single.$2), 14)
+            : CameraUpdate.newLatLng(_latLng(points.single.$2));
       } else {
         var south = double.infinity;
         var north = -double.infinity;
@@ -149,13 +167,15 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
         for (final (lat, lng) in _route?.points ?? const <(double, double)>[]) {
           include(lat, lng);
         }
-        update = CameraUpdate.newLatLngBounds(
-          LatLngBounds(
-            southwest: LatLng(south, west),
-            northeast: LatLng(north, east),
-          ),
-          56,
+        final bounds = LatLngBounds(
+          southwest: LatLng(south, west),
+          northeast: LatLng(north, east),
         );
+        update = fits
+            ? CameraUpdate.newLatLngBounds(bounds, 56)
+            : CameraUpdate.newLatLng(
+                LatLng((south + north) / 2, (west + east) / 2),
+              );
       }
 
       if (animate) {
@@ -271,6 +291,8 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
           _frame();
         },
         // The preview is a picture: no gestures, and lite mode on Android.
+        // Never further out than the country, whatever a fit asks for.
+        minMaxZoomPreference: const MinMaxZoomPreference(6, null),
         liteModeEnabled: !widget.interactive,
         zoomGesturesEnabled: widget.interactive,
         scrollGesturesEnabled: widget.interactive,
