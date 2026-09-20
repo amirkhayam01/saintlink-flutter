@@ -53,3 +53,6 @@ push to *.txt
 
 # Kotlin build residue
 android/.kotlin/
+
+# Native map keys, per developer. Never committed.
+ios/Flutter/Secrets.xcconfig
