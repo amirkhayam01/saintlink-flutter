@@ -227,7 +227,7 @@ Cheapest visible win. The data layer already exists.
 
 #### 2A — App — **DONE** (20 Sep 2026, `b118351`)
 
-- [x] "Go again" section on Home directly under the search bar, from the
+- [x] "Recent" section on Home directly under the search bar, from the
       existing `recentPlacesProvider`. Hidden until there is real history —
       the chip row already offers every shortcut, so a fallback list would be
       a copy of the row above it.
@@ -370,7 +370,7 @@ Six rules, decided once:
 | Fields | Captions above (`FieldLabel`), not floating labels | [x] Journey screen moved; the caption doubles as the control's semantics label |
 | Section heading | `SectionTitle` for sections, `GroupLabel` for list groups | [x] `HomeSectionHeading`, Account's `_SectionHeading`, search sheet's `_Heading` deleted |
 | Card | The theme's `Card` — radius 16, border, flat | [x] Account's `_CardContainer` deleted |
-| List row | Shared `ListRow` + `ListRowDivider` | [x] Account, search sheet and Go again all use it |
+| List row | Shared `ListRow` + `ListRowDivider` | [x] Account, search sheet and Recent all use it |
 
 App **129/129** (one obsolete asset test removed), screenshots 24/24.
 
@@ -381,7 +381,7 @@ would show the customer's position and nothing else — inDrive's need, not
 this product's. The value of this phase was the *ordering*. Hero stays.
 
 Home top to bottom now: hero → **next trip** (moved up from mid-page; gone
-when there is none) → `Where to?` + shortcut chips → **Go again** → a
+when there is none) → `Where to?` + shortcut chips → **Recent** → a
 **Plan a journey** button → services → trust strip → popular fares. The three
 things a returning customer needs are above the fold; the marketing is still
 there for anyone still deciding.

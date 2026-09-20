@@ -68,7 +68,7 @@ final customerPlacesProvider = FutureProvider<List<PlaceSelection>>((ref) async 
   }
 });
 
-/// What "Go again" shows: the server's list where there is one, then anything
+/// What "Recent" shows: the server's list where there is one, then anything
 /// the device remembers that the server has not seen.
 ///
 /// The server ranks by how often a place was booked, which is the order that

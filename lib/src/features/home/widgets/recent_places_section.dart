@@ -42,7 +42,7 @@ class RecentPlacesSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionTitle('Go again'),
+        const SectionTitle('Recent'),
         const SizedBox(height: 4),
         for (final place in places)
           ListRow(
