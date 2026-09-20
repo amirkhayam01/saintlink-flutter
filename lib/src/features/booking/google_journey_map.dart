@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../domain/place.dart';
 import '../places/current_location.dart';
 import 'journey_draft.dart';
+import 'journey_markers.dart';
 
 /// The journey's located places, pinned and framed. No route line on purpose:
 /// the server never computes one, so drawing one would claim a precision the fare lacks.
@@ -37,6 +38,28 @@ class GoogleJourneyMap extends ConsumerStatefulWidget {
 
 class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
   GoogleMapController? _controller;
+  Map<JourneyMarkerKind, BitmapDescriptor>? _icons;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadIcons();
+  }
+
+  Future<void> _loadIcons() async {
+    final colors = context.colors;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final icons = {
+      for (final kind in JourneyMarkerKind.values)
+        kind: await JourneyMarkers.of(
+          kind,
+          pixelRatio: dpr,
+          ink: colors.ink,
+          muted: colors.inkMuted,
+        ),
+    };
+    if (mounted) setState(() => _icons = icons);
+  }
 
   /// Pickup first, stops in order, destination last — only those with a
   /// position, each paired with its letter for the pin.
@@ -142,19 +165,23 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
       );
     }
 
-    final markers = {
-      for (final (label, place) in points)
-        Marker(
-          markerId: MarkerId(label),
-          position: _latLng(place),
-          infoWindow: InfoWindow(title: place.address),
-          icon: BitmapDescriptor.defaultMarkerWithHue(switch (label) {
-            'A' => BitmapDescriptor.hueAzure,
-            'B' => BitmapDescriptor.hueYellow,
-            _ => BitmapDescriptor.hueOrange,
-          }),
-        ),
-    };
+    final icons = _icons;
+    final markers = icons == null
+        ? const <Marker>{}
+        : {
+            for (final (label, place) in points)
+              Marker(
+                markerId: MarkerId(label),
+                position: _latLng(place),
+                anchor: const Offset(0.5, 0.5),
+                infoWindow: InfoWindow(title: place.address),
+                icon: icons[switch (label) {
+                  'A' => JourneyMarkerKind.pickup,
+                  'B' => JourneyMarkerKind.dropoff,
+                  _ => JourneyMarkerKind.stop,
+                }]!,
+              ),
+          };
 
     return ColoredBox(
       // Under the tiles while they load, and behind them in the test harness,

@@ -41,20 +41,26 @@ void main() {
         longitude: -0.45,
       ),
     );
-    await tester.pumpWidget(
-      scoped(
-        MaterialApp(
-          theme: AppTheme.light(),
-          home: SizedBox.expand(
-            child: GoogleJourneyMap(journey: journey, topPadding: 86),
+    // The pins are drawn through the engine, which only runs for real time.
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        scoped(
+          MaterialApp(
+            theme: AppTheme.light(),
+            home: SizedBox.expand(
+              child: GoogleJourneyMap(journey: journey, topPadding: 86),
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    });
+    await tester.pumpAndSettle();
 
     final map = tester.widget<GoogleMap>(find.byType(GoogleMap));
     expect(map.markers.map((m) => m.markerId.value), ['A', '1', 'B']);
+    // Drawn, not Google's default pins, and centred on the point.
+    expect(map.markers.every((m) => m.anchor == const Offset(0.5, 0.5)), isTrue);
     expect(map.markers.map((m) => m.infoWindow.title), [
       journey.pickup.address,
       'Winchester',
