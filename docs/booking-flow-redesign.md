@@ -5,7 +5,7 @@
 > covers the *flow* rather than the screens: where booking starts, how fast a
 > customer reaches a price, and how the map behaves.
 >
-> **Progress:** Phases 0–5 complete (20 Sep 2026). The native map is built
+> **Progress:** Phases 0–6 complete (20 Sep 2026). Phase 7 remains. The native map is built
 > and its Android wiring verified by a debug APK build, but **tiles are
 > unconfirmed** — no device on the build machine. First thing to do is run
 > it on a phone. Phases 6 and 7 remain; neither needs anything from anyone.
@@ -402,15 +402,38 @@ there for anyone still deciding.
 **Not verified on a device**, same as Phase 4. Worth checking on a phone:
 the back arrow from the form lands on whichever screen opened it.
 
-### Phase 6 — Shorten time-to-first-price (app 2 days)
+### Phase 6 — Shorten time-to-first-price — **DONE** (20 Sep 2026, `701d4dd`)
 
-`journey_screen` asks for pickup, destination, stops, date/time, return toggle,
-return date, passengers and suitcases — seven inputs before a single price
-appears. inDrive asks two, then shows prices.
+`journey_screen` asked for pickup, destination, stops, date/time, return
+toggle, return date, passengers and suitcases — seven inputs before a single
+price appeared. inDrive asks two, then shows prices.
 
-Split it: **route first**, then *when and who* as a second step. Surface an
-indicative price as early as the engine can give one. This is the metric worth
-optimising, and it is independent of Phase 5 — they can ship in either order.
+Now two stages in a **sheet over a live map** — the inDrive pattern, applied
+where it helps:
+
+- [x] **Stage 1, route:** pickup, stops, destination. Pins appear on the map
+      behind the sheet as each is chosen. *Continue* lights up the moment
+      both ends are named (`JourneyDraft.hasRoute`).
+- [x] **Stage 2, when and who:** the route as a timeline with *Edit*, then
+      date & time, return, passengers, luggage — only what the price depends
+      on — and *See prices*. Back returns to the route, not out of the form.
+- [x] Always the route first, even from a fare card with both ends preset:
+      the customer sees the route on the map before anything else.
+- [x] Map shows the fleet's region when nothing is pinned yet
+      (`regionWhenEmpty`); the header's curved edge is optional and off over
+      the map.
+- [x] `journey when` added to the screenshot harness. Tests walk both
+      stages. App **129/129**, screenshots 25/25.
+
+**Not done, deliberately:** no indicative price on stage 1. The engine needs
+a date (tariff windows) and a passenger count (vehicle fit) before it can
+price anything honestly, and a number that changes on the next screen would
+undercut "your quote is exact". Stage 2 is one screen away.
+
+**Sheets, decided:** step 1 is a sheet (this phase); step 2 (vehicle) is
+already map-top/panel-bottom and gets its collapse in Phase 7; step 3
+(details) stays a page — it is a form with a keyboard up, and a sheet
+fighting the keyboard is the worst version of it.
 
 ### Phase 7 — Vehicle list polish (app 1 day)
 
@@ -432,8 +455,8 @@ Days 4–5      Phase 3 (current location)            ✅ DONE │
 Days 6–8      Phase 4 (native map)                  ✅ DONE │
               Phase 5a (consistency pass)         ✅ DONE │
 Days 9–12     Phase 5 (Home as booking entry)       ✅ DONE
-Days 13–14    Phase 6 (split journey form)          ← NEXT
-Day 15        Phase 7 (vehicle list)
+Days 13–14    Phase 6 (split journey form)          ✅ DONE
+Day 15        Phase 7 (vehicle list)                 ← NEXT
 ```
 
 Phases 2, 3, 6 and 7 are independent of the key provisioning and can absorb any
