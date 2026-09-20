@@ -47,7 +47,9 @@ class GoogleJourneyMap extends ConsumerStatefulWidget {
 
 class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
   GoogleMapController? _controller;
-  Map<JourneyMarkerKind, BitmapDescriptor>? _icons;
+
+  /// One drawn marker per pin, keyed by its label letter.
+  Map<String, JourneyMarker>? _icons;
   Timer? _refit;
   RouteLine? _route;
 
@@ -60,15 +62,22 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
   Future<void> _loadIcons() async {
     final colors = context.colors;
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final icons = {
-      for (final kind in JourneyMarkerKind.values)
-        kind: await JourneyMarkers.of(
-          kind,
-          pixelRatio: dpr,
-          ink: colors.ink,
-          muted: colors.inkMuted,
-        ),
-    };
+    final icons = <String, JourneyMarker>{};
+    for (final (label, place) in _points) {
+      icons[label] = await JourneyMarkers.of(
+        switch (label) {
+          'A' => JourneyMarkerKind.pickup,
+          'B' => JourneyMarkerKind.dropoff,
+          _ => JourneyMarkerKind.stop,
+        },
+        pixelRatio: dpr,
+        ink: colors.ink,
+        onInk: colors.card,
+        card: colors.card,
+        onCard: colors.ink,
+        label: label == '1' && _points.length > 3 ? null : place.address,
+      );
+    }
     if (mounted) setState(() => _icons = icons);
   }
 
@@ -87,6 +96,7 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
         oldWidget.journey.dropoff != widget.journey.dropoff ||
         oldWidget.journey.via != widget.journey.via ||
         oldWidget.topPadding != widget.topPadding) {
+      _loadIcons();
       _frame();
     } else if (oldWidget.bottomPadding != widget.bottomPadding) {
       // The sheet is moving: the padding shifts the view each frame, and the
@@ -201,24 +211,18 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
       _route = route;
       _frame(animate: true);
     }
-    final icons = _icons;
-    final markers = icons == null
-        ? const <Marker>{}
-        : {
-            for (final (label, place) in points)
-              Marker(
-                markerId: MarkerId(label),
-                position: _latLng(place),
-                anchor: const Offset(0.5, 0.5),
-                infoWindow: InfoWindow(title: place.address),
-                icon:
-                    icons[switch (label) {
-                      'A' => JourneyMarkerKind.pickup,
-                      'B' => JourneyMarkerKind.dropoff,
-                      _ => JourneyMarkerKind.stop,
-                    }]!,
-              ),
-          };
+    final icons = _icons ?? const <String, JourneyMarker>{};
+    final markers = {
+      for (final (label, place) in points)
+        if (icons[label] case final marker?)
+          Marker(
+            markerId: MarkerId(label),
+            position: _latLng(place),
+            anchor: marker.anchor,
+            icon: marker.icon,
+            zIndexInt: label == 'A' ? 2 : 1,
+          ),
+    };
 
     return ColoredBox(
       // Under the tiles while they load, and behind them in the test harness,

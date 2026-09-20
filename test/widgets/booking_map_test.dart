@@ -61,13 +61,8 @@ void main() {
 
     final map = tester.widget<GoogleMap>(find.byType(GoogleMap));
     expect(map.markers.map((m) => m.markerId.value), ['A', '1', 'B']);
-    // Drawn, not Google's default pins, and centred on the point.
-    expect(map.markers.every((m) => m.anchor == const Offset(0.5, 0.5)), isTrue);
-    expect(map.markers.map((m) => m.infoWindow.title), [
-      journey.pickup.address,
-      'Winchester',
-      'Heathrow Airport',
-    ]);
+    // Drawn badges on a stem: the map point is the dot at the foot, not the centre.
+    expect(map.markers.every((m) => m.anchor.dy > 0.7), isTrue);
     // The header's route card floats over the top; the framing stays clear of it.
     expect(map.padding, const EdgeInsets.only(top: 86));
     // A preview, not a map to explore.
