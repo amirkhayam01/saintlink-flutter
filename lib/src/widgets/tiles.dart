@@ -442,3 +442,26 @@ class FieldLabel extends StatelessWidget {
     );
   }
 }
+
+/// The same small-caps label a field wears, over a group of rows in a list —
+/// "Airports and ports", "Recent". One voice for "here is what follows",
+/// whether what follows is an input or a list.
+class GroupLabel extends StatelessWidget {
+  const GroupLabel(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+    child: Text(
+      text.toUpperCase(),
+      style: TextStyle(
+        fontSize: 10.5,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.6,
+        color: context.colors.inkMuted,
+      ),
+    ),
+  );
+}

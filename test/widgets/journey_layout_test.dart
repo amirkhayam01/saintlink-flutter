@@ -10,6 +10,16 @@ import 'package:saints_link/src/features/booking/journey_screen.dart';
 
 import '../support/fakes.dart';
 
+/// The field a caption names. Captions sit above their fields now, so the
+/// tappable control carries the caption as its semantics label — which is
+/// also what a screen reader announces for it.
+Finder fieldNamed(String label) => find.descendant(
+  of: find.byWidgetPredicate(
+    (w) => w is Semantics && w.properties.label == label,
+  ),
+  matching: find.byType(InputDecorator),
+);
+
 void main() {
   for (final dark in [false, true]) {
     for (final scale in [1.0, 2.0]) {
@@ -87,18 +97,12 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Passengers & luggage'), findsNothing);
-      expect(find.text('Pickup date & time'), findsOneWidget);
-      final dateField = find.byWidgetPredicate(
-        (widget) =>
-            widget is InputDecorator &&
-            widget.decoration.labelText == 'Pickup date & time',
-      );
+      expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
+      final dateField = fieldNamed('Pickup date & time');
       for (final label in ['Pickup address', 'Destination']) {
-        final field = find.byWidgetPredicate(
-          (w) => w is InputDecorator && w.decoration.labelText == label,
-        );
+        final field = fieldNamed(label);
         expect(tester.widget<InputDecorator>(field).isEmpty, isTrue);
-        expect(find.text(label), findsOneWidget);
+        expect(find.text(label.toUpperCase()), findsOneWidget);
       }
       expect(tester.widget<InputDecorator>(dateField).isEmpty, isTrue);
       await tester.tap(dateField);
@@ -120,14 +124,12 @@ void main() {
           );
       await tester.pumpAndSettle();
       for (final label in ['Pickup address', 'Destination']) {
-        final field = find.byWidgetPredicate(
-          (w) => w is InputDecorator && w.decoration.labelText == label,
-        );
+        final field = fieldNamed(label);
         expect(tester.widget<InputDecorator>(field).isEmpty, isFalse);
-        expect(find.text(label), findsOneWidget);
+        expect(find.text(label.toUpperCase()), findsOneWidget);
       }
       expect(tester.widget<InputDecorator>(dateField).isEmpty, isFalse);
-      expect(find.text('Pickup date & time'), findsOneWidget);
+      expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
       expect(
         find.text(
           Formatting.journeyDateAndTime(
@@ -241,10 +243,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.tap(
-        find.byWidgetPredicate(
-          (w) =>
-              w is InputDecorator && w.decoration.labelText == 'Pickup address',
-        ),
+        fieldNamed('Pickup address'),
       );
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsOneWidget);
@@ -255,19 +254,14 @@ void main() {
         isTrue,
       );
       await tester.tap(
-        find.byWidgetPredicate(
-          (w) =>
-              w is InputDecorator && w.decoration.labelText == 'Pickup address',
-        ),
+        fieldNamed('Pickup address'),
       );
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Southampton Airport'));
       await tester.tap(find.text('Southampton Airport'));
       await tester.pumpAndSettle();
       await tester.tap(
-        find.byWidgetPredicate(
-          (w) => w is InputDecorator && w.decoration.labelText == 'Destination',
-        ),
+        fieldNamed('Destination'),
       );
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsOneWidget);

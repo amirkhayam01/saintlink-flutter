@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:saints_link/src/core/theme.dart';
@@ -12,13 +11,6 @@ import 'package:saints_link/src/features/places/current_location.dart';
 import '../support/fakes.dart';
 import '../support/platform_views.dart';
 
-class MissingMapBundle extends CachingAssetBundle {
-  @override
-  Future<ByteData> load(String key) => key.endsWith('southern_england.png')
-      ? Future.error(FlutterError('Unable to load asset: $key'))
-      : rootBundle.load(key);
-}
-
 /// The map reads whether location is already granted; no test here wants a
 /// real permission check, so each says so up front.
 Widget scoped(Widget app, {bool granted = false}) => ProviderScope(
@@ -28,27 +20,6 @@ Widget scoped(Widget app, {bool granted = false}) => ProviderScope(
 
 void main() {
   setUp(stubPlatformViews);
-
-  testWidgets('missing map image keeps the header usable', (tester) async {
-    await tester.pumpWidget(
-      scoped(MaterialApp(
-        theme: AppTheme.light(),
-        home: DefaultAssetBundle(
-          bundle: MissingMapBundle(),
-          child: Scaffold(
-            appBar: BookingScreenHeader(
-              title: 'Plan your journey',
-              journey: quotableJourney,
-            ),
-          ),
-        ),
-      )),
-    );
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    expect(find.text('Plan your journey'), findsOneWidget);
-    expect(find.byType(ErrorWidget), findsNothing);
-  });
 
   /*
    * A pin for every end of the journey that has a position, lettered in

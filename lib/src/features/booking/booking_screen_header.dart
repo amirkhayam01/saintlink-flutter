@@ -98,24 +98,6 @@ class BookingScreenHeader extends StatelessWidget
             ],
           )
         : null,
-    background: Stack(
-      fit: StackFit.expand,
-      children: [
-        if (expandable)
-          const ColoredBox(color: Color(0xFFEAF0EF))
-        else
-          _MapAsset(fit: BoxFit.cover, alignment: const Alignment(0.1, -0.15)),
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xAAFFFFFF), Color(0x22FFFFFF)],
-            ),
-          ),
-        ),
-      ],
-    ),
     actions: [
       ...actions,
       if (expandable)
@@ -292,30 +274,6 @@ Future<void> showBookingMap(BuildContext context, JourneyDraft journey) =>
         ),
       ),
     );
-
-/// Asset loading must never replace the booking header with Flutter's error UI.
-class _MapAsset extends StatelessWidget {
-  const _MapAsset({required this.fit, this.alignment = Alignment.center});
-  final BoxFit fit;
-  final Alignment alignment;
-
-  @override
-  Widget build(BuildContext context) => Image.asset(
-    'assets/maps/southern_england.png',
-    fit: fit,
-    alignment: alignment,
-    excludeFromSemantics: true,
-    errorBuilder: (context, error, stackTrace) => const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFF3F2E9), Color(0xFFDCEBEF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-    ),
-  );
-}
 
 class _MapPin extends StatelessWidget {
   const _MapPin({required this.label});

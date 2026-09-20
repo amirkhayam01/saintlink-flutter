@@ -57,8 +57,8 @@ void main() {
         expect(state.fieldErrors, isEmpty);
         await tester.tap(find.text('Book'));
         await tester.pumpAndSettle();
-        expect(find.text('Pickup address'), findsOneWidget);
-        expect(find.text('Destination'), findsOneWidget);
+        expect(find.text('PICKUP ADDRESS'), findsOneWidget);
+        expect(find.text('DESTINATION'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

@@ -9,6 +9,7 @@ import '../../core/theme_controller.dart';
 import '../../domain/customer.dart';
 import '../../widgets/common.dart';
 import '../../widgets/inner_screen_header.dart';
+import '../../widgets/list_row.dart';
 import '../auth/auth_controller.dart';
 import 'profile_controller.dart';
 
@@ -120,9 +121,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
           children: [
             // ── Account Identity Card ──
-            _CardContainer(
-              onTap: () => _openEditSheet(customer),
-              child: Padding(
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => _openEditSheet(customer),
+                child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Row(
                   children: [
@@ -192,50 +195,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
                 ),
+                ),
               ),
             ),
             const SizedBox(height: 22),
 
             // ── General Section ──
-            _SectionHeading('General'),
+            SectionTitle('General'),
             const SizedBox(height: 8),
-            _CardContainer(
+            Card(
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.bookmark_rounded,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  ListRow(
+                    icon: Icons.bookmark_rounded,
                     title: 'Favourite locations',
                     trailing: const _ComingSoon(),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: const _FontSizeGlyph(),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.format_size_rounded,
                     title: 'Font size',
                     trailing: const _ComingSoon(),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.vpn_key_rounded,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.vpn_key_rounded,
                     title: 'Ride Pin',
                     trailing: const _ComingSoon(),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.dark_mode_outlined,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.dark_mode_outlined,
                     title: 'Dark mode',
-                    showChevron: false,
                     trailing: Transform.scale(
                       scale: 0.85,
                       alignment: Alignment.centerRight,
@@ -247,15 +239,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.campaign_outlined,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.campaign_outlined,
                     title: 'Offers and news',
-                    showChevron: false,
                     trailing: Transform.scale(
                       scale: 0.85,
                       alignment: Alignment.centerRight,
@@ -272,50 +259,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 22),
 
             // ── Socials Section ──
-            _SectionHeading('Socials'),
+            SectionTitle('Socials'),
             const SizedBox(height: 8),
-            _CardContainer(
+            Card(
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.camera_alt_outlined,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  ListRow(
+                    icon: Icons.camera_alt_outlined,
                     title: 'Instagram',
-                    showChevron: true,
+                    chevron: true,
                     onTap: () => openLink(context, Env.instagramUrl),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.music_note_rounded,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.music_note_rounded,
                     title: 'TikTok',
-                    showChevron: true,
+                    chevron: true,
                     onTap: () => openLink(context, Env.tiktokUrl),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.facebook_rounded,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.facebook_rounded,
                     title: 'Facebook',
-                    showChevron: true,
+                    chevron: true,
                     onTap: () => openLink(context, Env.facebookUrl),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.share_outlined,
-                      size: 20,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.share_outlined,
                     title: 'Invite friends',
                     trailing: const _ComingSoon(),
                   ),
@@ -325,17 +297,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 22),
 
             // ── More Section ──
-            _SectionHeading('More'),
+            SectionTitle('More'),
             const SizedBox(height: 8),
-            _CardContainer(
+            Card(
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.call_outlined,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  ListRow(
+                    icon: Icons.call_outlined,
                     title: 'Call us',
                     trailing: Text(
                       Env.supportPhone,
@@ -344,19 +313,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         color: colors.inkMuted,
                       ),
                     ),
-                    showChevron: false,
                     onTap: () => openLink(
                       context,
                       'tel:${Env.supportPhone.replaceAll(' ', '')}',
                     ),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.mail_outline_rounded,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.mail_outline_rounded,
                     title: 'Email us',
                     trailing: Text(
                       Env.supportEmail,
@@ -365,57 +329,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         color: colors.inkMuted,
                       ),
                     ),
-                    showChevron: false,
                     onTap: () => openLink(context, 'mailto:${Env.supportEmail}'),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.language_rounded,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.language_rounded,
                     title: 'Website',
                     trailing: Icon(
                       Icons.open_in_new_rounded,
                       size: 18,
                       color: colors.inkMuted,
                     ),
-                    showChevron: false,
                     onTap: () => openLink(context, Env.websiteUrl),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.description_outlined,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.description_outlined,
                     title: 'Terms and conditions',
-                    showChevron: true,
+                    chevron: true,
                     onTap: () => openLink(context, Env.termsUrl),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: Icon(
-                      Icons.privacy_tip_outlined,
-                      size: 21,
-                      color: colors.ink,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.privacy_tip_outlined,
                     title: 'Privacy policy',
-                    showChevron: true,
+                    chevron: true,
                     onTap: () => openLink(context, Env.privacyUrl),
                   ),
-                  _tileDivider(colors),
-                  _ProfileTile(
-                    icon: const Icon(
-                      Icons.logout_rounded,
-                      size: 21,
-                      color: AppTheme.danger,
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.logout_rounded,
+                    iconColor: AppTheme.danger,
                     title: 'Sign out',
                     titleColor: AppTheme.danger,
-                    showChevron: false,
                     onTap: () async {
                       await ref.read(authControllerProvider.notifier).signOut();
                       if (context.mounted) context.go('/');
@@ -440,136 +386,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-// ───────────────────────── Helper Widgets ─────────────────────────
-
-Widget _tileDivider(AppColors colors) => Divider(
-      height: 1,
-      thickness: 0.8,
-      indent: 52,
-      endIndent: 0,
-      color: colors.inkFaint.withValues(alpha: 0.7),
-    );
-
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 4, bottom: 2),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: context.colors.ink,
-            letterSpacing: -0.2,
-          ),
-        ),
-      );
-}
-
-/// The rounded card container seen across the screen.
-class _CardContainer extends StatelessWidget {
-  const _CardContainer({required this.child, this.onTap});
-  final Widget child;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Material(
-      color: colors.card,
-      borderRadius: BorderRadius.circular(20),
-      clipBehavior: Clip.antiAlias,
-      elevation: 0,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark ? colors.inkFaint.withValues(alpha: 0.3) : colors.inkFaint.withValues(alpha: 0.6),
-              width: 0.8,
-            ),
-            boxShadow: [
-              if (!isDark)
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-/// Single profile row matching the screenshot styling.
-class _ProfileTile extends StatelessWidget {
-  const _ProfileTile({
-    required this.icon,
-    required this.title,
-    this.trailing,
-    this.showChevron = false,
-    this.titleColor,
-    this.onTap,
-  });
-
-  final Widget icon;
-  final String title;
-  final Widget? trailing;
-  final bool showChevron;
-  final Color? titleColor;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: Center(child: icon),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: titleColor ?? colors.ink,
-                ),
-              ),
-            ),
-            ?trailing,
-            if (showChevron) ...[
-              const SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: colors.inkMuted,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Marks a row the design shows but no feature stands behind yet. The row
 /// stays visible so the shape of the screen is settled, and stays inert so it
 /// never promises something tapping it cannot deliver.
@@ -585,42 +401,6 @@ class _ComingSoon extends StatelessWidget {
           color: context.colors.inkMuted,
         ),
       );
-}
-
-/// The "Aa" typography glyph seen in the screenshot.
-class _FontSizeGlyph extends StatelessWidget {
-  const _FontSizeGlyph();
-
-  @override
-  Widget build(BuildContext context) {
-    final color = context.colors.ink;
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        children: [
-          Text(
-            'A',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-          Text(
-            'a',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Bottom sheet allowing user to edit their name and email.

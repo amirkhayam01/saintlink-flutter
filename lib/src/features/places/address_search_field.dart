@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../core/api_exception.dart';
 import '../../widgets/inner_screen_header.dart';
+import '../../widgets/list_row.dart';
+import '../../widgets/tiles.dart';
 import '../../core/theme.dart';
 import '../../domain/place.dart';
 import 'current_location.dart';
@@ -367,13 +369,13 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
             children: [
               if (browsing) ...[
                 if (widget.allowCurrentLocation)
-                  _PlaceRow(
+                  ListRow(
                     icon: Icons.my_location_rounded,
                     title: 'Use my current location',
                     subtitle: _locating ? 'Finding your address…' : null,
                     onTap: _useCurrentLocation,
                   ),
-                _Heading('Airports and ports'),
+                GroupLabel('Airports and ports'),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
                   child: Wrap(
@@ -406,9 +408,9 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
                   ),
                 ),
                 if (recents.isNotEmpty) ...[
-                  _Heading('Recent'),
+                  GroupLabel('Recent'),
                   for (final place in recents)
-                    _PlaceRow(
+                    ListRow(
                       icon: Icons.history,
                       title: place.address,
                       onTap: () => _finish(place),
@@ -416,9 +418,10 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
                 ],
               ] else ...[
                 for (final suggestion in _suggestions)
-                  _PlaceRow(
+                  ListRow(
                     icon: Icons.place_outlined,
                     title: suggestion.description,
+                    chevron: true,
                     onTap: () {
                       if (!_resolving) _choose(suggestion);
                     },
@@ -445,11 +448,11 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
                       style: TextStyle(color: colors.inkMuted, fontSize: 13),
                     ),
                   ),
-                _PlaceRow(
+                ListRow(
                   icon: Icons.keyboard_outlined,
                   title: 'Use "$typed"',
                   subtitle: 'As typed, without a map location',
-                  muted: true,
+                  iconColor: colors.inkMuted,
                   onTap: _useTypedText,
                 ),
               ],
@@ -490,93 +493,6 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
     return Scaffold(
       appBar: InnerScreenHeader(title: widget.title),
       body: body,
-    );
-  }
-}
-
-class _Heading extends StatelessWidget {
-  const _Heading(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
-      child: Text(
-        text.toUpperCase(),
-        style: TextStyle(
-          color: context.colors.inkMuted,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-        ),
-      ),
-    );
-  }
-}
-
-class _PlaceRow extends StatelessWidget {
-  const _PlaceRow({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.subtitle,
-    this.muted = false,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final bool muted;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: colors.inkFaint),
-              ),
-              child: Icon(icon, size: 18, color: colors.inkMuted),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: muted ? FontWeight.w500 : FontWeight.w600,
-                      color: muted ? colors.inkMuted : colors.ink,
-                    ),
-                  ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      style: TextStyle(color: colors.inkMuted, fontSize: 12),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

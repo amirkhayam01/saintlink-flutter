@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
 import '../../../domain/place.dart';
 import '../../places/recent_places.dart';
-import 'home_section_heading.dart';
+import '../../../widgets/common.dart';
+import '../../../widgets/list_row.dart';
 
 /// The places this customer keeps going back to, one tap from the front door.
 ///
@@ -41,51 +42,18 @@ class RecentPlacesSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const HomeSectionHeading('Go again'),
+        const SectionTitle('Go again'),
         const SizedBox(height: 4),
         for (final place in places)
-          _PlaceRow(place: place, onTap: () => onSelect(place)),
+          ListRow(
+            icon: Icons.history_rounded,
+            iconColor: context.colors.inkMuted,
+            title: place.address,
+            chevron: true,
+            onTap: () => onSelect(place),
+          ),
         SizedBox(height: spacingBelow),
       ],
-    );
-  }
-}
-
-class _PlaceRow extends StatelessWidget {
-  const _PlaceRow({required this.place, required this.onTap});
-
-  final PlaceSelection place;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        child: Row(
-          children: [
-            Icon(Icons.history_rounded, size: 20, color: colors.inkMuted),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                place.address,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: colors.ink,
-                ),
-              ),
-            ),
-            Icon(Icons.north_east_rounded, size: 16, color: colors.inkMuted),
-          ],
-        ),
-      ),
     );
   }
 }

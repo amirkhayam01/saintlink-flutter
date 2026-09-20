@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme.dart';
 import '../../../domain/vehicle_category.dart';
-import 'home_section_heading.dart';
+import '../../../widgets/common.dart';
 import '../../../widgets/vehicle_image.dart';
 
 /// The fleet as a carousel of photo cards. Tapping one presets that vehicle
@@ -30,7 +30,7 @@ class FleetShowcaseSection extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: gutter),
-          child: const HomeSectionHeading('Our fleet'),
+          child: const SectionTitle('Our fleet'),
         ),
         const SizedBox(height: 12),
         SingleChildScrollView(

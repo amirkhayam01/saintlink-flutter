@@ -6,6 +6,7 @@ import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../domain/place.dart';
 import '../../widgets/common.dart';
+import '../../widgets/tiles.dart';
 import '../../widgets/inner_screen_header.dart';
 import '../places/address_search_field.dart';
 import 'booking_flow_controller.dart';
@@ -299,70 +300,81 @@ class _RouteStop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Semantics(
-      button: true,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () async {
-            final selection = await showAddressSearchSheet(
-              context,
-              title: label,
-              initial: value,
-              allowCurrentLocation: marker == _Marker.pickup,
-            );
-            if (selection != null && context.mounted) onChanged(selection);
-          },
-          child: InputDecorator(
-            isEmpty: value.isEmpty,
-            decoration: InputDecoration(
-              labelText: label,
-              labelStyle: TextStyle(color: colors.placeholder, fontSize: 14),
-              floatingLabelStyle: TextStyle(
-                color: colors.inkMuted,
-                fontSize: 12,
-              ),
-              prefixIcon: Icon(
-                marker == _Marker.pickup
-                    ? Icons.my_location_rounded
-                    : marker == _Marker.dropoff
-                    ? Icons.location_on_outlined
-                    : Icons.more_horiz_rounded,
-                size: 21,
-                color: colors.accent,
-              ),
-              suffixIcon: onRemove != null
-                  ? IconButton(
-                      tooltip: 'Remove $label',
-                      icon: Icon(
-                        Icons.close_rounded,
-                        size: 18,
-                        color: colors.inkMuted,
-                      ),
-                      onPressed: onRemove,
-                    )
-                  : Icon(
-                      Icons.expand_more_rounded,
-                      size: 18,
-                      color: colors.inkMuted,
-                    ),
-            ),
-            child: Text(
-              value.isEmpty ? '' : value.address,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.3,
-                fontWeight: FontWeight.w600,
-                color: colors.ink,
+    /*
+     * A caption above the field rather than a label that floats inside it:
+     * the one field style every form in the app now shares, and the one that
+     * has somewhere to put "optional" without crowding the value.
+     */
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FieldLabel(label),
+        Semantics(
+          button: true,
+          label: label,
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () async {
+                final selection = await showAddressSearchSheet(
+                  context,
+                  title: label,
+                  initial: value,
+                  allowCurrentLocation: marker == _Marker.pickup,
+                );
+                if (selection != null && context.mounted) onChanged(selection);
+              },
+              child: InputDecorator(
+                isEmpty: value.isEmpty,
+                decoration: InputDecoration(
+                  hintText: switch (marker) {
+                    _Marker.pickup => 'Where shall we collect you?',
+                    _Marker.dropoff => 'Where are you going?',
+                    _Marker.via => 'Somewhere on the way',
+                  },
+                  prefixIcon: Icon(
+                    marker == _Marker.pickup
+                        ? Icons.my_location_rounded
+                        : marker == _Marker.dropoff
+                        ? Icons.location_on_outlined
+                        : Icons.more_horiz_rounded,
+                    size: 21,
+                    color: colors.accent,
+                  ),
+                  suffixIcon: onRemove != null
+                      ? IconButton(
+                          tooltip: 'Remove $label',
+                          icon: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: colors.inkMuted,
+                          ),
+                          onPressed: onRemove,
+                        )
+                      : Icon(
+                          Icons.expand_more_rounded,
+                          size: 18,
+                          color: colors.inkMuted,
+                        ),
+                ),
+                child: Text(
+                  value.isEmpty ? '' : value.address,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                    color: colors.ink,
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -394,54 +406,56 @@ class _JourneyDateTimeField extends StatelessWidget {
             time?.minute ?? 0,
           );
     final complete = date != null && time != null;
-    return Semantics(
-      button: true,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () async {
-            final value = await showJourneyDateTimeSheet(
-              context,
-              title: title,
-              minimum: minimum,
-              initial: initial,
-            );
-            if (value != null && context.mounted) onChanged(value);
-          },
-          child: InputDecorator(
-            isEmpty: !complete,
-            decoration: InputDecoration(
-              labelText: title,
-              labelStyle: TextStyle(color: colors.placeholder, fontSize: 14),
-              floatingLabelStyle: TextStyle(
-                color: colors.inkMuted,
-                fontSize: 12,
-              ),
-              prefixIcon: Icon(
-                Icons.calendar_month_outlined,
-                size: 21,
-                color: colors.accent,
-              ),
-              suffixIcon: Icon(
-                Icons.expand_more_rounded,
-                size: 18,
-                color: colors.inkMuted,
-              ),
-            ),
-            child: Text(
-              complete ? Formatting.journeyDateAndTime(initial!) : '',
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.3,
-                fontWeight: FontWeight.w600,
-                color: colors.ink,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FieldLabel(title),
+        Semantics(
+          button: true,
+          label: title,
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () async {
+                final value = await showJourneyDateTimeSheet(
+                  context,
+                  title: title,
+                  minimum: minimum,
+                  initial: initial,
+                );
+                if (value != null && context.mounted) onChanged(value);
+              },
+              child: InputDecorator(
+                isEmpty: !complete,
+                decoration: InputDecoration(
+                  hintText: 'Choose a date and time',
+                  prefixIcon: Icon(
+                    Icons.calendar_month_outlined,
+                    size: 21,
+                    color: colors.accent,
+                  ),
+                  suffixIcon: Icon(
+                    Icons.expand_more_rounded,
+                    size: 18,
+                    color: colors.inkMuted,
+                  ),
+                ),
+                child: Text(
+                  complete ? Formatting.journeyDateAndTime(initial!) : '',
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                    color: colors.ink,
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'home_section_heading.dart';
+import '../../../widgets/common.dart';
 import '../../../widgets/tiles.dart';
 
 /// The four things the company does, as a 2×2 grid of [ServiceTile]s. Each
@@ -48,7 +48,7 @@ class ServicesGrid extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const HomeSectionHeading('Our services'),
+        const SectionTitle('Our services'),
         const SizedBox(height: 12),
         for (var row = 0; row < _services.length; row += 2) ...[
           if (row > 0) const SizedBox(height: 10),

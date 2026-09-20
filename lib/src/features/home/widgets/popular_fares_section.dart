@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme.dart';
-import 'home_section_heading.dart';
+import '../../../widgets/common.dart';
 
 /// Popular fixed fares from the website, as a carousel of cards. Tapping one
 /// presets the journey form with that route.
@@ -61,7 +61,7 @@ class PopularFaresSection extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: gutter),
-          child: const HomeSectionHeading('Popular fixed fares'),
+          child: const SectionTitle('Popular fixed fares'),
         ),
         const SizedBox(height: 12),
         SingleChildScrollView(

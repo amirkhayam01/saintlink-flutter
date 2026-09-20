@@ -98,6 +98,9 @@ void main() {
 
   Future<void> shot(WidgetTester tester, String name, Widget home, {ThemeData? theme, Future<void> Function(ProviderContainer)? prime, bool tall = false, RecentPlaces Function()? recents}) async {
     stubPlatformViews();
+    // flutter_test draws elevation as a solid black outline unless told
+    // otherwise; these pictures exist to be looked at, so shadows are real.
+    debugDisableShadows = false;
     await loadFonts();
     tester.view.physicalSize = Size(1179, tall ? 4400 : 2556);
     tester.view.devicePixelRatio = 3;
@@ -118,6 +121,8 @@ void main() {
     });
     await tester.pump();
     await expectLater(find.byType(MaterialApp), matchesGoldenFile('out/$name.png'));
+    // Back before the framework checks that no painting flag leaked out of the test.
+    debugDisableShadows = true;
     c.dispose();
   }
 

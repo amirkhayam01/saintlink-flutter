@@ -7,6 +7,7 @@ import '../../core/formatting.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/inner_screen_header.dart';
 import '../../widgets/ticket_card.dart';
 import '../../domain/booking.dart';
 import '../payment/payment_controller.dart';
@@ -68,8 +69,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     final busy = _busy || paying;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your trip'),
+      appBar: InnerScreenHeader(
+        title: 'Your trip',
         actions: [
           IconButton(
             tooltip: 'Copy reference',
