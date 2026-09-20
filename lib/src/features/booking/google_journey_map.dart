@@ -7,9 +7,10 @@ import '../../domain/place.dart';
 import '../places/current_location.dart';
 import 'journey_draft.dart';
 import 'journey_markers.dart';
+import 'route_line_provider.dart';
 
-/// The journey's located places, pinned and framed. No route line on purpose:
-/// the server never computes one, so drawing one would claim a precision the fare lacks.
+/// The journey's located places, pinned and framed, with the road route
+/// between them. The line is display only; the fare is measured elsewhere.
 class GoogleJourneyMap extends ConsumerStatefulWidget {
   const GoogleJourneyMap({
     super.key,
@@ -165,6 +166,9 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
       );
     }
 
+    final route = points.length >= 2
+        ? ref.watch(routeLineProvider(routeKey(points.map((p) => p.$2)))).value
+        : null;
     final icons = _icons;
     final markers = icons == null
         ? const <Marker>{}
@@ -175,11 +179,12 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
                 position: _latLng(place),
                 anchor: const Offset(0.5, 0.5),
                 infoWindow: InfoWindow(title: place.address),
-                icon: icons[switch (label) {
-                  'A' => JourneyMarkerKind.pickup,
-                  'B' => JourneyMarkerKind.dropoff,
-                  _ => JourneyMarkerKind.stop,
-                }]!,
+                icon:
+                    icons[switch (label) {
+                      'A' => JourneyMarkerKind.pickup,
+                      'B' => JourneyMarkerKind.dropoff,
+                      _ => JourneyMarkerKind.stop,
+                    }]!,
               ),
           };
 
@@ -193,6 +198,18 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
           zoom: points.isEmpty ? 10 : 11,
         ),
         markers: markers,
+        polylines: {
+          if (route != null)
+            Polyline(
+              polylineId: const PolylineId('route'),
+              points: [for (final (lat, lng) in route.points) LatLng(lat, lng)],
+              color: colors.ink,
+              width: 4,
+              startCap: Cap.roundCap,
+              endCap: Cap.roundCap,
+              jointType: JointType.round,
+            ),
+        },
         style: isDark ? _darkStyle : null,
         padding: EdgeInsets.only(top: widget.topPadding.toDouble()),
         onMapCreated: (controller) {

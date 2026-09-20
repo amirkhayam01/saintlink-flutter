@@ -6,6 +6,7 @@ import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/features/booking/booking_screen_header.dart';
 import 'package:saints_link/src/features/booking/google_journey_map.dart';
+import 'package:saints_link/src/features/booking/route_line_provider.dart';
 import 'package:saints_link/src/features/places/current_location.dart';
 import 'package:saints_link/src/widgets/route_timeline.dart';
 
@@ -15,7 +16,10 @@ import '../support/platform_views.dart';
 /// The map reads whether location is already granted; no test here wants a
 /// real permission check, so each says so up front.
 Widget scoped(Widget app, {bool granted = false}) => ProviderScope(
-  overrides: [locationGrantedProvider.overrideWith((ref) async => granted)],
+  overrides: [
+    locationGrantedProvider.overrideWith((ref) async => granted),
+    routeLineProvider.overrideWith((ref, key) async => null),
+  ],
   child: app,
 );
 

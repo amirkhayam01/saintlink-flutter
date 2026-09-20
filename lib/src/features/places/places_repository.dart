@@ -1,5 +1,6 @@
 import '../../core/api_client.dart';
 import '../../domain/place.dart';
+import '../../domain/route_line.dart';
 
 /// Address search, proxied so the Google key stays on the server.
 class PlacesRepository {
@@ -44,6 +45,16 @@ class PlacesRepository {
     );
 
     return PlaceSelection.fromJson(response);
+  }
+
+  /// The road route through `lat,lng` points, for the map. Display only.
+  Future<RouteLine> route(List<String> points) async {
+    final response = await _api.get(
+      '/places/route',
+      query: {'points[]': points},
+    );
+
+    return RouteLine.fromJson(response);
   }
 
   /// The customer's most-used places, kept by the server from their bookings.
