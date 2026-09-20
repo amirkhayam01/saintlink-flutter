@@ -36,12 +36,6 @@ void main() {
         expect(find.text('Our services'), findsOneWidget);
         expect(find.text('Popular fixed fares'), findsOneWidget);
         expect(find.textContaining('Good '), findsOneWidget);
-
-        // The theme toggle sits on the hero and offers the other mode.
-        final toggle = theme.brightness == Brightness.dark
-            ? Icons.light_mode_rounded
-            : Icons.dark_mode_rounded;
-        expect(find.byIcon(toggle), findsOneWidget);
       });
 
       testWidgets('journey screen', (tester) async {

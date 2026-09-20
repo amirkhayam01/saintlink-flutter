@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
-import '../../core/theme_controller.dart';
 import '../../domain/place.dart';
 import '../../widgets/hero_banner.dart';
 import '../auth/auth_controller.dart';
@@ -43,7 +42,6 @@ class HomeScreen extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
     final bookingController = ref.read(bookingFlowProvider.notifier);
     final firstName = auth.customer?.firstName;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     void presetAndBook(JourneyDraft Function(JourneyDraft) update) {
       bookingController.reset();
@@ -89,15 +87,6 @@ class HomeScreen extends ConsumerWidget {
                     height: 30,
                   ),
                   actions: [
-                    HeroIconButton(
-                      icon: isDark
-                          ? Icons.light_mode_rounded
-                          : Icons.dark_mode_rounded,
-                      semanticLabel: 'Switch theme',
-                      onPressed: () =>
-                          ref.read(themeModeProvider.notifier).toggleTheme(),
-                    ),
-                    const SizedBox(width: 8),
                     HomeAccountChip(
                       auth: auth,
                       onProfile: () => context.go('/profile'),
