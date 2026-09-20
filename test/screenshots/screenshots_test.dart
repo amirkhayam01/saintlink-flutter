@@ -14,7 +14,6 @@ import 'package:saints_link/src/features/booking/journey_screen.dart';
 import 'package:saints_link/src/features/booking/route_line_provider.dart';
 import 'package:saints_link/src/features/booking/journey_date_time_sheet.dart';
 import 'package:saints_link/src/features/booking/confirmation_screen.dart';
-import 'package:saints_link/src/features/booking/vehicle_screen.dart';
 import 'package:saints_link/src/features/trips/trip_detail_screen.dart';
 import 'package:saints_link/src/features/trips/trips_screen.dart';
 import 'package:saints_link/src/features/home/home_screen.dart';
@@ -361,7 +360,7 @@ void main() {
   );
   testWidgets(
     'vehicle',
-    (t) => shot(t, 'vehicle', const VehicleScreen(), prime: primeQuote),
+    (t) => shot(t, 'vehicle', const JourneyScreen(initialStage: JourneyStage.vehicles), prime: primeQuote),
   );
   testWidgets(
     'details',
@@ -405,7 +404,7 @@ void main() {
     (t) => shot(
       t,
       'vehicle_dark',
-      const VehicleScreen(),
+      const JourneyScreen(initialStage: JourneyStage.vehicles),
       theme: AppTheme.dark(),
       prime: primeQuote,
     ),

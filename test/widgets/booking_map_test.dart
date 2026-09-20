@@ -4,11 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/domain/place.dart';
-import 'package:saints_link/src/features/booking/booking_screen_header.dart';
 import 'package:saints_link/src/features/booking/google_journey_map.dart';
 import 'package:saints_link/src/features/booking/route_line_provider.dart';
 import 'package:saints_link/src/features/places/current_location.dart';
-import 'package:saints_link/src/widgets/route_timeline.dart';
 
 import '../support/fakes.dart';
 import '../support/platform_views.dart';
@@ -132,62 +130,4 @@ void main() {
     expect(map.myLocationEnabled, isTrue);
     expect(map.myLocationButtonEnabled, isTrue);
   });
-
-  for (final dark in [false, true]) {
-    testWidgets('map header and expansion fit narrow large text: $dark', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320, 600);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final journey = quotableJourney.copyWith(
-        dropoff: const PlaceSelection(
-          address: 'Heathrow Airport London (LHR), Hounslow',
-          latitude: 51.47,
-          longitude: -.45,
-        ),
-      );
-      await tester.pumpWidget(
-        scoped(
-          MaterialApp(
-            theme: dark ? AppTheme.dark() : AppTheme.light(),
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context)
-                  .copyWith(textScaler: const TextScaler.linear(2)),
-              child: child!,
-            ),
-            home: Scaffold(
-              appBar: BookingScreenHeader(
-                title: 'Choose your vehicle',
-                journey: journey,
-                expandable: true,
-              ),
-              body: const Text('Form'),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      // The route card over the map is the shared timeline, not its own thing.
-      expect(find.byType(RouteTimeline), findsOneWidget);
-      expect(find.text(journey.pickup.address), findsOneWidget);
-      expect(find.text(journey.dropoff.address), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await tester.tap(find.byTooltip('Expand map'));
-      await tester.pumpAndSettle();
-      expect(find.text('Journey map'), findsOneWidget);
-      expect(find.byType(GoogleJourneyMap), findsNWidgets(2));
-      expect(
-        tester
-            .widgetList<GoogleJourneyMap>(find.byType(GoogleJourneyMap))
-            .where((map) => map.interactive),
-        hasLength(1),
-      );
-      expect(tester.takeException(), isNull);
-      await tester.tap(find.byTooltip('Close map'));
-      await tester.pumpAndSettle();
-      expect(find.text('Journey map'), findsNothing);
-    });
-  }
 }

@@ -8,7 +8,6 @@ import 'features/booking/booking_flow_controller.dart';
 import 'features/booking/confirmation_screen.dart';
 import 'features/booking/details_screen.dart';
 import 'features/booking/journey_screen.dart';
-import 'features/booking/vehicle_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/services/prices_screen.dart';
@@ -123,11 +122,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (_, _) => const JourneyScreen(),
         routes: [
-          GoRoute(
-            path: 'vehicle',
-            parentNavigatorKey: _rootNavigatorKey,
-            builder: (_, _) => const VehicleScreen(),
-          ),
           GoRoute(
             path: 'details',
             parentNavigatorKey: _rootNavigatorKey,

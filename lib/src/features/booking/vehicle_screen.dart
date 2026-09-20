@@ -1,120 +1,72 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/tiles.dart';
-import '../../widgets/inner_screen_header.dart';
 import '../../widgets/vehicle_image.dart';
 import 'booking_flow_controller.dart';
-import 'booking_screen_header.dart';
 import '../../domain/vehicle_category.dart';
 
-/// Step two: pick a vehicle. Prices are the server's, held against the quote token.
-class VehicleScreen extends ConsumerStatefulWidget {
-  const VehicleScreen({super.key});
+/// Step two: pick a vehicle. Prices are the server's, held against the quote
+/// token. The list content of the journey sheet's third stage; the button
+/// lives with the sheet.
+class VehicleStage extends ConsumerWidget {
+  const VehicleStage({super.key});
 
   @override
-  ConsumerState<VehicleScreen> createState() => _VehicleScreenState();
-}
-
-class _VehicleScreenState extends ConsumerState<VehicleScreen> {
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    // The quote lasts thirty minutes. A visible countdown is kinder than a
-    // surprise refusal at the end of the passenger form.
-    _ticker = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) => setState(() {}),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(bookingFlowProvider);
     final controller = ref.read(bookingFlowProvider.notifier);
     final quote = state.quote;
     final journey = state.journey;
 
-    if (quote == null) {
-      return const Scaffold(body: Center(child: Text('No quote yet.')));
+    if (quote == null) return const SizedBox.shrink();
+
+    if (quote.hasExpired) {
+      return _Expired(onRefresh: () => controller.requestQuote());
     }
 
-    final expired = quote.hasExpired;
     final vehicles = state.availableVehicles;
-    final selectedFits =
-        state.selectedVehicle?.fits(
-          passengers: journey.passengerCount,
-          luggage: journey.luggageCount,
-        ) ??
-        false;
+
+    // The fleet is fetched at launch and silently retried before a quote; if
+    // it is still missing the customer must be told, not shown nothing.
+    if (vehicles.isEmpty) {
+      return ErrorNotice(
+        'We could not load the vehicles just now.',
+        onRetry: () => controller.loadVehicles(force: true),
+      );
+    }
 
     final bestValue = state.suggestedVehicleSlug;
 
-    return Scaffold(
-      appBar: BookingScreenHeader(
-        title: 'Choose your vehicle',
-        journey: journey,
-        expandable: true,
-      ),
-      body: expired
-          ? _Expired(
-              onRefresh: () async {
-                if (await controller.requestQuote() && mounted) setState(() {});
-              },
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              itemCount: vehicles.length + 1,
-              separatorBuilder: (_, index) =>
-                  SizedBox(height: index == 0 ? 16 : 10),
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return const BookingProgress(step: 1);
-                }
-                final vehicle = vehicles[index - 1];
-                final fare = quote.fareFor(vehicle.slug)!;
-                final fits = vehicle.fits(
-                  passengers: journey.passengerCount,
-                  luggage: journey.luggageCount,
-                );
-                final price = journey.isReturn ? fare.returnTotal : fare.single;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (i, vehicle) in vehicles.indexed) ...[
+          if (i > 0) const SizedBox(height: 10),
+          Builder(
+            builder: (context) {
+              final fare = quote.fareFor(vehicle.slug)!;
+              final fits = vehicle.fits(
+                passengers: journey.passengerCount,
+                luggage: journey.luggageCount,
+              );
+              final price = journey.isReturn ? fare.returnTotal : fare.single;
 
-                return _VehicleCard(
-                  vehicle: vehicle,
-                  price: price,
-                  fits: fits && price != null,
-                  selected: journey.vehicleCategorySlug == vehicle.slug,
-                  tag: vehicle.slug == bestValue ? 'Best value' : null,
-                  onTap: () => controller.selectVehicle(vehicle.slug),
-                );
-              },
-            ),
-      bottomNavigationBar: BottomAction(
-        child: FilledButton(
-          onPressed: !expired && selectedFits && state.totalDue != null
-              ? () => context.push('/book/details')
-              : null,
-          child: Text(
-            state.totalDue == null || !selectedFits
-                ? 'Select a vehicle'
-                : 'Continue · ${Formatting.money(state.totalDue!)}',
+              return _VehicleCard(
+                vehicle: vehicle,
+                price: price,
+                fits: fits && price != null,
+                selected: journey.vehicleCategorySlug == vehicle.slug,
+                tag: vehicle.slug == bestValue ? 'Best value' : null,
+                onTap: () => controller.selectVehicle(vehicle.slug),
+              );
+            },
           ),
-        ),
-      ),
+        ],
+      ],
     );
   }
 }
@@ -335,35 +287,33 @@ class _Expired extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.timer_off_outlined,
-              size: 48,
-              color: context.colors.inkMuted,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Your quote has expired',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Prices are held for 30 minutes. Refresh to get a current price for the same journey.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: context.colors.inkMuted),
-            ),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: onRefresh,
-              child: const Text('Refresh price'),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.timer_off_outlined,
+            size: 48,
+            color: context.colors.inkMuted,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Your quote has expired',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Prices are held for 30 minutes. Refresh to get a current price for the same journey.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.colors.inkMuted),
+          ),
+          const SizedBox(height: 20),
+          FilledButton(
+            onPressed: onRefresh,
+            child: const Text('Refresh price'),
+          ),
+        ],
       ),
     );
   }

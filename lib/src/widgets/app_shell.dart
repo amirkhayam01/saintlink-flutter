@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/auth/demo_session.dart';
+import '../features/booking/map_warmup.dart';
 
 import 'package:go_router/go_router.dart';
 
@@ -100,26 +102,32 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          if (ref.watch(demoSessionProvider) != null)
-            SafeArea(
-              bottom: false,
-              child: Container(
-                width: double.infinity,
-                color: context.colors.tint,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
+          // Under everything, one pixel: starts the map renderer while the splash is up.
+          if (!kIsWeb) const MapWarmup(),
+          Column(
+            children: [
+              if (ref.watch(demoSessionProvider) != null)
+                SafeArea(
+                  bottom: false,
+                  child: Container(
+                    width: double.infinity,
+                    color: context.colors.tint,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    child: Text(
+                      'Demo account · sample trips',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: context.colors.ink),
+                    ),
+                  ),
                 ),
-                child: Text(
-                  'Demo account · sample trips',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: context.colors.ink),
-                ),
-              ),
-            ),
-          Expanded(child: navigationShell),
+              Expanded(child: navigationShell),
+            ],
+          ),
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(

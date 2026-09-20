@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,26 +18,60 @@ import 'booking_screen_header.dart';
 import 'google_journey_map.dart';
 import 'journey_draft.dart';
 import 'journey_date_time_sheet.dart';
+import 'vehicle_screen.dart';
 
-/// The booking form in two stages over a map: the route, then only what the price depends on.
-/// Fields mirror the website's search widget; the server validates both the same way.
+/// The booking form in three stages over one map: the route, then only what
+/// the price depends on, then the vehicles at their prices. One map, so no
+/// reload between steps. Fields mirror the website's search widget.
 class JourneyScreen extends ConsumerStatefulWidget {
-  const JourneyScreen({super.key});
+  const JourneyScreen({super.key, this.initialStage = JourneyStage.route});
+
+  final JourneyStage initialStage;
 
   @override
   ConsumerState<JourneyScreen> createState() => _JourneyScreenState();
 }
 
-enum _Stage { route, when }
+enum JourneyStage { route, when, vehicles }
 
 class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   // Always the route first, even when preset: the customer sees it on the map before anything else.
-  _Stage _stage = _Stage.route;
+  late JourneyStage _stage = widget.initialStage;
+  Timer? _ticker;
+
+  /// The sheet's height as a fraction of the body, as it moves. Only the map
+  /// listens, so a drag rebuilds the map and nothing else.
+  final _sheetExtent = ValueNotifier<double>(0.56);
 
   @override
   void initState() {
     super.initState();
     _prefillPickup();
+    _syncTicker();
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    _sheetExtent.dispose();
+    super.dispose();
+  }
+
+  void _go(JourneyStage stage) {
+    setState(() => _stage = stage);
+    _sheetExtent.value = _initialExtent(stage);
+    _syncTicker();
+  }
+
+  static double _initialExtent(JourneyStage stage) =>
+      stage == JourneyStage.route ? 0.56 : 0.72;
+
+  // The quote lasts thirty minutes; while the vehicles show, tick so its expiry is noticed.
+  void _syncTicker() {
+    _ticker?.cancel();
+    _ticker = _stage == JourneyStage.vehicles
+        ? Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}))
+        : null;
   }
 
   /// The launch location as the pickup, unless one is already set or gets
@@ -56,17 +92,36 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
     final controller = ref.read(bookingFlowProvider.notifier);
     final journey = state.journey;
     final colors = context.colors;
-    final onRoute = _stage == _Stage.route;
+    // A quote that has gone cannot show vehicles; fall back to asking when.
+    final stage = _stage == JourneyStage.vehicles && state.quote == null
+        ? JourneyStage.when
+        : _stage;
+    final selectedFits =
+        state.selectedVehicle?.fits(
+          passengers: journey.passengerCount,
+          luggage: journey.luggageCount,
+        ) ??
+        false;
+    final canContinue =
+        !(state.quote?.hasExpired ?? true) &&
+        selectedFits &&
+        state.totalDue != null;
 
     return Scaffold(
       appBar: BookingScreenHeader(
         journey: journey,
         curvedEdge: false,
-        title: onRoute ? 'Plan your journey' : 'When are you travelling?',
-        // From the second stage, back is back to the route, not out of the form.
-        onBack: onRoute
-            ? () => context.pop()
-            : () => setState(() => _stage = _Stage.route),
+        title: switch (stage) {
+          JourneyStage.route => 'Plan your journey',
+          JourneyStage.when => 'When are you travelling?',
+          JourneyStage.vehicles => 'Choose your vehicle',
+        },
+        // Back walks the stages; only the first leaves the form.
+        onBack: switch (stage) {
+          JourneyStage.route => () => context.pop(),
+          JourneyStage.when => () => _go(JourneyStage.route),
+          JourneyStage.vehicles => () => _go(JourneyStage.when),
+        },
         actions: [
           if (!journey.pickup.isEmpty ||
               !journey.dropoff.isEmpty ||
@@ -75,80 +130,97 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
               tooltip: 'Clear journey',
               onPressed: () {
                 controller.reset();
-                setState(() => _stage = _Stage.route);
+                _go(JourneyStage.route);
               },
               icon: const Icon(Icons.restart_alt_rounded),
             ),
         ],
       ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          GoogleJourneyMap(
-            journey: journey,
-            interactive: true,
-            regionWhenEmpty: true,
-          ),
-          DraggableScrollableSheet(
-            initialChildSize: onRoute ? 0.56 : 0.72,
-            minChildSize: 0.4,
-            maxChildSize: 0.94,
-            snap: true,
-            builder: (context, scroll) => Material(
-              color: colors.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+      body: LayoutBuilder(
+        builder: (context, constraints) => Stack(
+          fit: StackFit.expand,
+          children: [
+            ValueListenableBuilder<double>(
+              valueListenable: _sheetExtent,
+              builder: (context, extent, _) => GoogleJourneyMap(
+                journey: journey,
+                interactive: true,
+                regionWhenEmpty: true,
+                bottomPadding: extent * constraints.maxHeight,
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  const _DragHandle(),
-                  Expanded(
-                    child: ListView(
-                      controller: scroll,
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
-                      children: [
-                        const BookingProgress(step: 0),
-                        const SizedBox(height: 20),
-                        if (onRoute)
-                          _RouteEditor(journey: journey, controller: controller)
-                        else
-                          _WhenAndWho(
-                            journey: journey,
-                            controller: controller,
-                            onEditRoute: () =>
-                                setState(() => _stage = _Stage.route),
-                          ),
-                        if (!onRoute && state.quoteError != null) ...[
-                          const SizedBox(height: 16),
-                          ErrorNotice(state.quoteError!),
-                        ],
-                      ],
-                    ),
+            ),
+            NotificationListener<DraggableScrollableNotification>(
+              onNotification: (n) {
+                _sheetExtent.value = n.extent;
+                return false;
+              },
+              child: DraggableScrollableSheet(
+                key: ValueKey(stage),
+                initialChildSize: _initialExtent(stage),
+                minChildSize: 0.4,
+                maxChildSize: 0.94,
+                snap: true,
+                builder: (context, scroll) => Material(
+                  color: colors.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
                   ),
-                  BottomAction(
-                    verticalPadding: 8,
-                    child: onRoute
-                        ? FilledButton(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      const _DragHandle(),
+                      Expanded(
+                        child: ListView(
+                          controller: scroll,
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
+                          children: [
+                            BookingProgress(
+                              step: stage == JourneyStage.vehicles ? 1 : 0,
+                            ),
+                            const SizedBox(height: 20),
+                            switch (stage) {
+                              JourneyStage.route => _RouteEditor(
+                                journey: journey,
+                                controller: controller,
+                              ),
+                              JourneyStage.when => _WhenAndWho(
+                                journey: journey,
+                                controller: controller,
+                                onEditRoute: () => _go(JourneyStage.route),
+                              ),
+                              JourneyStage.vehicles => const VehicleStage(),
+                            },
+                            if (stage == JourneyStage.when &&
+                                state.quoteError != null) ...[
+                              const SizedBox(height: 16),
+                              ErrorNotice(state.quoteError!),
+                            ],
+                          ],
+                        ),
+                      ),
+                      BottomAction(
+                        verticalPadding: 8,
+                        child: switch (stage) {
+                          JourneyStage.route => FilledButton(
                             style: FilledButton.styleFrom(
                               minimumSize: const Size.fromHeight(48),
                             ),
                             onPressed: journey.hasRoute
-                                ? () => setState(() => _stage = _Stage.when)
+                                ? () => _go(JourneyStage.when)
                                 : null,
                             child: const Text('Continue'),
-                          )
-                        : FilledButton(
+                          ),
+                          JourneyStage.when => FilledButton(
                             style: FilledButton.styleFrom(
                               minimumSize: const Size.fromHeight(48),
                             ),
                             onPressed: journey.isQuotable && !state.isQuoting
                                 ? () async {
                                     if (await controller.requestQuote() &&
-                                        context.mounted) {
-                                      context.push('/book/vehicle');
+                                        mounted) {
+                                      _go(JourneyStage.vehicles);
                                     }
                                   }
                                 : null,
@@ -156,12 +228,28 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                                 ? const ButtonSpinner()
                                 : const Text('See prices'),
                           ),
+                          JourneyStage.vehicles => FilledButton(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            onPressed: canContinue
+                                ? () => context.push('/book/details')
+                                : null,
+                            child: Text(
+                              canContinue
+                                  ? 'Continue · ${Formatting.money(state.totalDue!)}'
+                                  : 'Select a vehicle',
+                            ),
+                          ),
+                        },
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

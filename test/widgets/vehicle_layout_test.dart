@@ -5,7 +5,7 @@ import 'package:saints_link/src/core/providers.dart';
 import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/domain/quote.dart';
 import 'package:saints_link/src/features/booking/booking_flow_controller.dart';
-import 'package:saints_link/src/features/booking/vehicle_screen.dart';
+import 'package:saints_link/src/features/booking/journey_screen.dart';
 
 import '../support/fakes.dart';
 
@@ -64,7 +64,7 @@ void main() {
                         .copyWith(textScaler: TextScaler.linear(scale)),
                     child: child!,
                   ),
-                  home: const VehicleScreen(),
+                  home: const JourneyScreen(initialStage: JourneyStage.vehicles),
                 ),
               ),
             );
@@ -129,7 +129,7 @@ void main() {
         container: container,
         child: MaterialApp(
           theme: AppTheme.light(),
-          home: const VehicleScreen(),
+          home: const JourneyScreen(initialStage: JourneyStage.vehicles),
         ),
       ),
     );
@@ -202,7 +202,7 @@ void main() {
                 .copyWith(textScaler: const TextScaler.linear(2)),
             child: child!,
           ),
-          home: const VehicleScreen(),
+          home: const JourneyScreen(initialStage: JourneyStage.vehicles),
         ),
       ),
     );

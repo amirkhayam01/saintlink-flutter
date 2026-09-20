@@ -139,7 +139,7 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     state = state.copyWith(isQuoting: true, quoteError: null, quote: null);
 
     try {
-      if (state.vehicles.isEmpty) await loadVehicles();
+      if (state.vehicles.isEmpty) await loadVehicles(force: true);
       if (generation != _resetGeneration) return false;
       final quote = await ref
           .read(bookingRepositoryProvider)

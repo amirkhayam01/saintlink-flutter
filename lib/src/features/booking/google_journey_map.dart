@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/theme.dart';
 import '../../domain/place.dart';
+import '../../domain/route_line.dart';
 import '../places/current_location.dart';
 import 'journey_draft.dart';
 import 'journey_markers.dart';
@@ -17,8 +20,13 @@ class GoogleJourneyMap extends ConsumerStatefulWidget {
     required this.journey,
     this.interactive = false,
     this.topPadding = 0,
+    this.bottomPadding = 0,
     this.regionWhenEmpty = false,
   });
+
+  /// Space at the bottom covered by a sheet. The framing and the centre use
+  /// only the area above it, and follow it as it moves.
+  final double bottomPadding;
 
   final JourneyDraft journey;
 
@@ -40,6 +48,8 @@ class GoogleJourneyMap extends ConsumerStatefulWidget {
 class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
   GoogleMapController? _controller;
   Map<JourneyMarkerKind, BitmapDescriptor>? _icons;
+  Timer? _refit;
+  RouteLine? _route;
 
   @override
   void didChangeDependencies() {
@@ -78,18 +88,27 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
         oldWidget.journey.via != widget.journey.via ||
         oldWidget.topPadding != widget.topPadding) {
       _frame();
+    } else if (oldWidget.bottomPadding != widget.bottomPadding) {
+      // The sheet is moving: the padding shifts the view each frame, and the
+      // fit is redone once it has settled, with an animated camera.
+      _refit?.cancel();
+      _refit = Timer(
+        const Duration(milliseconds: 120),
+        () => _frame(animate: true),
+      );
     }
   }
 
   @override
   void dispose() {
+    _refit?.cancel();
     _controller?.dispose();
     super.dispose();
   }
 
-  /// Fit every pin in view. Deferred a frame because the map reports its
-  /// size only after layout, and bounds need a size to be turned into a zoom.
-  void _frame() {
+  /// Fit every pin and the route in the area above the sheet. Deferred a
+  /// frame because bounds need the map's size, which it reports after layout.
+  void _frame({bool animate = false}) {
     final controller = _controller;
     final points = _points;
     if (controller == null || points.isEmpty) return;
@@ -97,33 +116,41 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
+      final CameraUpdate update;
       if (points.length == 1) {
-        controller.moveCamera(
-          CameraUpdate.newLatLngZoom(_latLng(points.single.$2), 14),
-        );
-        return;
-      }
+        update = CameraUpdate.newLatLngZoom(_latLng(points.single.$2), 14);
+      } else {
+        var south = double.infinity;
+        var north = -double.infinity;
+        var west = double.infinity;
+        var east = -double.infinity;
+        void include(double lat, double lng) {
+          south = south < lat ? south : lat;
+          north = north > lat ? north : lat;
+          west = west < lng ? west : lng;
+          east = east > lng ? east : lng;
+        }
 
-      var south = double.infinity;
-      var north = -double.infinity;
-      var west = double.infinity;
-      var east = -double.infinity;
-      for (final (_, place) in points) {
-        south = south < place.latitude! ? south : place.latitude!;
-        north = north > place.latitude! ? north : place.latitude!;
-        west = west < place.longitude! ? west : place.longitude!;
-        east = east > place.longitude! ? east : place.longitude!;
-      }
-
-      controller.moveCamera(
-        CameraUpdate.newLatLngBounds(
+        for (final (_, place) in points) {
+          include(place.latitude!, place.longitude!);
+        }
+        for (final (lat, lng) in _route?.points ?? const <(double, double)>[]) {
+          include(lat, lng);
+        }
+        update = CameraUpdate.newLatLngBounds(
           LatLngBounds(
             southwest: LatLng(south, west),
             northeast: LatLng(north, east),
           ),
           56,
-        ),
-      );
+        );
+      }
+
+      if (animate) {
+        controller.animateCamera(update);
+      } else {
+        controller.moveCamera(update);
+      }
     });
   }
 
@@ -169,6 +196,11 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
     final route = points.length >= 2
         ? ref.watch(routeLineProvider(routeKey(points.map((p) => p.$2)))).value
         : null;
+    if (route != _route) {
+      // A route has arrived (or gone): refit so all of it is in view.
+      _route = route;
+      _frame(animate: true);
+    }
     final icons = _icons;
     final markers = icons == null
         ? const <Marker>{}
@@ -211,7 +243,10 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
             ),
         },
         style: isDark ? _darkStyle : null,
-        padding: EdgeInsets.only(top: widget.topPadding.toDouble()),
+        padding: EdgeInsets.only(
+          top: widget.topPadding.toDouble(),
+          bottom: widget.bottomPadding,
+        ),
         onMapCreated: (controller) {
           _controller = controller;
           _frame();

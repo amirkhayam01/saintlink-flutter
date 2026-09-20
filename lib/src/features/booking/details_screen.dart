@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../core/links.dart';
 import '../../widgets/common.dart';
 import '../../widgets/inner_screen_header.dart';
+import '../../widgets/route_timeline.dart';
 import '../../widgets/tiles.dart';
 import '../auth/auth_controller.dart';
 import 'booking_flow_controller.dart';
@@ -78,19 +79,29 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
     final fieldError = state.fieldErrors;
 
     return Scaffold(
-      appBar: BookingScreenHeader(
-        title: 'Your details',
-        journey: journey,
-        expandable: true,
-        mapHeight: MediaQuery.viewInsetsOf(context).bottom > 0 ? 0 : 300,
-      ),
+      appBar: BookingScreenHeader(title: 'Your details', journey: journey),
       body: Form(
         key: _form,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           children: [
             const BookingProgress(step: 2),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                child: RouteTimeline(
+                  dense: true,
+                  points: [
+                    RoutePoint(address: journey.pickup.address),
+                    for (final stop in journey.via)
+                      if (!stop.isEmpty) RoutePoint(address: stop.address),
+                    RoutePoint(address: journey.dropoff.address),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
             const SectionTitle('Lead passenger'),
             const SizedBox(height: 14),
             const FieldLabel('Full name'),
