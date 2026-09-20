@@ -71,7 +71,8 @@ void main() {
       ],
     });
     final map = tester.widget<GoogleMap>(find.byType(GoogleMap));
-    expect(map.polylines, hasLength(1));
-    expect(map.polylines.single.points, hasLength(3));
+    // The line and its casing, both along the decoded route.
+    expect(map.polylines, hasLength(2));
+    expect(map.polylines.every((p) => p.points.length == 3), isTrue);
   });
 }

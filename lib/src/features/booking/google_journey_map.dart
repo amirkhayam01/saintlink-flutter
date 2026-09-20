@@ -64,14 +64,16 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
     final dpr = MediaQuery.devicePixelRatioOf(context);
     final icons = <String, JourneyMarker>{};
     for (final (label, place) in _points) {
+      final kind = switch (label) {
+        'A' => JourneyMarkerKind.pickup,
+        'B' => JourneyMarkerKind.dropoff,
+        _ => JourneyMarkerKind.stop,
+      };
       icons[label] = await JourneyMarkers.of(
-        switch (label) {
-          'A' => JourneyMarkerKind.pickup,
-          'B' => JourneyMarkerKind.dropoff,
-          _ => JourneyMarkerKind.stop,
-        },
+        kind,
         pixelRatio: dpr,
-        ink: colors.ink,
+        // The start and the stops in the route's blue; the destination in ink.
+        ink: kind == JourneyMarkerKind.dropoff ? colors.ink : colors.route,
         onInk: colors.card,
         card: colors.card,
         onCard: colors.ink,
@@ -235,16 +237,29 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
         ),
         markers: markers,
         polylines: {
-          if (route != null)
+          if (route != null) ...[
+            // A pale casing under the line keeps it legible over any tile.
             Polyline(
-              polylineId: const PolylineId('route'),
+              polylineId: const PolylineId('route-casing'),
               points: [for (final (lat, lng) in route.points) LatLng(lat, lng)],
-              color: colors.ink,
-              width: 4,
+              color: colors.card,
+              width: 9,
               startCap: Cap.roundCap,
               endCap: Cap.roundCap,
               jointType: JointType.round,
+              zIndex: 1,
             ),
+            Polyline(
+              polylineId: const PolylineId('route'),
+              points: [for (final (lat, lng) in route.points) LatLng(lat, lng)],
+              color: colors.route,
+              width: 5,
+              startCap: Cap.roundCap,
+              endCap: Cap.roundCap,
+              jointType: JointType.round,
+              zIndex: 2,
+            ),
+          ],
         },
         style: isDark ? _darkStyle : null,
         padding: EdgeInsets.only(

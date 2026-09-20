@@ -21,14 +21,14 @@ class JourneyMarkers {
 
   static final _cache = <String, JourneyMarker>{};
 
-  static const _badge = 30.0;
-  static const _stem = 10.0;
-  static const _dot = 3.5;
+  static const _badge = 24.0;
+  static const _stem = 8.0;
+  static const _dot = 3.0;
   static const _margin = 6.0;
   static const _maxLabelChars = 30;
 
   /// How far the teardrop's tip sits below its circle's centre.
-  static const _pinDrop = 24.0;
+  static const _pinDrop = 19.0;
 
   static Future<JourneyMarker> of(
     JourneyMarkerKind kind, {
@@ -47,7 +47,7 @@ class JourneyMarkers {
 
     final small = kind == JourneyMarkerKind.stop;
     final pin = kind == JourneyMarkerKind.dropoff;
-    final badge = small ? 22.0 : _badge;
+    final badge = small ? 18.0 : _badge;
 
     final painter = text == null
         ? null
@@ -55,7 +55,7 @@ class JourneyMarkers {
             text: TextSpan(
               text: text,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: onCard,
                 fontFamily: 'Figtree',
@@ -65,8 +65,8 @@ class JourneyMarkers {
             maxLines: 1,
           )..layout());
 
-    final pillW = painter == null ? 0.0 : painter.width + 20;
-    final pillH = 26.0;
+    final pillW = painter == null ? 0.0 : painter.width + 18;
+    final pillH = 24.0;
     final width = _margin * 2 + badge + (painter == null ? 0 : 6 + pillW);
     // A pin's tip reaches further down than a badge's stem and dot.
     final below = pin ? _pinDrop - badge / 2 : _stem + _dot * 2;
@@ -118,7 +118,7 @@ class JourneyMarkers {
       canvas.drawCircle(Offset(cx, pointY), _dot, Paint()..color = ink);
       canvas.drawCircle(c.translate(0, 2), r, shadow);
       canvas.drawCircle(c, r, Paint()..color = ink);
-      canvas.drawCircle(c, small ? 3.5 : r * 0.36, Paint()..color = onInk);
+      canvas.drawCircle(c, small ? 3 : r * 0.36, Paint()..color = onInk);
     }
 
     if (painter != null) {
@@ -135,7 +135,7 @@ class JourneyMarkers {
       canvas.drawRRect(pill, Paint()..color = card);
       painter.paint(
         canvas,
-        Offset(pill.left + 10, pill.top + (pillH - painter.height) / 2),
+        Offset(pill.left + 9, pill.top + (pillH - painter.height) / 2),
       );
     }
 

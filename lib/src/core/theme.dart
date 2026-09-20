@@ -228,6 +228,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.errorText,
     required this.tint,
     required this.accent,
+    required this.route,
   });
 
   static const light = AppColors(
@@ -241,6 +242,7 @@ class AppColors extends ThemeExtension<AppColors> {
     errorText: Color(0xFF991B1B),
     tint: Color(0x1FFACC15),
     accent: AppTheme.brandDark,
+    route: Color(0xFF2F6BFF),
   );
 
   static const dark = AppColors(
@@ -254,6 +256,7 @@ class AppColors extends ThemeExtension<AppColors> {
     errorText: Color(0xFFFCA5A5),
     tint: Color(0x2EFACC15),
     accent: AppTheme.brand,
+    route: Color(0xFF6B95FF),
   );
 
   /// Body text.
@@ -283,6 +286,10 @@ class AppColors extends ThemeExtension<AppColors> {
 
   /// Gold for text and icons: darker on white for contrast, the logo gold on midnight.
   final Color accent;
+  
+  /// The road route on a map. Blue because that is what a route line is
+  /// everywhere; the brand's gold stays off the map.
+  final Color route;
 
   /// The one shadow the app uses, on cards that float over the hero or the
   /// ground. Softer and larger than Material's default elevation.
@@ -308,6 +315,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? errorText,
     Color? tint,
     Color? accent,
+    Color? route,
   }) {
     return AppColors(
       ink: ink ?? this.ink,
@@ -320,6 +328,7 @@ class AppColors extends ThemeExtension<AppColors> {
       errorText: errorText ?? this.errorText,
       tint: tint ?? this.tint,
       accent: accent ?? this.accent,
+      route: route ?? this.route,
     );
   }
 
@@ -338,6 +347,7 @@ class AppColors extends ThemeExtension<AppColors> {
       errorText: Color.lerp(errorText, other.errorText, t)!,
       tint: Color.lerp(tint, other.tint, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
+      route: Color.lerp(route, other.route, t)!,
     );
   }
 }
