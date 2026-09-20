@@ -10,6 +10,7 @@ import '../../widgets/tiles.dart';
 import '../../widgets/inner_screen_header.dart';
 import '../../widgets/route_timeline.dart';
 import '../places/address_search_field.dart';
+import '../places/current_location.dart';
 import 'booking_flow_controller.dart';
 import 'booking_screen_header.dart';
 import 'google_journey_map.dart';
@@ -30,6 +31,24 @@ enum _Stage { route, when }
 class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   // Always the route first, even when preset: the customer sees it on the map before anything else.
   _Stage _stage = _Stage.route;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillPickup();
+  }
+
+  /// The launch location as the pickup, unless one is already set or gets
+  /// set first.
+  Future<void> _prefillPickup() async {
+    if (!ref.read(bookingFlowProvider).journey.pickup.isEmpty) return;
+    final place = await ref.read(currentPlaceProvider.future);
+    if (!mounted || place == null) return;
+    if (!ref.read(bookingFlowProvider).journey.pickup.isEmpty) return;
+    ref
+        .read(bookingFlowProvider.notifier)
+        .updateJourney((j) => j.copyWith(pickup: place));
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../core/providers.dart';
+import '../../domain/place.dart';
+
 /// Why a position could not be had. Each one is something the screen says
 /// differently, so they are named rather than folded into one failure.
 enum LocationDenial {
@@ -33,7 +36,7 @@ class LocationFix {
   final double longitude;
 }
 
-/// Where the phone is right now. Asked for on a tap, never watched, never prompted at launch.
+/// Where the phone is right now. Asked for at launch and on the pickup tap; never watched.
 abstract class LocationSource {
   Future<LocationFix> current();
 
@@ -50,14 +53,19 @@ class GeolocatorLocationSource implements LocationSource {
 
   @override
   Future<LocationFix> current() async {
-    if (!await Geolocator.isLocationServiceEnabled()) {
-      throw const LocationDeniedException(LocationDenial.servicesOff);
-    }
-
-    var permission = await Geolocator.checkPermission();
-
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+    final LocationPermission permission;
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw const LocationDeniedException(LocationDenial.servicesOff);
+      }
+      final checked = await Geolocator.checkPermission();
+      permission = checked == LocationPermission.denied
+          ? await Geolocator.requestPermission()
+          : checked;
+    } on LocationDeniedException {
+      rethrow;
+    } catch (_) {
+      throw const LocationDeniedException(LocationDenial.unavailable);
     }
 
     switch (permission) {
@@ -116,3 +124,28 @@ final locationSourceProvider = Provider<LocationSource>(
 final locationGrantedProvider = FutureProvider<bool>(
   (ref) => ref.watch(locationSourceProvider).isGranted(),
 );
+
+/// The fix asked for once when the app opens. Null on any refusal.
+final launchLocationProvider = FutureProvider<LocationFix?>((ref) async {
+  try {
+    final fix = await ref.watch(locationSourceProvider).current();
+    ref.invalidate(locationGrantedProvider);
+    return fix;
+  } catch (_) {
+    return null;
+  }
+});
+
+/// The launch fix as an address the engine trusts, resolved once per session.
+/// Prefills the pickup when the form opens empty.
+final currentPlaceProvider = FutureProvider<PlaceSelection?>((ref) async {
+  final fix = await ref.watch(launchLocationProvider.future);
+  if (fix == null) return null;
+  try {
+    return await ref
+        .watch(placesRepositoryProvider)
+        .reverse(latitude: fix.latitude, longitude: fix.longitude);
+  } catch (_) {
+    return null;
+  }
+});

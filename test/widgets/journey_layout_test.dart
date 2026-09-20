@@ -7,6 +7,7 @@ import 'package:saints_link/src/core/formatting.dart';
 import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/features/booking/booking_flow_controller.dart';
 import 'package:saints_link/src/features/booking/journey_screen.dart';
+import 'package:saints_link/src/features/places/current_location.dart';
 
 import '../support/fakes.dart';
 
@@ -323,4 +324,46 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('the launch location prefills an empty pickup and only that', (
+    tester,
+  ) async {
+    const here = PlaceSelection(
+      address: '14 Bedford Pl, Southampton',
+      placeId: 'here',
+      latitude: 50.91,
+      longitude: -1.4,
+    );
+    Future<ProviderContainer> pump(PlaceSelection pickup) async {
+      final container = ProviderContainer(
+        overrides: [
+          bookingRepositoryProvider.overrideWithValue(FakeBookingRepository()),
+          currentPlaceProvider.overrideWith((ref) async => here),
+        ],
+      );
+      addTearDown(container.dispose);
+      container
+          .read(bookingFlowProvider.notifier)
+          .updateJourney((j) => j.copyWith(pickup: pickup));
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            key: UniqueKey(),
+            theme: AppTheme.light(),
+            home: const JourneyScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return container;
+    }
+
+    phoneSized(tester);
+    var c = await pump(PlaceSelection.empty);
+    expect(c.read(bookingFlowProvider).journey.pickup, here);
+
+    c = await pump(quotableJourney.pickup);
+    expect(c.read(bookingFlowProvider).journey.pickup, quotableJourney.pickup);
+  });
 }
