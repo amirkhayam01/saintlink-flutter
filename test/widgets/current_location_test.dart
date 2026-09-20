@@ -33,6 +33,9 @@ class FakeLocation implements LocationSource {
   }
 
   @override
+  Future<bool> isGranted() async => fix != null;
+
+  @override
   Future<void> openSettings() async => settingsOpened++;
 }
 

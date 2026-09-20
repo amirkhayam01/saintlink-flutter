@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/theme.dart';
 import '../../domain/place.dart';
+import '../places/current_location.dart';
 import 'journey_draft.dart';
 
 /// The journey on a map: every end of it that has a position, framed.
@@ -19,7 +21,7 @@ import 'journey_draft.dart';
 /// the server measures a journey as a straight line scaled by a constant and
 /// never asks Google for a route, so drawing one would claim a precision the
 /// fare does not have.
-class GoogleJourneyMap extends StatefulWidget {
+class GoogleJourneyMap extends ConsumerStatefulWidget {
   const GoogleJourneyMap({
     super.key,
     required this.journey,
@@ -38,10 +40,10 @@ class GoogleJourneyMap extends StatefulWidget {
   final int topPadding;
 
   @override
-  State<GoogleJourneyMap> createState() => _GoogleJourneyMapState();
+  ConsumerState<GoogleJourneyMap> createState() => _GoogleJourneyMapState();
 }
 
-class _GoogleJourneyMapState extends State<GoogleJourneyMap> {
+class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
   GoogleMapController? _controller;
 
   /// Pickup first, stops in order, destination last — only those with a
@@ -116,6 +118,13 @@ class _GoogleJourneyMapState extends State<GoogleJourneyMap> {
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final points = _points;
+    /*
+     * The "you are here" dot, only where the app already may. Map loads are
+     * free and the dot costs nothing, but it must never be the reason for a
+     * permission prompt — that stays on the pickup field, where there is a
+     * reason the customer can see.
+     */
+    final showLocation = ref.watch(locationGrantedProvider).value ?? false;
 
     if (points.isEmpty) {
       return ColoredBox(
@@ -188,8 +197,8 @@ class _GoogleJourneyMapState extends State<GoogleJourneyMap> {
         zoomControlsEnabled: false,
         mapToolbarEnabled: false,
         compassEnabled: widget.interactive,
-        myLocationEnabled: false,
-        myLocationButtonEnabled: false,
+        myLocationEnabled: showLocation,
+        myLocationButtonEnabled: showLocation && widget.interactive,
         buildingsEnabled: false,
       ),
     );

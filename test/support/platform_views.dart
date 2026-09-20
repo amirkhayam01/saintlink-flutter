@@ -1,35 +1,125 @@
-import 'package:flutter/services.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformViewCreatedCallback;
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 /// Lets a native map be pumped in a widget test.
 ///
 /// `GoogleMap` is a platform view, and there is no platform under a widget
-/// test. Two channels want answering before the widget settles: the
-/// platform-views channel, where `create` must return a view id, and the
-/// map's own method channel, where `map#waitForMap`, `camera#move` and the
-/// rest are content with no reply. With both answered the map mounts, lays
-/// out and draws its blank surface like any other widget, so the screens
-/// around it can be tested and shot.
-///
-/// No native plugin registers in a test, so the platform interface's default
-/// `MethodChannel` implementation is what runs, one channel per map with the
-/// map's id as a suffix. Ids count up across the test process, so a run of
-/// them is registered up front.
+/// test: the default implementation throws the moment the widget rebuilds.
+/// This swaps in a platform that draws a plain box and accepts every call,
+/// so the map mounts, lays out and updates like any other widget and the
+/// screens around it can be tested and screenshotted. The `GoogleMap`
+/// widget's own properties are still real, so a test can read what the
+/// screen asked for — markers, gestures, the location dot — off the widget.
 void stubPlatformViews() {
-  final messenger =
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  GoogleMapsFlutterPlatform.instance = _FakeMapsPlatform();
+}
 
-  messenger.setMockMethodCallHandler(SystemChannels.platform_views, (call) async {
-    return switch (call.method) {
-      'create' => 0,
-      _ => null,
-    };
-  });
+class _FakeMapsPlatform extends GoogleMapsFlutterPlatform
+    with MockPlatformInterfaceMixin {
+  final _created = <int>{};
 
-  for (var mapId = 0; mapId < 64; mapId++) {
-    messenger.setMockMethodCallHandler(
-      MethodChannel('plugins.flutter.io/google_maps_$mapId'),
-      (_) async => null,
-    );
+  @override
+  Future<void> init(int mapId) async {}
+
+  @override
+  Widget buildViewWithConfiguration(
+    int creationId,
+    PlatformViewCreatedCallback onPlatformViewCreated, {
+    required MapWidgetConfiguration widgetConfiguration,
+    MapConfiguration mapConfiguration = const MapConfiguration(),
+    MapObjects mapObjects = const MapObjects(),
+  }) {
+    // Created "immediately", so onMapCreated fires and the controller exists —
+    // once: the widget builds this on every rebuild and expects one creation.
+    if (_created.add(creationId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => onPlatformViewCreated(creationId));
+    }
+
+    return const SizedBox.expand();
   }
+
+  @override
+  Future<void> updateMapConfiguration(MapConfiguration configuration, {required int mapId}) async {}
+  @override
+  Future<void> updateMarkers(MarkerUpdates markerUpdates, {required int mapId}) async {}
+  @override
+  Future<void> updatePolygons(PolygonUpdates polygonUpdates, {required int mapId}) async {}
+  @override
+  Future<void> updatePolylines(PolylineUpdates polylineUpdates, {required int mapId}) async {}
+  @override
+  Future<void> updateCircles(CircleUpdates circleUpdates, {required int mapId}) async {}
+  @override
+  Future<void> updateHeatmaps(HeatmapUpdates heatmapUpdates, {required int mapId}) async {}
+  @override
+  Future<void> updateTileOverlays({required Set<TileOverlay> newTileOverlays, required int mapId}) async {}
+  @override
+  Future<void> updateClusterManagers(ClusterManagerUpdates clusterManagerUpdates, {required int mapId}) async {}
+  @override
+  Future<void> updateGroundOverlays(GroundOverlayUpdates groundOverlayUpdates, {required int mapId}) async {}
+  @override
+  Future<void> clearTileCache(TileOverlayId tileOverlayId, {required int mapId}) async {}
+  @override
+  Future<void> animateCamera(CameraUpdate cameraUpdate, {required int mapId}) async {}
+  @override
+  Future<void> moveCamera(CameraUpdate cameraUpdate, {required int mapId}) async {}
+  @override
+  Future<void> setMapStyle(String? mapStyle, {required int mapId}) async {}
+  @override
+  Future<void> showMarkerInfoWindow(MarkerId markerId, {required int mapId}) async {}
+  @override
+  Future<void> hideMarkerInfoWindow(MarkerId markerId, {required int mapId}) async {}
+  @override
+  Future<bool> isMarkerInfoWindowShown(MarkerId markerId, {required int mapId}) async => false;
+  @override
+  Future<double> getZoomLevel({required int mapId}) async => 11;
+  @override
+  Future<Uint8List?> takeSnapshot({required int mapId}) async => null;
+  @override
+  Future<LatLngBounds> getVisibleRegion({required int mapId}) async =>
+      LatLngBounds(southwest: const LatLng(0, 0), northeast: const LatLng(0, 0));
+  @override
+  Future<ScreenCoordinate> getScreenCoordinate(LatLng latLng, {required int mapId}) async =>
+      const ScreenCoordinate(x: 0, y: 0);
+  @override
+  Future<LatLng> getLatLng(ScreenCoordinate screenCoordinate, {required int mapId}) async =>
+      const LatLng(0, 0);
+  @override
+  void dispose({required int mapId}) {}
+
+  @override
+  Stream<CameraMoveStartedEvent> onCameraMoveStarted({required int mapId}) => const Stream.empty();
+  @override
+  Stream<CameraMoveEvent> onCameraMove({required int mapId}) => const Stream.empty();
+  @override
+  Stream<CameraIdleEvent> onCameraIdle({required int mapId}) => const Stream.empty();
+  @override
+  Stream<MarkerTapEvent> onMarkerTap({required int mapId}) => const Stream.empty();
+  @override
+  Stream<InfoWindowTapEvent> onInfoWindowTap({required int mapId}) => const Stream.empty();
+  @override
+  Stream<MarkerDragStartEvent> onMarkerDragStart({required int mapId}) => const Stream.empty();
+  @override
+  Stream<MarkerDragEvent> onMarkerDrag({required int mapId}) => const Stream.empty();
+  @override
+  Stream<MarkerDragEndEvent> onMarkerDragEnd({required int mapId}) => const Stream.empty();
+  @override
+  Stream<PolylineTapEvent> onPolylineTap({required int mapId}) => const Stream.empty();
+  @override
+  Stream<PolygonTapEvent> onPolygonTap({required int mapId}) => const Stream.empty();
+  @override
+  Stream<CircleTapEvent> onCircleTap({required int mapId}) => const Stream.empty();
+  @override
+  Stream<PointOfInterestTapEvent> onPointOfInterestTap({required int mapId}) => const Stream.empty();
+  @override
+  Stream<MapTapEvent> onTap({required int mapId}) => const Stream.empty();
+  @override
+  Stream<MapLongPressEvent> onLongPress({required int mapId}) => const Stream.empty();
+  @override
+  Stream<ClusterTapEvent> onClusterTap({required int mapId}) => const Stream.empty();
+  @override
+  Stream<GroundOverlayTapEvent> onGroundOverlayTap({required int mapId}) => const Stream.empty();
 }

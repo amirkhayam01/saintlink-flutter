@@ -236,6 +236,7 @@ class _AddressSearchScreenState extends ConsumerState<AddressSearchScreen> {
 
     try {
       final fix = await ref.read(locationSourceProvider).current();
+      ref.invalidate(locationGrantedProvider);
       final selection = await ref
           .read(placesRepositoryProvider)
           .reverse(latitude: fix.latitude, longitude: fix.longitude);

@@ -42,6 +42,14 @@ class LocationFix {
 abstract class LocationSource {
   Future<LocationFix> current();
 
+  /// Whether the app may already read location — a check, never a prompt.
+  ///
+  /// The route maps use it to decide whether to draw the "you are here" dot.
+  /// A customer who has once tapped "Use my current location" gets the dot
+  /// from then on; nobody is asked for anything on a screen with no reason
+  /// to ask.
+  Future<bool> isGranted();
+
   /// Sends the customer to the system settings page for this app, for the
   /// case where the permission can no longer be asked for in-app.
   Future<void> openSettings();
@@ -96,9 +104,28 @@ class GeolocatorLocationSource implements LocationSource {
   }
 
   @override
+  Future<bool> isGranted() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return false;
+      final permission = await Geolocator.checkPermission();
+
+      return permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
   Future<void> openSettings() => Geolocator.openAppSettings();
 }
 
 final locationSourceProvider = Provider<LocationSource>(
   (ref) => const GeolocatorLocationSource(),
+);
+
+/// Whether the maps may show where the customer is. Re-read after a grant,
+/// so the dot appears on the very next map without a restart.
+final locationGrantedProvider = FutureProvider<bool>(
+  (ref) => ref.watch(locationSourceProvider).isGranted(),
 );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -6,6 +7,7 @@ import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/features/booking/booking_screen_header.dart';
 import 'package:saints_link/src/features/booking/google_journey_map.dart';
+import 'package:saints_link/src/features/places/current_location.dart';
 
 import '../support/fakes.dart';
 import '../support/platform_views.dart';
@@ -17,12 +19,19 @@ class MissingMapBundle extends CachingAssetBundle {
       : rootBundle.load(key);
 }
 
+/// The map reads whether location is already granted; no test here wants a
+/// real permission check, so each says so up front.
+Widget scoped(Widget app, {bool granted = false}) => ProviderScope(
+  overrides: [locationGrantedProvider.overrideWith((ref) async => granted)],
+  child: app,
+);
+
 void main() {
   setUp(stubPlatformViews);
 
   testWidgets('missing map image keeps the header usable', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
+      scoped(MaterialApp(
         theme: AppTheme.light(),
         home: DefaultAssetBundle(
           bundle: MissingMapBundle(),
@@ -33,7 +42,7 @@ void main() {
             ),
           ),
         ),
-      ),
+      )),
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
@@ -61,12 +70,12 @@ void main() {
       ),
     );
     await tester.pumpWidget(
-      MaterialApp(
+      scoped(MaterialApp(
         theme: AppTheme.light(),
         home: SizedBox.expand(
           child: GoogleJourneyMap(journey: journey, topPadding: 86),
         ),
-      ),
+      )),
     );
     await tester.pump();
 
@@ -81,6 +90,8 @@ void main() {
     // A preview, not a map to explore.
     expect(map.scrollGesturesEnabled, isFalse);
     expect(map.liteModeEnabled, isTrue);
+    // Nothing granted, so no dot — and, more to the point, no prompt.
+    expect(map.myLocationEnabled, isFalse);
     expect(tester.takeException(), isNull);
   });
 
@@ -88,7 +99,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
+      scoped(MaterialApp(
         theme: AppTheme.light(),
         home: SizedBox.expand(
           child: GoogleJourneyMap(
@@ -98,7 +109,7 @@ void main() {
             ),
           ),
         ),
-      ),
+      )),
     );
     await tester.pump();
 
@@ -110,19 +121,23 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
+      scoped(MaterialApp(
         theme: AppTheme.dark(),
         home: SizedBox.expand(
           child: GoogleJourneyMap(journey: quotableJourney, interactive: true),
         ),
-      ),
+      ), granted: true),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     final map = tester.widget<GoogleMap>(find.byType(GoogleMap));
     expect(map.scrollGesturesEnabled, isTrue);
     expect(map.liteModeEnabled, isFalse);
     expect(map.style, isNotNull);
+    // Granted already, so the "you are here" dot draws — and the button to
+    // recentre on it, since this is the map you can move.
+    expect(map.myLocationEnabled, isTrue);
+    expect(map.myLocationButtonEnabled, isTrue);
   });
 
   for (final dark in [false, true]) {
@@ -141,7 +156,7 @@ void main() {
         ),
       );
       await tester.pumpWidget(
-        MaterialApp(
+        scoped(MaterialApp(
           theme: dark ? AppTheme.dark() : AppTheme.light(),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context)
@@ -156,7 +171,7 @@ void main() {
             ),
             body: const Text('Form'),
           ),
-        ),
+        )),
       );
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.trip_origin_rounded), findsOneWidget);
