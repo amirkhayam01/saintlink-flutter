@@ -16,7 +16,11 @@ final routeLineProvider = FutureProvider.family<RouteLine?, String>((
   ref.keepAlive();
   try {
     return await ref.watch(placesRepositoryProvider).route(key.split('|'));
-  } catch (_) {
+  } catch (error, stack) {
+    // Pins alone is a fine fallback, but the reason must not vanish.
+    await ref
+        .read(errorReporterProvider)
+        .report(error, stack, context: 'route line for $key');
     return null;
   }
 });

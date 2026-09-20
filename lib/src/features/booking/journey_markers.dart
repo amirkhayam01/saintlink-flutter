@@ -13,10 +13,9 @@ class JourneyMarker {
   final Offset anchor;
 }
 
-/// The map's pins, the way the ride apps draw them: a badge on a stem above
-/// the exact point, with the place name in a pill beside it. Ink and white
-/// only; the symbol in the badge matches [RouteTimeline]. Rendered once per
-/// label and pixel ratio, and cached.
+/// The map's pins: a round badge on a stem for the pickup and stops, a
+/// teardrop pin for the destination, the place name in a pill beside each.
+/// Ink and white only. Rendered once per label and pixel ratio, and cached.
 class JourneyMarkers {
   JourneyMarkers._();
 
@@ -27,6 +26,9 @@ class JourneyMarkers {
   static const _dot = 3.5;
   static const _margin = 6.0;
   static const _maxLabelChars = 30;
+
+  /// How far the teardrop's tip sits below its circle's centre.
+  static const _pinDrop = 24.0;
 
   static Future<JourneyMarker> of(
     JourneyMarkerKind kind, {
@@ -44,6 +46,7 @@ class JourneyMarkers {
     if (cached != null) return cached;
 
     final small = kind == JourneyMarkerKind.stop;
+    final pin = kind == JourneyMarkerKind.dropoff;
     final badge = small ? 22.0 : _badge;
 
     final painter = text == null
@@ -65,7 +68,9 @@ class JourneyMarkers {
     final pillW = painter == null ? 0.0 : painter.width + 20;
     final pillH = 26.0;
     final width = _margin * 2 + badge + (painter == null ? 0 : 6 + pillW);
-    final height = _margin * 2 + badge + _stem + _dot * 2;
+    // A pin's tip reaches further down than a badge's stem and dot.
+    final below = pin ? _pinDrop - badge / 2 : _stem + _dot * 2;
+    final height = _margin * 2 + badge + below;
     final px = (width * pixelRatio).ceil();
     final py = (height * pixelRatio).ceil();
 
@@ -76,51 +81,44 @@ class JourneyMarkers {
       ..color = Colors.black.withValues(alpha: 0.22)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
 
-    final badgeRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(_margin, _margin, badge, badge),
-      Radius.circular(small ? 6 : 8),
-    );
     final cx = _margin + badge / 2;
-    final stemTop = _margin + badge;
-    final dotY = stemTop + _stem + _dot;
-
-    // Stem and dot first, so the badge sits over the stem's top.
-    canvas.drawCircle(Offset(cx, dotY + 1), _dot, shadow);
-    canvas.drawLine(
-      Offset(cx, stemTop),
-      Offset(cx, dotY),
-      Paint()
-        ..color = ink
-        ..strokeWidth = 2.5
-        ..strokeCap = StrokeCap.round,
-    );
-    canvas.drawCircle(Offset(cx, dotY), _dot + 1.5, Paint()..color = onInk);
-    canvas.drawCircle(Offset(cx, dotY), _dot, Paint()..color = ink);
-
-    canvas.drawRRect(badgeRect.shift(const Offset(0, 2)), shadow);
-    canvas.drawRRect(badgeRect, Paint()..color = ink);
-
     final c = Offset(cx, _margin + badge / 2);
-    switch (kind) {
-      case JourneyMarkerKind.pickup:
-        canvas.drawCircle(
-          c,
-          6,
-          Paint()
-            ..color = onInk
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2.5,
-        );
-      case JourneyMarkerKind.stop:
-        canvas.drawCircle(c, 3.5, Paint()..color = onInk);
-      case JourneyMarkerKind.dropoff:
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromCenter(center: c, width: 11, height: 11),
-            const Radius.circular(2.5),
-          ),
-          Paint()..color = onInk,
-        );
+    final r = badge / 2;
+    final double pointY;
+
+    if (pin) {
+      // Teardrop: the circle, and a tip hanging from its lower tangents.
+      final tip = Offset(cx, c.dy + _pinDrop);
+      final path = Path()
+        ..moveTo(tip.dx, tip.dy)
+        ..lineTo(cx - r * 0.72, c.dy + r * 0.69)
+        ..arcToPoint(
+          Offset(cx + r * 0.72, c.dy + r * 0.69),
+          radius: Radius.circular(r),
+          largeArc: true,
+        )
+        ..close();
+      canvas.drawPath(path.shift(const Offset(0, 2)), shadow);
+      canvas.drawPath(path, Paint()..color = ink);
+      canvas.drawCircle(c, r * 0.36, Paint()..color = onInk);
+      pointY = tip.dy;
+    } else {
+      final stemTop = c.dy + r;
+      pointY = stemTop + _stem + _dot;
+      canvas.drawCircle(Offset(cx, pointY + 1), _dot, shadow);
+      canvas.drawLine(
+        Offset(cx, stemTop),
+        Offset(cx, pointY),
+        Paint()
+          ..color = ink
+          ..strokeWidth = 2.5
+          ..strokeCap = StrokeCap.round,
+      );
+      canvas.drawCircle(Offset(cx, pointY), _dot + 1.5, Paint()..color = onInk);
+      canvas.drawCircle(Offset(cx, pointY), _dot, Paint()..color = ink);
+      canvas.drawCircle(c.translate(0, 2), r, shadow);
+      canvas.drawCircle(c, r, Paint()..color = ink);
+      canvas.drawCircle(c, small ? 3.5 : r * 0.36, Paint()..color = onInk);
     }
 
     if (painter != null) {
@@ -150,8 +148,8 @@ class JourneyMarkers {
         bytes!.buffer.asUint8List(),
         imagePixelRatio: pixelRatio,
       ),
-      // The map point is the dot at the foot of the stem.
-      anchor: Offset(cx / width, dotY / height),
+      // The map point is the dot at the foot of the stem, or the pin's tip.
+      anchor: Offset(cx / width, pointY / height),
     );
     _cache[key] = marker;
 
