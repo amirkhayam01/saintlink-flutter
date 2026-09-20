@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
@@ -15,7 +16,16 @@ final routeLineProvider = FutureProvider.family<RouteLine?, String>((
 ) async {
   ref.keepAlive();
   try {
-    return await ref.watch(placesRepositoryProvider).route(key.split('|'));
+    final route = await ref
+        .watch(placesRepositoryProvider)
+        .route(key.split('|'));
+    if (kDebugMode) {
+      debugPrint(
+        'route line for $key: ${route.points.length} points, '
+        '${route.distanceMeters} m',
+      );
+    }
+    return route;
   } catch (error, stack) {
     // Pins alone is a fine fallback, but the reason must not vanish.
     await ref
