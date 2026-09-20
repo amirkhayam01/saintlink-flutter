@@ -521,6 +521,31 @@ New coverage worth writing:
 
 ---
 
+## After the first session on a device (21 Sep 2026)
+
+Feedback from running it on a phone, and what changed:
+
+- **Location at launch — reversed.** Now asked for once after the first
+  frame, and the fix is reverse-geocoded once per session to prefill the
+  pickup. A refusal is silent. Decided knowing an iOS refusal is permanent.
+- **Route line — shipped.** `GET /places/route` proxies Google Directions
+  (already enabled for the website) and returns an encoded polyline; the
+  app draws it in ink. Display only — the fare still does not read it. The
+  server key needs the **Directions API** in its restrictions.
+- **Markers** drawn to match the route timeline: ring, dot, square. Ink
+  only; no gold on the map.
+- **One map for the whole form.** The vehicle step is the third stage of
+  the journey sheet over the same map; `/book/vehicle` is gone. Details
+  keeps the route card and loses its map. A one-pixel map under the shell
+  warms the renderer at launch.
+- **Map framing follows the sheet.** Padding tracks the sheet's height as
+  it moves; bounds (pins and route) are refitted with an animated camera
+  once it settles.
+- **Home:** shortcut chips removed (Recent covers it); section titles 17px.
+- **Vehicles "missing"** was a transient fleet-load failure. A quote now
+  force-loads the fleet and surfaces the error; the stage shows a retry
+  notice rather than an empty list.
+
 ## Follow-ups
 
 Things surfaced along the way that are not part of the flow redesign:
@@ -535,8 +560,8 @@ Things surfaced along the way that are not part of the flow redesign:
 - **"Favourite locations"** on the account screen is still *Coming soon*.
   It has a real source now (`GET /places/recent`, with forget) — a small
   wiring job.
-- **Route line on the map** (Phase 4b) needs a Google Routes integration
-  and a decision on whether the 1.22 haversine multiplier should keep
-  pricing off-catalogue journeys. Deliberately not started.
+- **Pricing from the real route.** The map now has the road route; the
+  fare still uses the 1.22 haversine multiplier for off-catalogue journeys.
+  Whether to price from the route is a business decision, not started.
 - **35 APIs enabled** on the Google Cloud project for an app that uses
   five. Harmless; worth a tidy.
