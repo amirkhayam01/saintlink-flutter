@@ -122,6 +122,13 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
   }
 }
 
+/// One vehicle in the list.
+///
+/// The chosen one is shown in full — photo, capacities, the "best value"
+/// tag — because that is the one the customer is about to pay for. The rest
+/// fold to a single line of name and price, so the whole fleet fits on one
+/// screen and choosing is a glance down a column of prices rather than a
+/// scroll through five identical panels. Tapping a folded card opens it.
 class _VehicleCard extends StatelessWidget {
   const _VehicleCard({
     required this.vehicle,
@@ -159,167 +166,187 @@ class _VehicleCard extends StatelessWidget {
       ),
     );
 
+    // Full when chosen, or when it cannot be chosen and has to say why.
+    final open = selected || !fits;
+
+    final tagPill = tag == null || !fits
+        ? null
+        : Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: colors.accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              tag!,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: colors.accent,
+                height: 1.2,
+              ),
+            ),
+          );
+
     return Opacity(
       opacity: fits ? 1 : 0.55,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
           color: selected ? colors.tint : colors.card,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? AppTheme.brand : colors.inkFaint,
             width: selected ? 2 : 1,
           ),
-          boxShadow: selected ? colors.floatingShadow : null,
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             onTap: fits ? onTap : null,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          width: 84,
-                          height: 56,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              VehicleImage(vehicle.slug),
-                              if (selected)
-                                Positioned(
-                                  top: 4,
-                                  left: 4,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: colors.card,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.check_circle_rounded,
-                                      size: 18,
-                                      color: colors.accent,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            LayoutBuilder(
-                              builder: (context, constraints) => Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      vehicle.name,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        height: 1.25,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // Price never wraps: shrink it instead when the
-                                  // card is narrow or text is scaled up.
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: constraints.maxWidth * 0.55,
-                                    ),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerRight,
-                                      child: Text(
-                                        price == null
-                                            ? '—'
-                                            : Formatting.money(price!),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 17,
-                                          height: 1.2,
-                                          letterSpacing: -0.3,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 4,
-                              crossAxisAlignment: WrapCrossAlignment.center,
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: EdgeInsets.all(open ? 12 : 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(open ? 10 : 8),
+                          child: SizedBox(
+                            width: open ? 84 : 60,
+                            height: open ? 56 : 40,
+                            child: Stack(
+                              fit: StackFit.expand,
                               children: [
-                                capacity(
-                                  Icons.person_outline,
-                                  vehicle.passengerCapacity,
-                                  'passengers',
-                                ),
-                                capacity(
-                                  Icons.luggage_outlined,
-                                  vehicle.luggageCapacity,
-                                  'suitcases',
-                                ),
-                                if (vehicle.handLuggageCapacity > 0)
-                                  capacity(
-                                    Icons.shopping_bag_outlined,
-                                    vehicle.handLuggageCapacity,
-                                    'hand luggage items',
-                                  ),
-                                if (tag != null && fits)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.accent.withValues(
-                                        alpha: 0.14,
+                                VehicleImage(vehicle.slug),
+                                if (selected)
+                                  Positioned(
+                                    top: 4,
+                                    left: 4,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: colors.card,
+                                        shape: BoxShape.circle,
                                       ),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Text(
-                                      tag!,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
+                                      child: Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 18,
                                         color: colors.accent,
-                                        height: 1.2,
                                       ),
                                     ),
                                   ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              LayoutBuilder(
+                                builder: (context, constraints) => Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            vehicle.name,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              height: 1.25,
+                                            ),
+                                          ),
+                                          // Folded, the tag still has to say
+                                          // "best value" — it is the one thing
+                                          // that helps someone pick.
+                                          if (!open && tagPill != null) ...[
+                                            const SizedBox(height: 4),
+                                            tagPill,
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    // Price never wraps: shrink it instead when the
+                                    // card is narrow or text is scaled up.
+                                    ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: constraints.maxWidth * 0.55,
+                                      ),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerRight,
+                                        child: Text(
+                                          price == null
+                                              ? '—'
+                                              : Formatting.money(price!),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 17,
+                                            height: 1.2,
+                                            letterSpacing: -0.3,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (open) ...[
+                                const SizedBox(height: 6),
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    capacity(
+                                      Icons.person_outline,
+                                      vehicle.passengerCapacity,
+                                      'passengers',
+                                    ),
+                                    capacity(
+                                      Icons.luggage_outlined,
+                                      vehicle.luggageCapacity,
+                                      'suitcases',
+                                    ),
+                                    if (vehicle.handLuggageCapacity > 0)
+                                      capacity(
+                                        Icons.shopping_bag_outlined,
+                                        vehicle.handLuggageCapacity,
+                                        'hand luggage items',
+                                      ),
+                                    ?tagPill,
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!fits) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        price == null
+                            ? 'Unavailable for this return journey'
+                            : 'Not enough room for your party',
+                        style: TextStyle(color: colors.inkMuted, fontSize: 12),
                       ),
                     ],
-                  ),
-                  if (!fits) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      price == null
-                          ? 'Unavailable for this return journey'
-                          : 'Not enough room for your party',
-                      style: TextStyle(color: colors.inkMuted, fontSize: 12),
-                    ),
                   ],
-                ],
+                ),
               ),
             ),
           ),
