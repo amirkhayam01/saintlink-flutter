@@ -1,11 +1,12 @@
 # Booking flow redesign — app + backend
 
-> Status: in progress, September 2026. Successor to `design-plan.md`, which
+> Status: **implemented**, September 2026. Successor to `design-plan.md`, which
 > covered the screen-level rebuild and is now largely implemented. This plan
 > covers the *flow* rather than the screens: where booking starts, how fast a
 > customer reaches a price, and how the map behaves.
 >
-> **Progress:** Phases 0–6 complete (20 Sep 2026). Phase 7 remains. The native map is built
+> **Progress:** All phases complete (20 Sep 2026). What remains is
+> verification on a device and the follow-ups listed at the end. The native map is built
 > and its Android wiring verified by a debug APK build, but **tiles are
 > unconfirmed** — no device on the build machine. First thing to do is run
 > it on a phone. Phases 6 and 7 remain; neither needs anything from anyone.
@@ -435,12 +436,21 @@ already map-top/panel-bottom and gets its collapse in Phase 7; step 3
 (details) stays a page — it is a form with a keyboard up, and a sheet
 fighting the keyboard is the worst version of it.
 
-### Phase 7 — Vehicle list polish (app 1 day)
+### Phase 7 — Vehicle list polish — **DONE** (20 Sep 2026, `df226ec`)
 
-`vehicle_screen` renders every fare card at full height; roughly three and a
-half fit on screen. Collapse unselected cards to a one-line summary and expand
-the selected one. Same information, far less scrolling, and no change to
-pricing, capacity display or the sticky `Continue · £155.00` bar.
+`vehicle_screen` rendered every fare card at full height; roughly three and
+a half fit on screen.
+
+- [x] Unselected cards fold to name, price and a small photo; the chosen
+      card is the full one. A card that cannot be chosen stays open to say
+      why. The "best value" tag stays visible folded. Folding animates.
+- [x] Selected card drops the floating shadow, per the Phase 5a card rule.
+- [x] Five cards fit where three and a half did. No change to pricing,
+      capacity display or the sticky `Continue · £155.00` bar.
+
+**Not done:** making the panel itself drag. It is already map-top /
+panel-bottom, and with five cards in view the drag has little to reveal.
+Cheap to add if wanted after a session on a device.
 
 ---
 
@@ -456,7 +466,7 @@ Days 6–8      Phase 4 (native map)                  ✅ DONE │
               Phase 5a (consistency pass)         ✅ DONE │
 Days 9–12     Phase 5 (Home as booking entry)       ✅ DONE
 Days 13–14    Phase 6 (split journey form)          ✅ DONE
-Day 15        Phase 7 (vehicle list)                 ← NEXT
+Day 15        Phase 7 (vehicle list)                 ✅ DONE
 ```
 
 Phases 2, 3, 6 and 7 are independent of the key provisioning and can absorb any
@@ -508,3 +518,25 @@ New coverage worth writing:
    to be created against the values under B4.
 4. ~~**Does dropping the `Book` tab need sign-off?**~~ Signed off and done
    20 Sep.
+
+---
+
+## Follow-ups
+
+Things surfaced along the way that are not part of the flow redesign:
+
+- **Run it on a phone.** Map tiles, the sheet's drag feel, the back arrow
+  from the form, the location dot. None verified on a device yet.
+- **Talha's debug SHA-1** on the Android key, and a **release keystore**
+  before the Play Store — its SHA-1 must be on the key or the map goes grey
+  in production.
+- **Billing alert** on the Google Cloud project. Places Autocomplete is the
+  call that costs; native map loads are free.
+- **"Favourite locations"** on the account screen is still *Coming soon*.
+  It has a real source now (`GET /places/recent`, with forget) — a small
+  wiring job.
+- **Route line on the map** (Phase 4b) needs a Google Routes integration
+  and a decision on whether the 1.22 haversine multiplier should keep
+  pricing off-catalogue journeys. Deliberately not started.
+- **35 APIs enabled** on the Google Cloud project for an app that uses
+  five. Harmless; worth a tidy.
