@@ -81,9 +81,13 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
           ),
         ],
       ),
+      // The same button as Home's, at a floating button's size.
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/book'),
-        icon: const Icon(Icons.add),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        icon: const Icon(Icons.edit_calendar_outlined, size: 18),
         label: const Text('Plan a journey'),
       ),
     );

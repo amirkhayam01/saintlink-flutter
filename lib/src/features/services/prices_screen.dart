@@ -10,6 +10,7 @@ import '../../widgets/common.dart';
 import '../../widgets/hero_banner.dart';
 import '../../widgets/tiles.dart';
 import '../booking/booking_flow_controller.dart';
+import '../places/known_places.dart';
 import '../home/widgets/fleet_showcase_section.dart';
 
 /// Popular fixed routes with their "from" prices, filtered by kind of trip.
@@ -36,8 +37,10 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
           .read(bookingFlowProvider.notifier)
           .updateJourney(
             (j) => j.copyWith(
-              pickup: PlaceSelection(address: route.from),
-              dropoff: PlaceSelection(address: route.to),
+              pickup: route.from == 'Southampton'
+                  ? PlaceSelection.empty
+                  : KnownPlaces.resolve(route.from),
+              dropoff: KnownPlaces.resolve(route.to),
             ),
           );
       context.push('/book');

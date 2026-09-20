@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/content.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
-import '../../domain/place.dart';
+import '../places/known_places.dart';
 import '../../widgets/common.dart';
 import '../../widgets/hero_banner.dart';
 import '../../widgets/tiles.dart';
@@ -60,12 +60,9 @@ class ServiceScreen extends ConsumerWidget {
           .read(bookingFlowProvider.notifier)
           .updateJourney(
             (j) => j.copyWith(
-              pickup: j.pickup.isEmpty
-                  ? const PlaceSelection(address: 'Southampton, UK')
-                  : j.pickup,
               dropoff: destination == null
                   ? j.dropoff
-                  : PlaceSelection(address: destination.address),
+                  : KnownPlaces.resolve(destination.address),
             ),
           );
       context.push('/book');

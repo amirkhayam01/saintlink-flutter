@@ -7,6 +7,7 @@ import '../../domain/place.dart';
 import '../../widgets/hero_banner.dart';
 import '../auth/auth_controller.dart';
 import '../booking/booking_flow_controller.dart';
+import '../places/known_places.dart';
 import '../booking/journey_draft.dart';
 import '../trips/trips_controller.dart';
 import 'widgets/home_top_bar.dart';
@@ -146,8 +147,8 @@ class HomeScreen extends ConsumerWidget {
                                 }
                                 presetAndBook(
                                   (j) => j.copyWith(
-                                    dropoff: PlaceSelection(
-                                      address: defaultDropoff,
+                                    dropoff: KnownPlaces.resolve(
+                                      defaultDropoff,
                                     ),
                                   ),
                                 );
@@ -168,8 +169,10 @@ class HomeScreen extends ConsumerWidget {
               child: PopularFaresSection(
                 onSelectFare: (from, to) => presetAndBook(
                   (j) => j.copyWith(
-                    pickup: PlaceSelection(address: from),
-                    dropoff: PlaceSelection(address: to),
+                    pickup: from == 'Southampton'
+                        ? PlaceSelection.empty
+                        : KnownPlaces.resolve(from),
+                    dropoff: KnownPlaces.resolve(to),
                   ),
                 ),
               ),
