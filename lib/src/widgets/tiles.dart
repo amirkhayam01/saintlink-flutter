@@ -122,7 +122,7 @@ class SegmentedTabs extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark ? colors.card : colors.inkFaint.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(999),
@@ -136,7 +136,7 @@ class SegmentedTabs extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 7),
                   decoration: BoxDecoration(
                     color: i == index
                         ? (isDark ? AppTheme.brand : AppTheme.midnight)
