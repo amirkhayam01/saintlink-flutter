@@ -27,6 +27,7 @@ import 'package:saints_link/src/domain/booking.dart';
 import 'package:saints_link/src/widgets/app_shell.dart';
 
 import '../support/fakes.dart';
+import '../support/platform_views.dart';
 
 /*
  * Renders each screen at iPhone-14-Pro size to test/screenshots/out/ as PNGs so a
@@ -96,6 +97,7 @@ void main() {
       ]);
 
   Future<void> shot(WidgetTester tester, String name, Widget home, {ThemeData? theme, Future<void> Function(ProviderContainer)? prime, bool tall = false, RecentPlaces Function()? recents}) async {
+    stubPlatformViews();
     await loadFonts();
     tester.view.physicalSize = Size(1179, tall ? 4400 : 2556);
     tester.view.devicePixelRatio = 3;

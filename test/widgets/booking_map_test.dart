@@ -1,14 +1,14 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/features/booking/booking_screen_header.dart';
 import 'package:saints_link/src/features/booking/google_journey_map.dart';
 
 import '../support/fakes.dart';
+import '../support/platform_views.dart';
 
 class MissingMapBundle extends CachingAssetBundle {
   @override
@@ -18,6 +18,8 @@ class MissingMapBundle extends CachingAssetBundle {
 }
 
 void main() {
+  setUp(stubPlatformViews);
+
   testWidgets('missing map image keeps the header usable', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -39,35 +41,89 @@ void main() {
     expect(find.byType(ErrorWidget), findsNothing);
   });
 
-  test(
-    'route preserves exact places, ordered stops and safely encoded text',
-    () {
-      final journey = quotableJourney.copyWith(
-        via: const [
-          PlaceSelection(address: 'Via', latitude: 51.1, longitude: -1),
-        ],
-        dropoff: const PlaceSelection(
-          address: '</script><script>alert(1)</script>',
+  /*
+   * A pin for every end of the journey that has a position, lettered in
+   * travel order — and no pin for a typed address, because a guessed one
+   * would sit somewhere the driver is not going.
+   */
+  testWidgets('pins located places in travel order and skips typed ones', (
+    tester,
+  ) async {
+    final journey = quotableJourney.copyWith(
+      via: const [
+        PlaceSelection(address: 'Winchester', latitude: 51.06, longitude: -1.31),
+        PlaceSelection(address: 'somewhere typed, never picked'),
+      ],
+      dropoff: const PlaceSelection(
+        address: 'Heathrow Airport',
+        latitude: 51.47,
+        longitude: -0.45,
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: SizedBox.expand(
+          child: GoogleJourneyMap(journey: journey, topPadding: 86),
         ),
-      );
-      final html = journeyMapHtml(
-        journey,
-        key: 'test-key',
-        interactive: true,
-        topPadding: 86,
-      );
-      final config = jsonDecode(
-        RegExp(r'const config=(.*);').firstMatch(html)!.group(1)!,
-      ) as Map<String, dynamic>;
-      expect(config['stops'], [
-        {'placeId': 'p1'},
-        {'lat': 51.1, 'lng': -1.0},
-        journey.dropoff.address,
-      ]);
-      expect(html, isNot(contains(journey.dropoff.address)));
-      expect(config['topPadding'], 86);
-    },
-  );
+      ),
+    );
+    await tester.pump();
+
+    final map = tester.widget<GoogleMap>(find.byType(GoogleMap));
+    expect(map.markers.map((m) => m.markerId.value), ['A', '1', 'B']);
+    expect(
+      map.markers.map((m) => m.infoWindow.title),
+      [journey.pickup.address, 'Winchester', 'Heathrow Airport'],
+    );
+    // The header's route card floats over the top; the framing stays clear of it.
+    expect(map.padding, const EdgeInsets.only(top: 86));
+    // A preview, not a map to explore.
+    expect(map.scrollGesturesEnabled, isFalse);
+    expect(map.liteModeEnabled, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('with nothing located there is a nudge, not an empty map', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: SizedBox.expand(
+          child: GoogleJourneyMap(
+            journey: quotableJourney.copyWith(
+              pickup: const PlaceSelection(address: 'typed'),
+              dropoff: const PlaceSelection(address: 'also typed'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(GoogleMap), findsNothing);
+    expect(find.textContaining('Choose your addresses'), findsOneWidget);
+  });
+
+  testWidgets('the expanded sheet is the interactive one, in a dark style', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: SizedBox.expand(
+          child: GoogleJourneyMap(journey: quotableJourney, interactive: true),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final map = tester.widget<GoogleMap>(find.byType(GoogleMap));
+    expect(map.scrollGesturesEnabled, isTrue);
+    expect(map.liteModeEnabled, isFalse);
+    expect(map.style, isNotNull);
+  });
 
   for (final dark in [false, true]) {
     testWidgets('map header and expansion fit narrow large text: $dark', (

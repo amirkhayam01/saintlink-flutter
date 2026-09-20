@@ -11,8 +11,9 @@
         android:label="Saints Link"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        <meta-data android:name="uk.co.saintslink.MAPS_BROWSER_KEY"
-            android:value="${mapsBrowserKey}" />
+        <!-- Read by the Maps SDK itself; supplied by Gradle from local.properties. -->
+        <meta-data android:name="com.google.android.geo.API_KEY"
+            android:value="${googleMapsAndroidKey}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

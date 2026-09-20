@@ -66,6 +66,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>GoogleMapsAPIKey</key>
+	<string>$(GOOGLE_MAPS_IOS_KEY)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Saints Link uses your location only when you tap “Use my current location”, to fill in your pickup address.</string>
 </dict>

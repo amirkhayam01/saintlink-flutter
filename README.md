@@ -22,17 +22,32 @@ Toolchain: Flutter 3.47 / Dart 3.13 (stable). Android minSdk 24, iOS 15.
 
 ## Booking route maps
 
-Vehicle and Details show a Google road map with driving directions, using the
-same Maps JavaScript and Directions APIs as the website. The compact preview
-reserves room for the From/To overlay; expanding opens an interactive map.
+Vehicle and Details show the journey on a native Google map — every end of it
+that has a verified position, pinned and framed. The compact preview in the
+header reserves room for the From/To overlay and is not pannable; expanding
+opens an interactive map in a sheet. Dark mode gets a dark map.
 
-Android reads only `VITE_GOOGLE_MAPS_API_KEY` from the sibling `../saintslink/.env`
-at build time. To override it, set `googleMapsBrowserKey` in Android's ignored
-`local.properties`, or set `GOOGLE_MAPS_BROWSER_KEY` in the build environment.
-Other supported platforms can use `--dart-define=GOOGLE_MAPS_BROWSER_KEY=...`.
-This must be a public browser key with the website's HTTPS origin allowed;
-server Places keys are kept on the backend. Use a full rebuild after changing
-the key or native plugin configuration.
+It is the native Maps SDK, not a WebView: the SDK is compiled in and caches
+its tiles, so the map draws on the first frame with no spinner. There is no
+route line on purpose — the backend measures a journey as a straight line
+scaled by a constant and never asks Google for a route, so drawing one would
+claim a precision the fare does not have.
+
+**Keys.** Native SDK keys ship inside the binary, so each is restricted in
+the Google console to the app's own identity and to one API, and a copy lifted
+from the binary can do nothing else with it. They are never committed:
+
+| Platform | File (ignored by git) | Line |
+|---|---|---|
+| Android | `android/local.properties` | `googleMapsAndroidKey=AIza…` |
+| iOS | `ios/Flutter/Secrets.xcconfig` (copy `Secrets.xcconfig.example`) | `GOOGLE_MAPS_IOS_KEY=AIza…` |
+
+CI can supply `GOOGLE_MAPS_ANDROID_KEY` in the environment instead. The
+Android key must be restricted to package `uk.co.saintslink.app` — the
+`applicationId`, not the Gradle namespace — plus each developer's debug SHA-1
+and, once one exists, the release keystore's. Grey tiles with no error means
+the restriction does not match the build that is running. Use a full rebuild
+after changing a key or native plugin configuration.
 
 ## Backend setup for local use
 
