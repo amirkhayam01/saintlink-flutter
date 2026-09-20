@@ -5,10 +5,12 @@
 > covers the *flow* rather than the screens: where booking starts, how fast a
 > customer reaches a price, and how the map behaves.
 >
-> **Progress:** Phases 0–4 complete (20 Sep 2026). The native map is built
-> and its Android wiring verified by a debug APK build, but **tiles are
+> **Progress:** Phases 0–4 and 5a complete (20 Sep 2026). The native map is
+> built and its Android wiring verified by a debug APK build, but **tiles are
 > unconfirmed** — no device on the build machine. First thing to do is run
 > it on a phone. Phase 5 next; it needs sign-off on dropping the `Book` tab.
+> **Decided:** no map on Home (map loads are free, but Home has nothing to
+> show on one); location asked for on the pickup tap only, never at launch.
 
 Spans two repositories:
 
@@ -277,7 +279,14 @@ Device recents stay as the offline fallback and as the guest experience.
 still *Coming soon*. It now has a real source — a most-used list with a
 forget action — and is a small follow-up rather than part of this phase.
 
-### Phase 3 — Current location — **DONE** (20 Sep 2026; backend `d1f070e`, app `d860897`)
+### Phase 3 — Current location — **DONE** (20 Sep 2026; backend `d1f070e`, app `d860897`, dot `07f964c`)
+
+**Decided 20 Sep, after discussion:** permission is asked for on the pickup
+tap only — not at launch, not on opening the booking form. A launch prompt
+is the one most people refuse, and on iOS a refusal is permanent. The
+route maps show the "you are here" dot whenever permission *already* exists
+(a check, never a request), so a customer who has tapped once gets it from
+then on.
 
 - [x] **Backend, resolving B2:** `GET /api/v1/places/reverse?lat=&lng=` in
       the throttled places group, same shape as `places/details`. Google
@@ -344,7 +353,32 @@ The route-line decision from the original plan, still open:
   question attached, rather than smuggling a pricing change in behind a
   cosmetic one.
 
+### Phase 5a — Consistency pass — **DONE** (20 Sep 2026, `82c24ed`)
+
+Inserted before the Home restructure so Home is rebuilt from settled
+primitives. Twenty-two screens side by side showed four header treatments,
+two field styles, four heading widgets and three hand-built list rows —
+drift, not taste: `widgets/` held the shared pieces and newer screens built
+their own beside them.
+
+Six rules, decided once:
+
+| Rule | Decision | Done |
+|---|---|---|
+| Header | Photo hero for marketing (Home, service pages); **gold** for tabs (Trips, Account); **midnight** for every task screen pushed into (booking flow, Your trip, Confirmation, Sign-in, search) | [x] Booking flow and Your trip moved to midnight; also fixes the light header on a dark screen. Decorative map asset removed from the bundle. |
+| Primary button | The theme's pill | [x] No change needed — the FAB's "black border" was a **test-rendering artifact**: `flutter_test` draws elevation as a solid outline. Harness now renders real shadows. |
+| Fields | Captions above (`FieldLabel`), not floating labels | [x] Journey screen moved; the caption doubles as the control's semantics label |
+| Section heading | `SectionTitle` for sections, `GroupLabel` for list groups | [x] `HomeSectionHeading`, Account's `_SectionHeading`, search sheet's `_Heading` deleted |
+| Card | The theme's `Card` — radius 16, border, flat | [x] Account's `_CardContainer` deleted |
+| List row | Shared `ListRow` + `ListRowDivider` | [x] Account, search sheet and Go again all use it |
+
+App **129/129** (one obsolete asset test removed), screenshots 24/24.
+
 ### Phase 5 — Home becomes the booking entry point (app 3–4 days)
+
+**Decided 20 Sep: no map on Home.** Native map loads are free, but a map on
+Home would show the customer's position and nothing else — inDrive's need,
+not this product's. The value of this phase is the *ordering*. Hero stays.
 
 The largest change and the main prize.
 
@@ -353,7 +387,7 @@ trust strip, popular fares, fleet carousel — and booking lives in a *separate
 tab*. Good for a first-time visitor being convinced. Pure friction for the
 third-time customer going to Heathrow again.
 
-- Hero or map at top, `Where to?` and recents/saved immediately beneath
+- Hero at top, `Where to?` and Go again immediately beneath
 - Services, trust strip, fleet demoted below the fold or moved into Services
 - **The `Book` tab becomes redundant** — bottom nav goes 4 items to 3
   (Home / Trips / Profile), which needs a `router.dart` change and a redirect
@@ -389,6 +423,7 @@ Days 2–3      Phase 2A (recents on Home)            ✅ DONE │
               Phase 2B (customer_places + sync)     ✅ DONE │
 Days 4–5      Phase 3 (current location)            ✅ DONE │
 Days 6–8      Phase 4 (native map)                  ✅ DONE │
+              Phase 5a (consistency pass)         ✅ DONE │
 Days 9–12     Phase 5 (Home as booking entry)       ← NEXT
 Days 13–14    Phase 6 (split journey form)
 Day 15        Phase 7 (vehicle list)
