@@ -8,6 +8,7 @@ import '../features/booking/map_warmup.dart';
 
 import 'package:go_router/go_router.dart';
 
+import '../core/env.dart';
 import '../core/theme.dart';
 
 class AppBottomNavBar extends StatelessWidget {
@@ -108,6 +109,28 @@ class AppShell extends ConsumerWidget {
           if (!kIsWeb) const MapWarmup(),
           Column(
             children: [
+              // Never a mystery which backend a build is talking to.
+              if (Env.isDevelopmentBackend)
+                SafeArea(
+                  bottom: false,
+                  child: Container(
+                    width: double.infinity,
+                    color: AppTheme.danger,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      'Dev backend · ${Uri.parse(Env.apiBaseUrl).host}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
               if (ref.watch(demoSessionProvider) != null)
                 SafeArea(
                   bottom: false,
