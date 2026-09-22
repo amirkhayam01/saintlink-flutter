@@ -174,6 +174,61 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  // A go to the confirmation rebuilt the root stack without the shell, so
+  // system back from the confirmation left the form as the only route and
+  // its Back had nothing to pop. Submit pushes, so Home stays underneath.
+  testWidgets('Home stays under the form and confirmation', (tester) async {
+    final repository = FakeBookingRepository()
+      ..vehicles = fixtureVehicles()
+      ..nextQuote = quoteExpiringIn(const Duration(minutes: 20))
+      ..nextBooking = bookingWith(canPay: false);
+    final container = ProviderContainer(
+      overrides: [
+        bookingRepositoryProvider.overrideWithValue(repository),
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(routerProvider);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          theme: AppTheme.light(),
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    router.push('/book');
+    await tester.pumpAndSettle();
+    final controller = container.read(bookingFlowProvider.notifier);
+    controller.updateJourney(
+      (_) => quotableJourney.copyWith(vehicleCategorySlug: 'saloon-car'),
+    );
+    await controller.requestQuote();
+    await controller.confirmBooking(
+      customerName: 'Alex Morgan',
+      customerPhone: '+447700900123',
+    );
+    // What DetailsStage.submit does.
+    router.push('/book/confirmed');
+    await tester.pumpAndSettle();
+    expect(find.text('Booking confirmed'), findsOneWidget);
+    expect(find.text('Our services', skipOffstage: false), findsOneWidget);
+
+    // The confirmation does not pop; Done is the way out, and it lands Home.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Booking confirmed'), findsOneWidget);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(find.text('Our services'), findsOneWidget);
+    expect(find.text('PICKUP ADDRESS'), findsNothing);
+    expect(container.read(bookingFlowProvider).booking, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a Recent on Home opens a fresh destination-only form', (
     tester,
   ) async {
