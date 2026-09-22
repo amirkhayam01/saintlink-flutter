@@ -83,7 +83,7 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
     // from Home are applied before the next push, so they survive this.
     // After the frame: providers cannot change while the tree is torn down.
     final booking = _booking;
-    WidgetsBinding.instance.addPostFrameCallback((_) => booking.reset());
+    WidgetsBinding.instance.addPostFrameCallback((_) => booking.endDraft());
     super.dispose();
   }
 

@@ -65,7 +65,10 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
         );
 
     if (booking != null && mounted) {
-      context.go('/book/confirmed');
+      // Pushed, like the form itself was. A `go` here rebuilds the stack from
+      // the URL, which gives the form a new page key: the old form is
+      // disposed, and its dispose resets the flow, booking included.
+      context.push('/book/confirmed');
     }
   }
 

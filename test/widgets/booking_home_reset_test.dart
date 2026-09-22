@@ -121,6 +121,59 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  // The form is pushed (a unique page key); reaching the confirmation with
+  // go (a path key) makes the router rebuild the form under a new key, and
+  // the old one's dispose used to reset the flow, taking the booking with it.
+  // Submit now pushes, and a rebuilt form no longer drops a booking either.
+  testWidgets('the confirmation keeps the booking the form just made', (
+    tester,
+  ) async {
+    final repository = FakeBookingRepository()
+      ..vehicles = fixtureVehicles()
+      ..nextQuote = quoteExpiringIn(const Duration(minutes: 20))
+      ..nextBooking = bookingWith();
+    final container = ProviderContainer(
+      overrides: [
+        bookingRepositoryProvider.overrideWithValue(repository),
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = container.read(routerProvider);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          theme: AppTheme.light(),
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    router.push('/book');
+    await tester.pumpAndSettle();
+    final controller = container.read(bookingFlowProvider.notifier);
+    controller.updateJourney(
+      (_) => quotableJourney.copyWith(vehicleCategorySlug: 'saloon-car'),
+    );
+    await controller.requestQuote();
+    final booking = await controller.confirmBooking(
+      customerName: 'Alex Morgan',
+      customerPhone: '+447700900123',
+    );
+    expect(booking, isNotNull);
+
+    router.go('/book/confirmed');
+    await tester.pumpAndSettle();
+    // A few frames more: the reset ran in a post-frame callback.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No booking to show.'), findsNothing);
+    expect(container.read(bookingFlowProvider).booking, isNotNull);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a Recent on Home opens a fresh destination-only form', (
     tester,
   ) async {

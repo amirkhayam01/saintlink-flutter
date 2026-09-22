@@ -237,6 +237,15 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     _resetGeneration++;
     state = BookingFlowState(vehicles: state.vehicles);
   }
+
+  /// The form is going away: end the draft, unless it has already become a
+  /// booking. That belongs to the confirmation, which resets on its own way
+  /// out; the router may rebuild the form under it, and that must not blank
+  /// the booking just made.
+  void endDraft() {
+    if (!ref.mounted || state.booking != null) return;
+    reset();
+  }
 }
 
 final bookingFlowProvider =
