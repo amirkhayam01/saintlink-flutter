@@ -41,11 +41,11 @@ void main() {
       expect(PhoneController(country: gb(), initial: '12345').isPlausible, isFalse);
     });
 
-    testWidgets('the device locale sets the default', (t) async {
-      t.platformDispatcher.localeTestValue = const Locale('fr', 'FR');
+    testWidgets('defaults to United Kingdom regardless of device locale', (t) async {
+      t.platformDispatcher.localeTestValue = const Locale('en', 'US');
       addTearDown(t.platformDispatcher.clearLocaleTestValue);
-      expect(PhoneController().country.iso, 'FR');
-      t.platformDispatcher.localeTestValue = const Locale('en');
+      expect(PhoneController().country.iso, 'GB');
+      t.platformDispatcher.localeTestValue = const Locale('fr', 'FR');
       expect(PhoneController().country.iso, 'GB');
     });
   });

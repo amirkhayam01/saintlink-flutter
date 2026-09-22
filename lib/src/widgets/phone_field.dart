@@ -11,7 +11,7 @@ class PhoneController extends ChangeNotifier {
   /// [initial] may be a full international number (`+33612345678`), which
   /// picks the country, or a national one for [country], or nothing.
   PhoneController({Country? country, String initial = ''})
-    : _country = country ?? deviceCountry() {
+    : _country = country ?? Country.fallback {
     national = TextEditingController();
     national.addListener(_absorbInternational);
     _setNational(initial.trim());
@@ -24,11 +24,8 @@ class PhoneController extends ChangeNotifier {
     );
   }
 
-  /// The country the device is set to, or the business's own.
-  static Country deviceCountry() {
-    final locale = WidgetsBinding.instance.platformDispatcher.locale;
-    return Country.byIso(locale.countryCode) ?? Country.fallback;
-  }
+  /// The default country for the app: the business is British.
+  static Country deviceCountry() => Country.fallback;
 
   Country _country;
   Country get country => _country;
