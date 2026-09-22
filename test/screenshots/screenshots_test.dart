@@ -164,6 +164,8 @@ void main() {
     // otherwise; these pictures exist to be looked at, so shadows are real.
     debugDisableShadows = false;
     await loadFonts();
+    tester.platformDispatcher.localeTestValue = const Locale('en', 'GB');
+    addTearDown(tester.platformDispatcher.clearLocaleTestValue);
     tester.view.physicalSize = Size(1179, tall ? 4400 : 2556);
     tester.view.devicePixelRatio = 3;
     final c = container(recents: recents);

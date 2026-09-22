@@ -10,6 +10,7 @@ import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/hero_banner.dart';
+import '../../widgets/phone_field.dart';
 import '../../widgets/tiles.dart';
 import 'auth_controller.dart';
 import '../../domain/customer.dart';
@@ -27,7 +28,7 @@ class SignInScreen extends ConsumerStatefulWidget {
 }
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
-  final _phone = TextEditingController();
+  final _phone = PhoneController();
   final _name = TextEditingController();
   final _code = TextEditingController();
   SignInCodeRequest? _sent;
@@ -54,7 +55,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     try {
       final sent = await ref
           .read(authRepositoryProvider)
-          .requestCode(_phoneForServer);
+          .requestCode(_phone.e164);
       if (!mounted) return;
       setState(() {
         _sent = sent;
@@ -88,7 +89,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       final customer = await ref
           .read(authRepositoryProvider)
           .verifyCode(
-            phone: _phoneForServer,
+            phone: _phone.e164,
             code: _code.text.trim(),
             name: _name.text,
             deviceName: Theme.of(context).platform == TargetPlatform.iOS
@@ -105,15 +106,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
-  }
-
-  /// What the server is sent. The field shows a +44 prefix, so a customer who
-  /// types "7700 900123" without the leading zero still means a UK mobile.
-  String get _phoneForServer {
-    final raw = _phone.text.trim();
-    if (raw.startsWith('+') || raw.startsWith('0')) return raw;
-
-    return '+44$raw';
   }
 
   @override
@@ -159,35 +151,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   children: [
                     if (!awaitingCode) ...[
                       const FieldLabel('Mobile number'),
-                      TextField(
+                      PhoneField(
                         controller: _phone,
-                        keyboardType: TextInputType.phone,
                         autofocus: true,
-                        autofillHints: const [AutofillHints.telephoneNumber],
-                        textInputAction: TextInputAction.next,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: '7700 900123',
-                          hintStyle: TextStyle(
-                            color: colors.placeholder,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          prefixIcon: const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 0, 10, 0),
-                            child: Text(
-                              '+44',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          prefixIconConstraints: const BoxConstraints(),
-                        ),
+                        fontSize: 18,
                         onChanged: (_) => setState(() {}),
                       ),
                       const SizedBox(height: 14),
@@ -266,10 +233,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ? null
                   : (awaitingCode
                         ? (_code.text.length == 6 ? _verify : null)
-                        : (_phone.text.replaceAll(RegExp(r'\D'), '').length >=
-                                  10
-                              ? _requestCode
-                              : null)),
+                        : (_phone.isPlausible ? _requestCode : null)),
               child: _busy
                   ? const ButtonSpinner()
                   : Text(awaitingCode ? 'Sign in' : 'Send code'),
