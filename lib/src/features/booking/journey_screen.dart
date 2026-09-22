@@ -91,6 +91,25 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   /// map. Set from the layout, since it depends on the status bar.
   double _maxExtent = 0.9;
 
+  /// The pickup picker, opened from the button as well as from the field.
+  Future<void> _pickPickupTime(JourneyDraft journey) async {
+    final value = await showJourneyDateTimeSheet(
+      context,
+      title: 'Pickup date & time',
+      minimum: DateTime.now(),
+      initial: journey.pickupDateTime,
+    );
+    if (value == null || !mounted) return;
+    ref
+        .read(bookingFlowProvider.notifier)
+        .updateJourney(
+          (j) => j.copyWith(
+            pickupDate: DateUtils.dateOnly(value),
+            pickupTime: TimeOfDay.fromDateTime(value),
+          ),
+        );
+  }
+
   void _go(JourneyStage stage) {
     setState(() => _stage = stage);
     _sheetExtent.value = _initialExtent(stage);
@@ -298,6 +317,19 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                                   : null,
                               child: const Text('Continue'),
                             ),
+                            // With no pickup time yet the button says so and
+                            // opens the picker itself, instead of sitting
+                            // greyed out with nothing to explain why.
+                            JourneyStage.when when !journey.hasPickupTime =>
+                              FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                onPressed: () => _pickPickupTime(journey),
+                                child: const Text(
+                                  'Choose a date to see prices',
+                                ),
+                              ),
                             JourneyStage.when => FilledButton(
                               style: FilledButton.styleFrom(
                                 minimumSize: const Size.fromHeight(48),
@@ -760,8 +792,28 @@ class _JourneyDateTimeField extends StatelessWidget {
               },
               child: InputDecorator(
                 isEmpty: !complete,
+                // Unset, the field is the next thing to do and reads like
+                // it: tinted, edged in the accent, the prompt in ink. The
+                // black switch and steppers below no longer outweigh it.
+                // Chosen, it settles into an ordinary field.
                 decoration: InputDecoration(
                   hintText: 'Choose a date and time',
+                  hintStyle: complete
+                      ? null
+                      : TextStyle(
+                          color: colors.ink,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  fillColor: complete ? null : colors.tint,
+                  enabledBorder: complete
+                      ? null
+                      : OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: colors.accent,
+                            width: 1.5,
+                          ),
+                        ),
                   prefixIcon: Icon(
                     Icons.calendar_month_outlined,
                     size: 21,
@@ -770,7 +822,7 @@ class _JourneyDateTimeField extends StatelessWidget {
                   suffixIcon: Icon(
                     Icons.expand_more_rounded,
                     size: 18,
-                    color: colors.inkMuted,
+                    color: complete ? colors.inkMuted : colors.accent,
                   ),
                 ),
                 child: Text(

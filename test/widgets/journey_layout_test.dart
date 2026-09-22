@@ -142,11 +142,20 @@ void main() {
     expect(find.text('PICKUP DATE & TIME'), findsOneWidget);
     final dateField = fieldNamed('Pickup date & time');
     expect(tester.widget<InputDecorator>(dateField).isEmpty, isTrue);
-    expect(find.text('See prices'), findsOneWidget);
+    // Without a date the button names the gap and opens the picker itself,
+    // rather than sitting greyed out under the louder switch and steppers.
+    expect(find.text('See prices'), findsNothing);
+    expect(find.text('Choose a date to see prices'), findsOneWidget);
     expect(
       tester.widget<FilledButton>(find.byType(FilledButton)).enabled,
-      isFalse,
+      isTrue,
     );
+    await tester.tap(find.text('Choose a date to see prices'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsOneWidget);
+    await tester.tap(find.byTooltip('Close date and time'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
     await tester.tap(dateField);
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsOneWidget);
@@ -164,7 +173,8 @@ void main() {
         );
     await tester.pumpAndSettle();
     expect(tester.widget<InputDecorator>(dateField).isEmpty, isFalse);
-    // A date makes it quotable, and the way on lights up.
+    // A date makes it quotable, and the button is now the way on.
+    expect(find.text('See prices'), findsOneWidget);
     expect(
       tester.widget<FilledButton>(find.byType(FilledButton)).enabled,
       isTrue,

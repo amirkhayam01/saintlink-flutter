@@ -38,6 +38,20 @@ abstract class JourneyDraft with _$JourneyDraft {
       pickup.address.trim().toLowerCase() !=
           dropoff.address.trim().toLowerCase();
 
+  /// Both halves of the pickup moment are set.
+  bool get hasPickupTime => pickupDate != null && pickupTime != null;
+
+  /// The pickup moment, once both halves are set.
+  DateTime? get pickupDateTime => hasPickupTime
+      ? DateTime(
+          pickupDate!.year,
+          pickupDate!.month,
+          pickupDate!.day,
+          pickupTime!.hour,
+          pickupTime!.minute,
+        )
+      : null;
+
   /// Whether there is enough here to ask for a price.
   bool get isQuotable =>
       hasRoute &&

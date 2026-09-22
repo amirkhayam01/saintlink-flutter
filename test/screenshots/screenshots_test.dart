@@ -331,6 +331,26 @@ void main() {
       },
     ),
   );
+  // No date yet: the field is the loud one, and the button says what to do.
+  testWidgets(
+    'journey when, no date',
+    (t) => shot(
+      t,
+      'journey_when_no_date',
+      const JourneyScreen(),
+      prime: (c) async {
+        c
+            .read(bookingFlowProvider.notifier)
+            .updateJourney(
+              (j) => j.copyWith(
+                pickup: quotableJourney.pickup,
+                dropoff: quotableJourney.dropoff,
+              ),
+            );
+      },
+      act: (t) => t.tap(find.text('Continue')),
+    ),
+  );
   testWidgets(
     'journey when',
     (t) => shot(
