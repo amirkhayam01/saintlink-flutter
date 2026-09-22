@@ -195,6 +195,10 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
               required isFocused,
               maxLength,
             }) => null,
+            // The last field: Done drops the keyboard, and with it the
+            // confirm button comes back into view.
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
             decoration: const InputDecoration(
               hintText: 'Add a note for your driver',
               prefixIcon: Padding(

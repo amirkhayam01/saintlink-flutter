@@ -177,6 +177,9 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
       JourneyStage.details => () => _go(JourneyStage.vehicles),
     };
     final topInset = MediaQuery.paddingOf(context).top;
+    // Read here, above the Scaffold: it hands its body a MediaQuery with
+    // the keyboard inset already taken out.
+    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return Scaffold(
       // The map is the ground for the whole booking: it runs under the
@@ -359,6 +362,13 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                                     : 'Select a vehicle',
                               ),
                             ),
+                            // While the keyboard is up only the first fields
+                            // show, and a confirm button right above the keys
+                            // invites booking before the flight or notes were
+                            // ever seen. Next/Done on the keys walk the form;
+                            // the button returns when the keyboard goes.
+                            JourneyStage.details when keyboardUp =>
+                              _TotalWhileTyping(total: state.totalDue),
                             JourneyStage.details => FilledButton(
                               style: FilledButton.styleFrom(
                                 minimumSize: const Size.fromHeight(48),
@@ -384,6 +394,41 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// What the confirm button gives way to while a field has the keyboard:
+/// the total, and a word on how to get the button back.
+class _TotalWhileTyping extends StatelessWidget {
+  const _TotalWhileTyping({required this.total});
+
+  final double? total;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SizedBox(
+      height: 48,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Finish the form to confirm',
+              style: TextStyle(fontSize: 13, color: colors.inkMuted),
+            ),
+          ),
+          if (total != null)
+            Text(
+              Formatting.money(total!),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: colors.ink,
+              ),
+            ),
+        ],
       ),
     );
   }
