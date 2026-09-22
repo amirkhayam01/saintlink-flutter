@@ -5,6 +5,7 @@ import 'package:saints_link/src/core/providers.dart';
 import 'package:saints_link/src/core/theme.dart';
 import 'package:saints_link/src/features/booking/booking_flow_controller.dart';
 import 'package:saints_link/src/features/booking/journey_screen.dart';
+import 'package:saints_link/src/widgets/common.dart';
 
 import '../support/fakes.dart';
 
@@ -52,15 +53,12 @@ void main() {
     addTearDown(tester.view.resetViewInsets);
     await tester.pumpAndSettle();
     expect(find.textContaining('Confirm booking'), findsNothing);
-    expect(find.text('Finish the form to confirm'), findsOneWidget);
-    // The total stays in view, so the price is never a surprise.
-    expect(find.textContaining('£'), findsOneWidget);
+    expect(find.byType(BottomAction), findsNothing);
 
     // The keyboard goes, the button returns.
     tester.view.resetViewInsets();
     await tester.pumpAndSettle();
     expect(find.textContaining('Confirm booking'), findsOneWidget);
-    expect(find.text('Finish the form to confirm'), findsNothing);
 
     // The last field ends with Done, which drops the keyboard.
     final notes = tester.widget<TextField>(field('Add a note for your driver'));

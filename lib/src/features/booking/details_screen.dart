@@ -83,6 +83,83 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // For an airport trip the flight comes first: it is what the driver
+          // needs most and the easiest thing to forget, so it is the first
+          // thing on screen, before the details the customer never forgets.
+          if (journey.touchesAirport) ...[
+            const SectionTitle(
+              'Your flight',
+              subtitle: 'So your driver can track delays and meet you on time.',
+            ),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const FieldLabel('Flight number', optional: true),
+                      TextFormField(
+                        controller: _flight,
+                        textCapitalization: TextCapitalization.characters,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. BA123',
+                          prefixIcon: const Icon(
+                            Icons.flight_takeoff,
+                            size: 20,
+                          ),
+                          errorText:
+                              fieldError['outbound_flight_number']?.first,
+                        ),
+                        validator: (value) {
+                          final text = (value ?? '').trim().toUpperCase();
+                          if (text.isEmpty) return null;
+                          return RegExp(r'^[A-Z0-9]{2,4}\s?\d{1,4}[A-Z]?$')
+                                      .hasMatch(text) &&
+                                  text.length <= 20
+                              ? null
+                              : 'Please enter a valid flight number';
+                        },
+                        onChanged: (value) => ref
+                            .read(bookingFlowProvider.notifier)
+                            .updateFlightDetails(
+                              flightNumber: value.trim().toUpperCase(),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const FieldLabel('Terminal', optional: true),
+                      TextFormField(
+                        controller: _terminal,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. T5',
+                          errorText: fieldError['outbound_terminal']?.first,
+                        ),
+                        validator: (value) => (value ?? '').trim().length > 100
+                            ? 'Terminal is too long'
+                            : null,
+                        onChanged: (value) => ref
+                            .read(bookingFlowProvider.notifier)
+                            .updateFlightDetails(terminal: value.trim()),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
           const SectionTitle('Lead passenger'),
           const SizedBox(height: 14),
           const FieldLabel('Full name'),
@@ -135,52 +212,6 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
             },
           ),
           const SizedBox(height: 24),
-          if (journey.touchesAirport) ...[
-            const SectionTitle('Flight details'),
-            const SizedBox(height: 14),
-            const FieldLabel('Flight number', optional: true),
-            TextFormField(
-              controller: _flight,
-              textCapitalization: TextCapitalization.characters,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                hintText: 'e.g. BA123',
-                prefixIcon: const Icon(Icons.flight_takeoff, size: 20),
-                errorText: fieldError['outbound_flight_number']?.first,
-              ),
-              validator: (value) {
-                final text = (value ?? '').trim().toUpperCase();
-                if (text.isEmpty) return null;
-                return RegExp(r'^[A-Z0-9]{2,4}\s?\d{1,4}[A-Z]?$')
-                            .hasMatch(text) &&
-                        text.length <= 20
-                    ? null
-                    : 'Please enter a valid flight number';
-              },
-              onChanged: (value) => ref
-                  .read(bookingFlowProvider.notifier)
-                  .updateFlightDetails(
-                    flightNumber: value.trim().toUpperCase(),
-                  ),
-            ),
-            const SizedBox(height: 14),
-            const FieldLabel('Terminal', optional: true),
-            TextFormField(
-              controller: _terminal,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                hintText: 'e.g. T5',
-                errorText: fieldError['outbound_terminal']?.first,
-              ),
-              validator: (value) => (value ?? '').trim().length > 100
-                  ? 'Terminal is too long'
-                  : null,
-              onChanged: (value) => ref
-                  .read(bookingFlowProvider.notifier)
-                  .updateFlightDetails(terminal: value.trim()),
-            ),
-            const SizedBox(height: 24),
-          ],
           const SectionTitle('For your driver'),
           const SizedBox(height: 14),
           const FieldLabel('Notes', optional: true),

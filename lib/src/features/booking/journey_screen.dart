@@ -308,84 +308,84 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                             ],
                           ),
                         ),
-                        BottomAction(
-                          verticalPadding: 8,
-                          child: switch (stage) {
-                            JourneyStage.route => FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48),
-                              ),
-                              onPressed: journey.hasRoute
-                                  ? () => _go(JourneyStage.when)
-                                  : null,
-                              child: const Text('Continue'),
-                            ),
-                            // With no pickup time yet the button says so and
-                            // opens the picker itself, instead of sitting
-                            // greyed out with nothing to explain why.
-                            JourneyStage.when when !journey.hasPickupTime =>
-                              FilledButton(
+                        // While the keyboard is up only the first fields
+                        // show, and a confirm button right above the keys
+                        // invites booking before the flight or notes were
+                        // ever seen. Next/Done on the keys walk the form;
+                        // the button returns when the keyboard goes.
+                        if (stage != JourneyStage.details || !keyboardUp)
+                          BottomAction(
+                            verticalPadding: 8,
+                            child: switch (stage) {
+                              JourneyStage.route => FilledButton(
                                 style: FilledButton.styleFrom(
                                   minimumSize: const Size.fromHeight(48),
                                 ),
-                                onPressed: () => _pickPickupTime(journey),
-                                child: const Text(
-                                  'Choose a date to see prices',
+                                onPressed: journey.hasRoute
+                                    ? () => _go(JourneyStage.when)
+                                    : null,
+                                child: const Text('Continue'),
+                              ),
+                              // With no pickup time yet the button says so and
+                              // opens the picker itself, instead of sitting
+                              // greyed out with nothing to explain why.
+                              JourneyStage.when when !journey.hasPickupTime =>
+                                FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(48),
+                                  ),
+                                  onPressed: () => _pickPickupTime(journey),
+                                  child: const Text(
+                                    'Choose a date to see prices',
+                                  ),
+                                ),
+                              JourneyStage.when => FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                onPressed:
+                                    journey.isQuotable && !state.isQuoting
+                                    ? () async {
+                                        if (await controller.requestQuote() &&
+                                            mounted) {
+                                          _go(JourneyStage.vehicles);
+                                        }
+                                      }
+                                    : null,
+                                child: state.isQuoting
+                                    ? const ButtonSpinner()
+                                    : const Text('See prices'),
+                              ),
+                              JourneyStage.vehicles => FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                onPressed: canContinue
+                                    ? () => _go(JourneyStage.details)
+                                    : null,
+                                child: Text(
+                                  canContinue
+                                      ? 'Continue · ${Formatting.money(state.totalDue!)}'
+                                      : 'Select a vehicle',
                                 ),
                               ),
-                            JourneyStage.when => FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48),
+                              JourneyStage.details => FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                onPressed: state.isBooking
+                                    ? null
+                                    : () => _details.currentState?.submit(),
+                                child: state.isBooking
+                                    ? const ButtonSpinner()
+                                    : Text(
+                                        state.totalDue == null
+                                            ? 'Confirm booking'
+                                            : 'Confirm booking · ${Formatting.money(state.totalDue!)}',
+                                      ),
                               ),
-                              onPressed: journey.isQuotable && !state.isQuoting
-                                  ? () async {
-                                      if (await controller.requestQuote() &&
-                                          mounted) {
-                                        _go(JourneyStage.vehicles);
-                                      }
-                                    }
-                                  : null,
-                              child: state.isQuoting
-                                  ? const ButtonSpinner()
-                                  : const Text('See prices'),
-                            ),
-                            JourneyStage.vehicles => FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48),
-                              ),
-                              onPressed: canContinue
-                                  ? () => _go(JourneyStage.details)
-                                  : null,
-                              child: Text(
-                                canContinue
-                                    ? 'Continue · ${Formatting.money(state.totalDue!)}'
-                                    : 'Select a vehicle',
-                              ),
-                            ),
-                            // While the keyboard is up only the first fields
-                            // show, and a confirm button right above the keys
-                            // invites booking before the flight or notes were
-                            // ever seen. Next/Done on the keys walk the form;
-                            // the button returns when the keyboard goes.
-                            JourneyStage.details when keyboardUp =>
-                              _TotalWhileTyping(total: state.totalDue),
-                            JourneyStage.details => FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48),
-                              ),
-                              onPressed: state.isBooking
-                                  ? null
-                                  : () => _details.currentState?.submit(),
-                              child: state.isBooking
-                                  ? const ButtonSpinner()
-                                  : Text(
-                                      state.totalDue == null
-                                          ? 'Confirm booking'
-                                          : 'Confirm booking · ${Formatting.money(state.totalDue!)}',
-                                    ),
-                            ),
-                          },
-                        ),
+                            },
+                          ),
                       ],
                     ),
                   ),
@@ -394,41 +394,6 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-/// What the confirm button gives way to while a field has the keyboard:
-/// the total, and a word on how to get the button back.
-class _TotalWhileTyping extends StatelessWidget {
-  const _TotalWhileTyping({required this.total});
-
-  final double? total;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return SizedBox(
-      height: 48,
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Finish the form to confirm',
-              style: TextStyle(fontSize: 13, color: colors.inkMuted),
-            ),
-          ),
-          if (total != null)
-            Text(
-              Formatting.money(total!),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: colors.ink,
-              ),
-            ),
-        ],
       ),
     );
   }
