@@ -28,11 +28,11 @@ class HomeAccountChip extends StatelessWidget {
         child: InkWell(
           onTap: onSignIn,
           child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             child: Text(
               'Sign in',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.midnight,
               ),

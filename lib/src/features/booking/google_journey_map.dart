@@ -22,7 +22,12 @@ class GoogleJourneyMap extends ConsumerStatefulWidget {
     this.topPadding = 0,
     this.bottomPadding = 0,
     this.regionWhenEmpty = false,
+    this.onMapCreated,
   });
+
+  /// The controller once the map is up, for a screen that adds its own
+  /// buttons over the map (the native ones cannot be placed).
+  final ValueChanged<GoogleMapController>? onMapCreated;
 
   /// Space at the bottom covered by a sheet. The framing and the centre use
   /// only the area above it, and follow it as it moves.
@@ -288,6 +293,7 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
         ),
         onMapCreated: (controller) {
           _controller = controller;
+          widget.onMapCreated?.call(controller);
           _frame();
         },
         // The preview is a picture: no gestures, and lite mode on Android.
@@ -302,7 +308,7 @@ class _GoogleJourneyMapState extends ConsumerState<GoogleJourneyMap> {
         mapToolbarEnabled: false,
         compassEnabled: widget.interactive,
         myLocationEnabled: showLocation,
-        myLocationButtonEnabled: showLocation && widget.interactive,
+        myLocationButtonEnabled: false,
         buildingsEnabled: false,
       ),
     );

@@ -33,21 +33,10 @@ class Env {
     defaultValue: 'https://saintslink.co.uk',
   );
 
-  /// The brand's social accounts, linked from the account screen. Defined here
-  /// rather than in the screen so a handle only ever changes in one place.
-  static const String instagramUrl = String.fromEnvironment(
-    'INSTAGRAM_URL',
-    defaultValue: 'https://instagram.com/saintslink',
-  );
-
-  static const String tiktokUrl = String.fromEnvironment(
-    'TIKTOK_URL',
-    defaultValue: 'https://tiktok.com/@saintslink',
-  );
-
+  /// The brand's Facebook page, linked from the account screen.
   static const String facebookUrl = String.fromEnvironment(
     'FACEBOOK_URL',
-    defaultValue: 'https://facebook.com/saintslink',
+    defaultValue: 'https://facebook.com/saintslinkuk',
   );
 
   /// Shown on sign-in so a tester knows which backend they are on.

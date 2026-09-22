@@ -8,7 +8,7 @@ import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/inner_screen_header.dart';
-import '../../widgets/ticket_card.dart';
+import '../../widgets/booking_summary.dart';
 import '../../domain/booking.dart';
 import '../payment/payment_controller.dart';
 import '../payment/payment_service.dart';
@@ -83,22 +83,23 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       paymentControllerProvider(widget.reference).select((s) => s.isPaying),
     );
     final busy = _busy || paying;
+    final booking = detail.value;
 
     return Scaffold(
       appBar: InnerScreenHeader(
         title: 'Your trip',
-        actions: [
-          IconButton(
-            tooltip: 'Copy reference',
-            icon: const Icon(Icons.copy_rounded, size: 20),
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: widget.reference));
-              if (context.mounted) {
-                showMessage(context, 'Reference ${widget.reference} copied');
-              }
-            },
-          ),
-        ],
+        background: InnerScreenHeader.midnightBackground(),
+        contentHeight: _TripHeader.height,
+        headerContent: _TripHeader(
+          reference: widget.reference,
+          booking: booking,
+          onCopy: () async {
+            await Clipboard.setData(ClipboardData(text: widget.reference));
+            if (context.mounted) {
+              showMessage(context, 'Reference ${widget.reference} copied');
+            }
+          },
+        ),
       ),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -116,216 +117,240 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           onRefresh: () =>
               ref.refresh(tripDetailProvider(widget.reference).future),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
             children: [
-              TicketCard(booking: booking),
               if (booking.cancellationRequest != null) ...[
+                _Notice(
+                  icon: Icons.hourglass_top_rounded,
+                  text:
+                      'Cancellation requested and awaiting review. '
+                      'Recommended refund: ${booking.cancellationRequest!.recommendedRefundPercentage.toStringAsFixed(0)}%.',
+                ),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: context.colors.tint,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
+              ],
+              BookingSummary(booking: booking),
+              const SizedBox(height: 20),
+              const SectionTitle('Lead passenger'),
+              const SizedBox(height: 8),
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Column(
                     children: [
-                      Icon(
-                        Icons.hourglass_top,
-                        size: 18,
-                        color: context.colors.accent,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Cancellation requested — awaiting review. Recommended refund: ${booking.cancellationRequest!.recommendedRefundPercentage.toStringAsFixed(0)}%.',
-                          style: const TextStyle(fontSize: 13, height: 1.35),
-                        ),
-                      ),
+                      DetailRow('Name', booking.customerName ?? ''),
+                      DetailRow('Phone', booking.customerPhone ?? ''),
+                      if (booking.customerEmail != null)
+                        DetailRow('Email', booking.customerEmail!),
+                      if (booking.customerNotes != null)
+                        DetailRow('Notes', booking.customerNotes!),
                     ],
                   ),
                 ),
-              ],
-              for (final leg in booking.legs.where(
-                (l) =>
-                    l.pickupWasAdjusted ||
-                    l.flight != null ||
-                    l.includedWaitingMinutes > 0,
-              )) ...[
-                const SizedBox(height: 16),
-                _LegCard(leg: leg, showDirection: booking.isReturn),
-              ],
-              const SizedBox(height: 16),
-              _Panel(
-                title: 'Fare',
-                child: Column(
-                  children: [
-                    for (final item in booking.fareItems)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.label,
-                                style: TextStyle(
-                                  color: context.colors.inkMuted,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              Formatting.money(item.amount, booking.currency),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (booking.fareItems.isNotEmpty)
-                      Divider(height: 20, color: context.colors.inkFaint),
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Total',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        Text(
-                          Formatting.money(
-                            booking.totalAmount,
-                            booking.currency,
-                          ),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
+              ),
+              if (booking.isCancellable) ...[
+                const SizedBox(height: 20),
+                // Quiet on purpose: a way out, not a call to action.
+                Center(
+                  child: TextButton.icon(
+                    onPressed: busy ? null : () => _cancel(booking),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.danger,
                     ),
-                  ],
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    label: const Text('Request cancellation'),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              _Panel(
-                title: 'Lead passenger',
-                child: Column(
-                  children: [
-                    DetailRow('Name', booking.customerName ?? ''),
-                    DetailRow('Phone', booking.customerPhone ?? ''),
-                    if (booking.customerEmail != null)
-                      DetailRow('Email', booking.customerEmail!),
-                    if (booking.customerNotes != null)
-                      DetailRow('Notes', booking.customerNotes!),
-                  ],
-                ),
-              ),
+              ],
             ],
           ),
         ),
       ),
-      bottomNavigationBar: detail.maybeWhen(
-        data: (booking) => (booking.canPay || booking.isCancellable)
-            ? BottomAction(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (booking.canPay)
-                      FilledButton(
-                        onPressed: busy ? null : () => _pay(booking),
-                        child: Text(
-                          'Pay ${Formatting.money(booking.totalAmount, booking.currency)}',
-                        ),
-                      ),
-                    if (booking.canPay && booking.isCancellable)
-                      const SizedBox(height: 8),
-                    if (booking.isCancellable)
-                      OutlinedButton(
-                        onPressed: busy ? null : () => _cancel(booking),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.danger,
-                        ),
-                        child: const Text('Request cancellation'),
-                      ),
-                  ],
+      bottomNavigationBar: booking != null && booking.canPay
+          ? BottomAction(
+              child: FilledButton(
+                onPressed: busy ? null : () => _pay(booking),
+                child: Text(
+                  'Pay ${Formatting.money(booking.totalAmount, booking.currency)}',
                 ),
-              )
-            : null,
-        orElse: () => null,
-      ),
+              ),
+            )
+          : null,
     );
   }
 }
 
-class _LegCard extends StatelessWidget {
-  const _LegCard({required this.leg, required this.showDirection});
+/// Reference, status and what it costs, on the header so the eye lands on
+/// them first. Blank while the trip is still loading.
+class _TripHeader extends StatelessWidget {
+  const _TripHeader({
+    required this.reference,
+    required this.booking,
+    required this.onCopy,
+  });
 
-  final BookingLeg leg;
-  final bool showDirection;
+  final String reference;
+  final Booking? booking;
+  final VoidCallback onCopy;
+
+  static const height = 104.0;
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(
-      title: showDirection
-          ? (leg.isReturnLeg ? 'Return journey' : 'Outward journey')
-          : 'Your pickup',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final muted = Colors.white.withValues(alpha: 0.7);
+    final booking = this.booking;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (leg.pickupAt != null) ...[
-            Text(
-              '${Formatting.fullDate(leg.pickupAt!)} · ${Formatting.time(leg.pickupAt!)}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'BOOKING REFERENCE',
+                  style: TextStyle(
+                    color: muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: onCopy,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        reference,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.copy_rounded,
+                        size: 16,
+                        color: muted,
+                        semanticLabel: 'Copy reference',
+                      ),
+                    ],
+                  ),
+                ),
+                if (booking != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _HeaderChip(
+                        label: booking.statusLabel,
+                        color: AppTheme.statusColor(booking.status),
+                      ),
+                      const SizedBox(width: 6),
+                      _HeaderChip(
+                        label: booking.paymentStatusLabel,
+                        color: booking.isPaid
+                            ? AppTheme.success
+                            : AppTheme.brand,
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
-            if (leg.pickupWasAdjusted)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  'Moved from ${Formatting.time(leg.requestedPickupAt!)} to match your flight',
-                  style: TextStyle(color: context.colors.accent, fontSize: 12),
-                ),
-              ),
-            const SizedBox(height: 8),
-          ],
-          Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            children: [
-              if (leg.flight != null)
-                _Fact(
-                  Icons.flight,
-                  '${leg.flight!.number}${leg.flight!.terminal != null ? ' · ${leg.flight!.terminal}' : ''}${leg.flight!.status != null ? ' · ${leg.flight!.status}' : ''}',
-                ),
-              if (leg.meetAndGreet)
-                const _Fact(Icons.waving_hand_outlined, 'Meet & greet'),
-              if (leg.includedWaitingMinutes > 0)
-                _Fact(
-                  Icons.hourglass_bottom,
-                  '${leg.includedWaitingMinutes} min waiting included',
-                ),
-            ],
           ),
+          if (booking != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  Formatting.money(booking.totalAmount, booking.currency),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    height: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  booking.isReturn ? 'Return · total' : 'Total',
+                  style: TextStyle(color: muted, fontSize: 12),
+                ),
+              ],
+            ),
         ],
       ),
     );
   }
 }
 
-class _Fact extends StatelessWidget {
-  const _Fact(this.icon, this.text);
+/// A status pill drawn for the dark header: the colour as a tint and text.
+class _HeaderChip extends StatelessWidget {
+  const _HeaderChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Color.lerp(color, Colors.white, 0.35),
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _Notice extends StatelessWidget {
+  const _Notice({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 15, color: context.colors.inkMuted),
-      const SizedBox(width: 4),
-      Text(
-        text,
-        style: TextStyle(fontSize: 13, color: context.colors.inkMuted),
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.tint,
+        borderRadius: BorderRadius.circular(14),
       ),
-    ],
-  );
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: colors.accent),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 13, height: 1.35, color: colors.ink),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CancelDialog extends StatefulWidget {
@@ -382,35 +407,6 @@ class _CancelDialogState extends State<_CancelDialog> {
           child: const Text('Request'),
         ),
       ],
-    );
-  }
-}
-
-class _Panel extends StatelessWidget {
-  const _Panel({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.inkFaint),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          child,
-        ],
-      ),
     );
   }
 }

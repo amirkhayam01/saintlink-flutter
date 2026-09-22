@@ -24,6 +24,8 @@ class Formatting {
 
   static String monthShort(DateTime value) => DateFormat('MMM').format(value);
 
+  static String monthLong(DateTime value) => DateFormat('MMMM').format(value);
+
   static String fullDate(DateTime value) => _fullDate.format(value);
 
   static String time(DateTime value) => _time.format(value);

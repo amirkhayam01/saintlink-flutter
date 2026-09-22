@@ -10,6 +10,7 @@ import '../../widgets/common.dart';
 import '../../widgets/hero_banner.dart';
 import '../../widgets/tiles.dart';
 import '../booking/booking_flow_controller.dart';
+import '../places/known_places.dart';
 import '../home/widgets/fleet_showcase_section.dart';
 
 /// Popular fixed routes with their "from" prices, filtered by kind of trip.
@@ -36,97 +37,108 @@ class _PricesScreenState extends ConsumerState<PricesScreen> {
           .read(bookingFlowProvider.notifier)
           .updateJourney(
             (j) => j.copyWith(
-              pickup: PlaceSelection(address: route.from),
-              dropoff: PlaceSelection(address: route.to),
+              pickup: route.from == 'Southampton'
+                  ? PlaceSelection.empty
+                  : KnownPlaces.resolve(route.from),
+              dropoff: KnownPlaces.resolve(route.to),
             ),
           );
       context.push('/book');
     }
 
     return Scaffold(
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: HeroPage(
-              hero: const HeroBanner(
-                image: AssetImage('assets/brand/hero-harbor.webp'),
-                height: 220,
-                bottomInset: OverlapSheet.overlap,
-                title: 'Routes & prices',
-                subtitle: 'Popular journeys and what they start from.',
-                showBack: true,
-              ),
-              sheet: OverlapSheet(
-                padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SegmentedTabs(
-                      labels: [for (final g in groups) g.label],
-                      index: _group,
-                      onChanged: (i) => setState(() => _group = i),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: colors.card,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: colors.inkFaint),
+      body: RefreshIndicator(
+        color: context.colors.accent,
+        backgroundColor: context.colors.card,
+        edgeOffset: MediaQuery.paddingOf(context).top,
+        onRefresh: () => ref
+            .read(bookingFlowProvider.notifier)
+            .loadVehicles(force: true)
+            .catchError((_) {}),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: HeroPage(
+                hero: const HeroBanner(
+                  image: AssetImage('assets/brand/hero-harbor.webp'),
+                  height: 220,
+                  bottomInset: OverlapSheet.overlap,
+                  title: 'Routes & prices',
+                  subtitle: 'Popular journeys and what they start from.',
+                  showBack: true,
+                ),
+                sheet: OverlapSheet(
+                  padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SegmentedTabs(
+                        labels: [for (final g in groups) g.label],
+                        index: _group,
+                        onChanged: (i) => setState(() => _group = i),
                       ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < routes.length; i++) ...[
-                            if (i > 0)
-                              Divider(
-                                color: colors.inkFaint,
-                                height: 1,
-                                indent: 16,
-                                endIndent: 16,
+                      const SizedBox(height: 20),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: colors.card,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: colors.inkFaint),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            for (var i = 0; i < routes.length; i++) ...[
+                              if (i > 0)
+                                Divider(
+                                  color: colors.inkFaint,
+                                  height: 1,
+                                  indent: 16,
+                                  endIndent: 16,
+                                ),
+                              _RouteRow(
+                                route: routes[i],
+                                onTap: () => book(routes[i]),
                               ),
-                            _RouteRow(
-                              route: routes[i],
-                              onTap: () => book(routes[i]),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Prices are a guide for a saloon car. Larger vehicles, return journeys and out-of-hours travel are priced on your quote.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colors.inkMuted,
-                        height: 1.4,
+                      const SizedBox(height: 16),
+                      Text(
+                        'Prices are a guide for a saloon car. Larger vehicles, return journeys and out-of-hours travel are priced on your quote.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.inkMuted,
+                          height: 1.4,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          // The fleet, beside the prices it explains.
-          if (vehicles.isNotEmpty) ...[
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(
-              child: FleetShowcaseSection(
-                gutter: 20,
-                vehicles: vehicles,
-                onSelectVehicle: (v) {
-                  ref
-                      .read(bookingFlowProvider.notifier)
-                      .updateJourney(
-                        (j) => j.copyWith(vehicleCategorySlug: v.slug),
-                      );
-                  context.push('/book');
-                },
+            // The fleet, beside the prices it explains.
+            if (vehicles.isNotEmpty) ...[
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              SliverToBoxAdapter(
+                child: FleetShowcaseSection(
+                  gutter: 20,
+                  vehicles: vehicles,
+                  onSelectVehicle: (v) {
+                    ref
+                        .read(bookingFlowProvider.notifier)
+                        .updateJourney(
+                          (j) => j.copyWith(vehicleCategorySlug: v.slug),
+                        );
+                    context.push('/book');
+                  },
+                ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
           ],
-        ],
+        ),
       ),
       bottomNavigationBar: BottomAction(
         child: FilledButton(

@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
-import '../../core/theme_controller.dart';
 import '../../domain/place.dart';
 import '../../widgets/hero_banner.dart';
 import '../auth/auth_controller.dart';
 import '../booking/booking_flow_controller.dart';
+import '../places/known_places.dart';
 import '../booking/journey_draft.dart';
 import '../trips/trips_controller.dart';
 import 'widgets/home_top_bar.dart';
@@ -43,7 +43,6 @@ class HomeScreen extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
     final bookingController = ref.read(bookingFlowProvider.notifier);
     final firstName = auth.customer?.firstName;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     void presetAndBook(JourneyDraft Function(JourneyDraft) update) {
       bookingController.reset();
@@ -89,15 +88,6 @@ class HomeScreen extends ConsumerWidget {
                     height: 30,
                   ),
                   actions: [
-                    HeroIconButton(
-                      icon: isDark
-                          ? Icons.light_mode_rounded
-                          : Icons.dark_mode_rounded,
-                      semanticLabel: 'Switch theme',
-                      onPressed: () =>
-                          ref.read(themeModeProvider.notifier).toggleTheme(),
-                    ),
-                    const SizedBox(width: 8),
                     HomeAccountChip(
                       auth: auth,
                       onProfile: () => context.go('/profile'),
@@ -133,21 +123,8 @@ class HomeScreen extends ConsumerWidget {
                               onSelect: (place) => presetAndBook(
                                 (j) => j.copyWith(dropoff: place),
                               ),
-                              spacingBelow: 18,
+                              spacingBelow: 24,
                             ),
-                            // The one explicit door into the full form, replacing the old Book tab.
-                            FilledButton.icon(
-                              onPressed: () {
-                                bookingController.reset();
-                                context.push('/book');
-                              },
-                              icon: const Icon(
-                                Icons.edit_calendar_outlined,
-                                size: 18,
-                              ),
-                              label: const Text('Plan a journey'),
-                            ),
-                            const SizedBox(height: sectionGap),
                             ServicesGrid(
                               onSelectService: (serviceName, defaultDropoff) {
                                 if (defaultDropoff == null) {
@@ -157,8 +134,8 @@ class HomeScreen extends ConsumerWidget {
                                 }
                                 presetAndBook(
                                   (j) => j.copyWith(
-                                    dropoff: PlaceSelection(
-                                      address: defaultDropoff,
+                                    dropoff: KnownPlaces.resolve(
+                                      defaultDropoff,
                                     ),
                                   ),
                                 );
@@ -179,8 +156,10 @@ class HomeScreen extends ConsumerWidget {
               child: PopularFaresSection(
                 onSelectFare: (from, to) => presetAndBook(
                   (j) => j.copyWith(
-                    pickup: PlaceSelection(address: from),
-                    dropoff: PlaceSelection(address: to),
+                    pickup: from == 'Southampton'
+                        ? PlaceSelection.empty
+                        : KnownPlaces.resolve(from),
+                    dropoff: KnownPlaces.resolve(to),
                   ),
                 ),
               ),

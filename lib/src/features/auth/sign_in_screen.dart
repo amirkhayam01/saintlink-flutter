@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +9,8 @@ import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/hero_banner.dart';
+import '../../widgets/phone_field.dart';
 import '../../widgets/tiles.dart';
 import 'auth_controller.dart';
 import '../../domain/customer.dart';
@@ -27,7 +28,7 @@ class SignInScreen extends ConsumerStatefulWidget {
 }
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
-  final _phone = TextEditingController();
+  final _phone = PhoneController();
   final _name = TextEditingController();
   final _code = TextEditingController();
   SignInCodeRequest? _sent;
@@ -54,7 +55,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     try {
       final sent = await ref
           .read(authRepositoryProvider)
-          .requestCode(_phoneForServer);
+          .requestCode(_phone.e164);
       if (!mounted) return;
       setState(() {
         _sent = sent;
@@ -88,7 +89,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       final customer = await ref
           .read(authRepositoryProvider)
           .verifyCode(
-            phone: _phoneForServer,
+            phone: _phone.e164,
             code: _code.text.trim(),
             name: _name.text,
             deviceName: Theme.of(context).platform == TargetPlatform.iOS
@@ -107,180 +108,118 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
-  /// What the server is sent. The field shows a +44 prefix, so a customer who
-  /// types "7700 900123" without the leading zero still means a UK mobile.
-  String get _phoneForServer {
-    final raw = _phone.text.trim();
-    if (raw.startsWith('+') || raw.startsWith('0')) return raw;
-
-    return '+44$raw';
-  }
-
   @override
   Widget build(BuildContext context) {
     final awaitingCode = _sent != null;
     final colors = context.colors;
-    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    // Back from the code step returns to the number, not out of the screen.
+    void back() {
+      if (awaitingCode) {
+        setState(() {
+          _sent = null;
+          _error = null;
+          _code.clear();
+        });
+      } else if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/');
+      }
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: colors.surface,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: awaitingCode
-              ? () => setState(() {
-                  _sent = null;
-                  _error = null;
-                  _code.clear();
-                })
-              : () {
-                  if (context.canPop()) {
-                    context.pop();
-                  } else {
-                    context.go('/');
-                  }
-                },
-        ),
-      ),
       backgroundColor: colors.surface,
-      body: Stack(
-        children: [
-          // Two soft gold glows, so the page is not a plain grey form.
-          const Positioned(top: -140, left: -100, child: _Glow(320)),
-          const Positioned(bottom: -120, right: -120, child: _Glow(280)),
-          ListView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            children: [
-              Center(
-                child: Image.asset(
-                  dark
-                      ? 'assets/brand/logo-dark.png'
-                      : 'assets/brand/logo-light.png',
-                  height: 40,
-                ),
+      body: CustomScrollView(
+        // No bounce: an over-scroll would pull the photo down off the top.
+        physics: const ClampingScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        slivers: [
+          SliverToBoxAdapter(
+            child: HeroPage(
+              hero: _AuthHero(
+                title: awaitingCode ? 'Enter your code' : 'Welcome back',
+                subtitle: awaitingCode
+                    ? 'Sent to ${_sent!.maskedPhone}. It expires in a few minutes.'
+                    : 'Sign in with your mobile number to manage your journeys.',
+                onBack: back,
               ),
-              const SizedBox(height: 32),
-              if (!awaitingCode) ...[
-                Text(
-                  'Sign in with your mobile',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'We will text you a six-digit code. No password, nothing to remember.',
-                  style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(color: colors.inkMuted),
-                ),
-                const SizedBox(height: 28),
-                const FieldLabel('Mobile number'),
-                TextField(
-                  controller: _phone,
-                  keyboardType: TextInputType.phone,
-                  autofocus: true,
-                  autofillHints: const [AutofillHints.telephoneNumber],
-                  textInputAction: TextInputAction.next,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '7700 900123',
-                    hintStyle: TextStyle(
-                      color: colors.placeholder,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    prefixIcon: const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 0, 10, 0),
-                      child: Text(
-                        '+44',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+              sheet: OverlapSheet(
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (!awaitingCode) ...[
+                      const FieldLabel('Mobile number'),
+                      PhoneField(
+                        controller: _phone,
+                        autofocus: true,
+                        fontSize: 18,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 14),
+                      const FieldLabel('Your name', optional: true),
+                      TextField(
+                        controller: _name,
+                        textCapitalization: TextCapitalization.words,
+                        autofillHints: const [AutofillHints.name],
+                        decoration: const InputDecoration(
+                          hintText: 'Only needed the first time',
+                          prefixIcon: Icon(Icons.person_outline, size: 20),
                         ),
                       ),
-                    ),
-                    prefixIconConstraints: const BoxConstraints(),
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: 14),
-                const FieldLabel('Your name', optional: true),
-                TextField(
-                  controller: _name,
-                  textCapitalization: TextCapitalization.words,
-                  autofillHints: const [AutofillHints.name],
-                  decoration: const InputDecoration(
-                    hintText: 'Only needed the first time',
-                    prefixIcon: Icon(Icons.person_outline, size: 20),
-                  ),
-                ),
-              ] else ...[
-                Text(
-                  'Enter the code',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 8),
-                Text.rich(
-                  TextSpan(
-                    style: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(color: colors.inkMuted),
-                    children: [
-                      const TextSpan(text: 'Sent to '),
-                      TextSpan(
-                        text: _sent!.maskedPhone,
-                        style: TextStyle(
-                          color: colors.ink,
-                          fontWeight: FontWeight.w600,
+                    ] else ...[
+                      _OtpBoxes(
+                        controller: _code,
+                        enabled: !_busy,
+                        onCompleted: () {
+                          if (!_busy) _verify();
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: TextButton(
+                          onPressed: _resendIn > 0 || _busy
+                              ? null
+                              : _requestCode,
+                          child: Text(
+                            _resendIn > 0
+                                ? 'Resend code in ${_resendIn}s'
+                                : 'Resend code',
+                          ),
                         ),
                       ),
-                      const TextSpan(text: '. It expires in a few minutes.'),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                _OtpBoxes(
-                  controller: _code,
-                  enabled: !_busy,
-                  onCompleted: () {
-                    if (!_busy) _verify();
-                  },
-                ),
-                const SizedBox(height: 20),
-                Center(
-                  child: TextButton(
-                    onPressed: _resendIn > 0 || _busy ? null : _requestCode,
-                    child: Text(
-                      _resendIn > 0
-                          ? 'Resend code in ${_resendIn}s'
-                          : 'Resend code',
+                    if (_error != null) ...[
+                      const SizedBox(height: 16),
+                      ErrorNotice(_error!),
+                    ],
+                    const SizedBox(height: 28),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 16,
+                          color: colors.inkMuted,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Your number is only used to sign you in and to reach you about your bookings.',
+                            style: TextStyle(
+                              color: colors.inkMuted,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ),
-              ],
-              if (_error != null) ...[
-                const SizedBox(height: 16),
-                ErrorNotice(_error!),
-              ],
-              const SizedBox(height: 28),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.lock_outline, size: 16, color: colors.inkMuted),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Your number is only used to sign you in and to reach you about your bookings.',
-                      style: TextStyle(
-                        color: colors.inkMuted,
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -294,26 +233,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ? null
                   : (awaitingCode
                         ? (_code.text.length == 6 ? _verify : null)
-                        : (_phone.text.replaceAll(RegExp(r'\D'), '').length >=
-                                  10
-                              ? _requestCode
-                              : null)),
+                        : (_phone.isPlausible ? _requestCode : null)),
               child: _busy
                   ? const ButtonSpinner()
                   : Text(awaitingCode ? 'Sign in' : 'Send code'),
             ),
-            if (kDebugMode)
-              TextButton.icon(
-                onPressed: _busy
-                    ? null
-                    : () {
-                        FocusScope.of(context).unfocus();
-                        ref.read(authControllerProvider.notifier).signInDemo();
-                        context.go(widget.redirectTo ?? '/trips');
-                      },
-                icon: const Icon(Icons.person_outline, size: 18),
-                label: const Text('Demo login'),
-              ),
           ],
         ),
       ),
@@ -321,29 +245,143 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   }
 }
 
-class _Glow extends StatelessWidget {
-  const _Glow(this.size);
+/// A compact, code-built auth header. It uses the real wordmark instead of a
+/// travel photo, keeping the sign-in task calm and recognisably Saints Link.
+class _AuthHero extends StatelessWidget {
+  const _AuthHero({
+    required this.title,
+    required this.subtitle,
+    required this.onBack,
+  });
 
-  final double size;
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              AppTheme.brand.withValues(alpha: 0.22),
-              AppTheme.brand.withValues(alpha: 0),
-            ],
-          ),
+    final topPadding = MediaQuery.paddingOf(context).top;
+    // Two rows with air between them: navigation and brand, then the message.
+    final fullHeight = 224.0 + topPadding;
+    // Centred in the same row as the back button, so it must clear that
+    // button (and its mirror on the right) on the narrowest phones.
+    final logoWidth = (MediaQuery.sizeOf(context).width * 0.42)
+        .clamp(150.0, 190.0)
+        .toDouble();
+
+    return SizedBox(
+      height: fullHeight - OverlapSheet.overlap,
+      child: OverflowBox(
+        alignment: Alignment.topCenter,
+        minHeight: fullHeight,
+        maxHeight: fullHeight,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const DecoratedBox(
+              decoration: BoxDecoration(gradient: AppTheme.midnightGradient),
+            ),
+            const Positioned.fill(child: CustomPaint(painter: _RouteMotif())),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                topPadding + 8,
+                24,
+                24 + OverlapSheet.overlap,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: 48,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/brand/logo-dark.png',
+                          width: logoWidth,
+                          fit: BoxFit.contain,
+                          semanticLabel: 'Saints Link',
+                        ),
+                        Positioned(
+                          // Optically align the arrow with the text edge below.
+                          left: -12,
+                          child: HeroIconButton(
+                            icon: Icons.arrow_back,
+                            semanticLabel: 'Back',
+                            onPressed: onBack,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      fontSize: 13.5,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _RouteMotif extends CustomPainter {
+  const _RouteMotif();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width * 0.58, size.height + 10)
+      ..cubicTo(
+        size.width * 0.72,
+        size.height * 0.78,
+        size.width * 0.74,
+        size.height * 0.57,
+        size.width + 12,
+        size.height * 0.35,
+      );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppTheme.brand.withValues(alpha: 0.24)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawPath(
+      path.shift(const Offset(0, 10)),
+      Paint()
+        ..color = AppTheme.brand.withValues(alpha: 0.10)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RouteMotif oldDelegate) => false;
 }
 
 /// Six digit boxes over one invisible text field, so the keyboard, paste and

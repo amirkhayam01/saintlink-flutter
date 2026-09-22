@@ -174,11 +174,12 @@ class HeroIconButton extends StatelessWidget {
   }
 }
 
-/// A [HeroBanner] and its [OverlapSheet] in one box; as separate slivers the sheet would paint under the photo.
+/// A hero and its [OverlapSheet] in one box; as separate slivers the sheet
+/// would paint under the hero.
 class HeroPage extends StatelessWidget {
   const HeroPage({super.key, required this.hero, required this.sheet});
 
-  final HeroBanner hero;
+  final Widget hero;
   final OverlapSheet sheet;
 
   @override

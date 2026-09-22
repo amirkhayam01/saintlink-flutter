@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 /// The website's tokens: one accent (gold) and one neutral (zinc), midnight for large dark surfaces.
@@ -8,6 +7,13 @@ class AppTheme {
 
   static const brand = Color(0xFFFACC15);
   static const brandDark = Color(0xFFCA8A04);
+
+  /// The deep navy sweep behind the sign-in header and the tab screen bars.
+  static const midnightGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF020617), Color(0xFF0B1730)],
+  );
   static const midnight = Color(0xFF020617);
   static const danger = Color(0xFFDC2626);
   static const success = Color(0xFF15803D);
@@ -19,6 +25,11 @@ class AppTheme {
     stops: [0.0, 0.45, 1.0],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
+  );
+
+  static const _zoom = ZoomPageTransitionsBuilder(
+    allowSnapshotting: false,
+    allowEnterRouteSnapshotting: false,
   );
 
   static ThemeData light() => _build(AppColors.light, Brightness.light);
@@ -55,15 +66,18 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: colors.surface,
       extensions: [colors],
-      // A forward fade-and-slide on Android and the native push on iOS; the
-      // default zoom reads as a system dialog rather than a step in a flow.
+      // The zoom transition on every platform, so a push feels the same
+      // wherever the app runs. No snapshotting: capturing the routes to a
+      // texture first swallows the whole 300ms on a cold push (and the map's
+      // platform view cannot be captured at all), so the push looked like a
+      // cut while the pop animated.
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.android: _zoom,
+          TargetPlatform.iOS: _zoom,
+          TargetPlatform.linux: _zoom,
+          TargetPlatform.macOS: _zoom,
+          TargetPlatform.windows: _zoom,
         },
       ),
     );
@@ -289,11 +303,11 @@ class AppColors extends ThemeExtension<AppColors> {
 
   /// Gold for text and icons: darker on white for contrast, the logo gold on midnight.
   final Color accent;
-  
+
   /// The road route on a map. Blue because that is what a route line is
   /// everywhere; the brand's gold stays off the map.
   final Color route;
-  
+
   /// The pickup on a map: green, the colour every map uses for "start".
   final Color start;
 

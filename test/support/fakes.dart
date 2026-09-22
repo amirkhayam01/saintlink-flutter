@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:saints_link/src/core/api_client.dart';
 import 'package:saints_link/src/core/api_exception.dart';
 import 'package:saints_link/src/domain/booking.dart';
 import 'package:saints_link/src/domain/customer.dart';
@@ -6,6 +7,7 @@ import 'package:saints_link/src/domain/page_meta.dart';
 import 'package:saints_link/src/domain/payment_sheet_details.dart';
 import 'package:saints_link/src/domain/place.dart';
 import 'package:saints_link/src/domain/quote.dart';
+import 'package:saints_link/src/core/token_store.dart';
 import 'package:saints_link/src/domain/vehicle_category.dart';
 import 'package:saints_link/src/features/auth/auth_repository.dart';
 import 'package:saints_link/src/features/booking/booking_repository.dart';
@@ -239,4 +241,47 @@ class FakePaymentService implements PaymentService {
 
     return outcome;
   }
+}
+
+/// A whole-app boot with no network: vehicle categories from the fixture,
+/// every other request an error, and no token on disk.
+class PreviewApi implements ApiClient {
+  final calls = <String>[];
+  @override
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, dynamic>? query,
+  }) async {
+    calls.add(path);
+    if (path == '/vehicle-categories') return loadFixture('vehicle_categories');
+    throw StateError('Unexpected API request: $path');
+  }
+
+  @override
+  Future<Map<String, dynamic>> post(String path, {Object? body}) async {
+    calls.add(path);
+    throw StateError('Unexpected API write: $path');
+  }
+
+  @override
+  Future<Map<String, dynamic>> patch(String path, {Object? body}) async {
+    calls.add(path);
+    throw StateError('Unexpected API write: $path');
+  }
+
+  @override
+  Future<Map<String, dynamic>> delete(String path) async {
+    calls.add(path);
+    throw StateError('Unexpected API write: $path');
+  }
+}
+
+class PreviewTokens implements TokenStore {
+  int writes = 0;
+  @override
+  Future<String?> read() async => null;
+  @override
+  Future<void> write(String token) async => writes++;
+  @override
+  Future<void> clear() async {}
 }

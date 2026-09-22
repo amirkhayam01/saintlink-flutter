@@ -164,6 +164,8 @@ void main() {
     // otherwise; these pictures exist to be looked at, so shadows are real.
     debugDisableShadows = false;
     await loadFonts();
+    tester.platformDispatcher.localeTestValue = const Locale('en', 'GB');
+    addTearDown(tester.platformDispatcher.clearLocaleTestValue);
     tester.view.physicalSize = Size(1179, tall ? 4400 : 2556);
     tester.view.devicePixelRatio = 3;
     final c = container(recents: recents);
@@ -329,6 +331,26 @@ void main() {
               ),
             );
       },
+    ),
+  );
+  // No date yet: the field is the loud one, and the button says what to do.
+  testWidgets(
+    'journey when, no date',
+    (t) => shot(
+      t,
+      'journey_when_no_date',
+      const JourneyScreen(),
+      prime: (c) async {
+        c
+            .read(bookingFlowProvider.notifier)
+            .updateJourney(
+              (j) => j.copyWith(
+                pickup: quotableJourney.pickup,
+                dropoff: quotableJourney.dropoff,
+              ),
+            );
+      },
+      act: (t) => t.tap(find.text('Continue')),
     ),
   );
   testWidgets(

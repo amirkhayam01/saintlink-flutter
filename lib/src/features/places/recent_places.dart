@@ -6,18 +6,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/providers.dart';
 import '../../domain/place.dart';
 import '../auth/auth_controller.dart';
-import '../auth/demo_session.dart';
+import 'recent_places_storage.dart';
 
 /// The last few located places the customer chose, kept on the device.
 class RecentPlaces extends AsyncNotifier<List<PlaceSelection>> {
-  static const _key = 'saints_link.recent_places';
   static const _limit = 5;
 
   @override
   Future<List<PlaceSelection>> build() async {
+    // Never surface one person's saved addresses while this device is signed
+    // out, or before a different customer has restored their session.
+    if (!ref.watch(authControllerProvider.select((auth) => auth.isSignedIn))) {
+      return const [];
+    }
+
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getStringList(_key) ?? const [];
+      final raw = prefs.getStringList(recentPlacesStorageKey) ?? const [];
 
       return raw
           .map(
@@ -32,7 +37,9 @@ class RecentPlaces extends AsyncNotifier<List<PlaceSelection>> {
   }
 
   Future<void> remember(PlaceSelection place) async {
-    if (!place.isLocated) return;
+    if (!place.isLocated || !ref.read(authControllerProvider).isSignedIn) {
+      return;
+    }
 
     final current = state.value ?? const [];
     final next = [
@@ -46,7 +53,7 @@ class RecentPlaces extends AsyncNotifier<List<PlaceSelection>> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(
-        _key,
+        recentPlacesStorageKey,
         next.map((p) => jsonEncode(p.toJson())).toList(),
       );
     } catch (_) {
@@ -66,9 +73,6 @@ final customerPlacesProvider = FutureProvider<List<PlaceSelection>>((
     return const [];
   }
 
-  // A preview session is signed in without a server behind it.
-  if (ref.watch(demoSessionProvider) != null) return const [];
-
   try {
     return await ref.watch(placesRepositoryProvider).recent();
   } catch (_) {
@@ -79,6 +83,9 @@ final customerPlacesProvider = FutureProvider<List<PlaceSelection>>((
 
 /// What "Recent" shows: the server's list first, then device recents it has not seen.
 final goAgainPlacesProvider = Provider<List<PlaceSelection>>((ref) {
+  if (!ref.watch(authControllerProvider.select((auth) => auth.isSignedIn))) {
+    return const [];
+  }
   final synced =
       ref.watch(customerPlacesProvider).value ?? const <PlaceSelection>[];
   final local =

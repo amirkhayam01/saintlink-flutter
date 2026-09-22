@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/content.dart';
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
-import '../../domain/place.dart';
+import '../places/known_places.dart';
 import '../../widgets/common.dart';
 import '../../widgets/hero_banner.dart';
 import '../../widgets/tiles.dart';
@@ -15,77 +15,37 @@ import '../booking/booking_flow_controller.dart';
 enum ServiceKind {
   airport(
     title: 'Airport transfers',
-    lead: 'Stress-free transfers to and from every major UK airport. We track your flight and meet you in arrivals.',
     image: 'assets/brand/hero-airport.webp',
     listTitle: 'Airports we serve',
     listSubtitle: 'From Southampton, one way, saloon car. Your quote is exact.',
     destinations: Content.airports,
     icon: Icons.flight_takeoff_rounded,
-    promises: [
-      (
-        icon: Icons.flight_land,
-        label: 'Flight tracked',
-        caption: 'Pickup moves with delays',
-      ),
-      (
-        icon: Icons.waving_hand_outlined,
-        label: 'Meet & greet',
-        caption: 'Name board in arrivals',
-      ),
-      (
-        icon: Icons.hourglass_bottom,
-        label: '45 min waiting',
-        caption: 'Included after landing',
-      ),
-    ],
   ),
   cruise(
     title: 'Cruise terminal transfers',
-    lead: 'Door to ship and ship to door, timed to embarkation. We know every Southampton terminal and where to drop you.',
     image: 'assets/brand/hero-cruise.webp',
     listTitle: 'Terminals we serve',
     listSubtitle:
         'From Southampton Central, one way, saloon car. Your quote is exact.',
     destinations: Content.cruiseTerminals,
     icon: Icons.directions_boat_filled_rounded,
-    promises: [
-      (
-        icon: Icons.luggage_outlined,
-        label: 'Luggage help',
-        caption: 'To the porters\' desk',
-      ),
-      (
-        icon: Icons.schedule,
-        label: 'Timed to sailing',
-        caption: 'Never a rush at the port',
-      ),
-      (
-        icon: Icons.groups_outlined,
-        label: 'Up to 8 seats',
-        caption: 'Minibus for the whole party',
-      ),
-    ],
   );
 
   const ServiceKind({
     required this.title,
-    required this.lead,
     required this.image,
     required this.listTitle,
     required this.listSubtitle,
     required this.destinations,
     required this.icon,
-    required this.promises,
   });
 
   final String title;
-  final String lead;
   final String image;
   final String listTitle;
   final String listSubtitle;
   final List<Destination> destinations;
   final IconData icon;
-  final List<({IconData icon, String label, String? caption})> promises;
 }
 
 class ServiceScreen extends ConsumerWidget {
@@ -95,69 +55,62 @@ class ServiceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colors = context.colors;
-
     void quoteFor(Destination? destination) {
       ref
           .read(bookingFlowProvider.notifier)
           .updateJourney(
             (j) => j.copyWith(
-              pickup: j.pickup.isEmpty
-                  ? const PlaceSelection(address: 'Southampton, UK')
-                  : j.pickup,
               dropoff: destination == null
                   ? j.dropoff
-                  : PlaceSelection(address: destination.address),
+                  : KnownPlaces.resolve(destination.address),
             ),
           );
       context.push('/book');
     }
 
     return Scaffold(
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: HeroPage(
-              hero: HeroBanner(
-                image: AssetImage(kind.image),
-                height: 240,
-                bottomInset: OverlapSheet.overlap,
-                title: kind.title,
-                showBack: true,
-              ),
-              sheet: OverlapSheet(
-                padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      kind.lead,
-                      style: TextStyle(
-                        fontSize: 15,
-                        height: 1.45,
-                        color: colors.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    BadgeRow(items: kind.promises),
-                    const SizedBox(height: 28),
-                    SectionTitle(kind.listTitle, subtitle: kind.listSubtitle),
-                    const SizedBox(height: 14),
-                    for (final destination in kind.destinations) ...[
-                      _DestinationRow(
-                        destination: destination,
-                        icon: kind.icon,
-                        onTap: () => quoteFor(destination),
-                      ),
-                      const SizedBox(height: 10),
+      body: RefreshIndicator(
+        color: context.colors.accent,
+        backgroundColor: context.colors.card,
+        edgeOffset: MediaQuery.paddingOf(context).top,
+        onRefresh: () => ref
+            .read(bookingFlowProvider.notifier)
+            .loadVehicles(force: true)
+            .catchError((_) {}),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: HeroPage(
+                hero: HeroBanner(
+                  image: AssetImage(kind.image),
+                  height: 240,
+                  bottomInset: OverlapSheet.overlap,
+                  title: kind.title,
+                  showBack: true,
+                ),
+                sheet: OverlapSheet(
+                  padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SectionTitle(kind.listTitle, subtitle: kind.listSubtitle),
+                      const SizedBox(height: 14),
+                      for (final destination in kind.destinations) ...[
+                        _DestinationRow(
+                          destination: destination,
+                          icon: kind.icon,
+                          onTap: () => quoteFor(destination),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: BottomAction(
         child: FilledButton(

@@ -6,6 +6,7 @@ import '../../core/env.dart';
 import '../../core/theme.dart';
 import '../../core/links.dart';
 import '../../widgets/common.dart';
+import '../../widgets/phone_field.dart';
 import '../../widgets/tiles.dart';
 import '../auth/auth_controller.dart';
 import 'booking_flow_controller.dart';
@@ -23,7 +24,7 @@ class DetailsStage extends ConsumerStatefulWidget {
 class DetailsStageState extends ConsumerState<DetailsStage> {
   final _form = GlobalKey<FormState>();
   late final TextEditingController _name;
-  late final TextEditingController _phone;
+  late final PhoneController _phone;
   late final TextEditingController _email;
   final _notes = TextEditingController();
   late final TextEditingController _flight;
@@ -34,7 +35,7 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
     super.initState();
     final customer = ref.read(authControllerProvider).customer;
     _name = TextEditingController(text: customer?.name ?? '');
-    _phone = TextEditingController(text: customer?.phone ?? '');
+    _phone = PhoneController(initial: customer?.phone ?? '');
     _email = TextEditingController(text: customer?.email ?? '');
     final journey = ref.read(bookingFlowProvider).journey;
     _flight = TextEditingController(text: journey.outboundFlightNumber ?? '');
@@ -59,13 +60,16 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
         .read(bookingFlowProvider.notifier)
         .confirmBooking(
           customerName: _name.text,
-          customerPhone: _phone.text,
+          customerPhone: _phone.e164,
           customerEmail: _email.text,
           specialInstructions: _notes.text,
         );
 
     if (booking != null && mounted) {
-      context.go('/book/confirmed');
+      // Pushed, like the form itself was. A `go` here rebuilds the stack from
+      // the URL, which gives the form a new page key: the old form is
+      // disposed, and its dispose resets the flow, booking included.
+      context.push('/book/confirmed');
     }
   }
 
@@ -80,6 +84,83 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // For an airport trip the flight comes first: it is what the driver
+          // needs most and the easiest thing to forget, so it is the first
+          // thing on screen, before the details the customer never forgets.
+          if (journey.touchesAirport) ...[
+            const SectionTitle(
+              'Your flight',
+              subtitle: 'So your driver can track delays and meet you on time.',
+            ),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const FieldLabel('Flight number', optional: true),
+                      TextFormField(
+                        controller: _flight,
+                        textCapitalization: TextCapitalization.characters,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. BA123',
+                          prefixIcon: const Icon(
+                            Icons.flight_takeoff,
+                            size: 20,
+                          ),
+                          errorText:
+                              fieldError['outbound_flight_number']?.first,
+                        ),
+                        validator: (value) {
+                          final text = (value ?? '').trim().toUpperCase();
+                          if (text.isEmpty) return null;
+                          return RegExp(r'^[A-Z0-9]{2,4}\s?\d{1,4}[A-Z]?$')
+                                      .hasMatch(text) &&
+                                  text.length <= 20
+                              ? null
+                              : 'Please enter a valid flight number';
+                        },
+                        onChanged: (value) => ref
+                            .read(bookingFlowProvider.notifier)
+                            .updateFlightDetails(
+                              flightNumber: value.trim().toUpperCase(),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const FieldLabel('Terminal', optional: true),
+                      TextFormField(
+                        controller: _terminal,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. T5',
+                          errorText: fieldError['outbound_terminal']?.first,
+                        ),
+                        validator: (value) => (value ?? '').trim().length > 100
+                            ? 'Terminal is too long'
+                            : null,
+                        onChanged: (value) => ref
+                            .read(bookingFlowProvider.notifier)
+                            .updateFlightDetails(terminal: value.trim()),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
           const SectionTitle('Lead passenger'),
           const SizedBox(height: 14),
           const FieldLabel('Full name'),
@@ -97,18 +178,10 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
           ),
           const SizedBox(height: 14),
           const FieldLabel('Mobile number'),
-          TextFormField(
+          PhoneField(
             controller: _phone,
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              hintText: '07700 900123',
-              prefixIcon: const Icon(Icons.phone_iphone, size: 20),
-              errorText: fieldError['customer_phone']?.first,
-            ),
-            validator: (v) => (v ?? '').trim().length < 10
-                ? 'Please enter a valid mobile number'
-                : null,
+            validate: true,
+            errorText: fieldError['customer_phone']?.first,
           ),
           const SizedBox(height: 14),
           const FieldLabel('Email', optional: true),
@@ -132,52 +205,6 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
             },
           ),
           const SizedBox(height: 24),
-          if (journey.touchesAirport) ...[
-            const SectionTitle('Flight details'),
-            const SizedBox(height: 14),
-            const FieldLabel('Flight number', optional: true),
-            TextFormField(
-              controller: _flight,
-              textCapitalization: TextCapitalization.characters,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                hintText: 'e.g. BA123',
-                prefixIcon: const Icon(Icons.flight_takeoff, size: 20),
-                errorText: fieldError['outbound_flight_number']?.first,
-              ),
-              validator: (value) {
-                final text = (value ?? '').trim().toUpperCase();
-                if (text.isEmpty) return null;
-                return RegExp(r'^[A-Z0-9]{2,4}\s?\d{1,4}[A-Z]?$')
-                            .hasMatch(text) &&
-                        text.length <= 20
-                    ? null
-                    : 'Please enter a valid flight number';
-              },
-              onChanged: (value) => ref
-                  .read(bookingFlowProvider.notifier)
-                  .updateFlightDetails(
-                    flightNumber: value.trim().toUpperCase(),
-                  ),
-            ),
-            const SizedBox(height: 14),
-            const FieldLabel('Terminal', optional: true),
-            TextFormField(
-              controller: _terminal,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                hintText: 'e.g. T5',
-                errorText: fieldError['outbound_terminal']?.first,
-              ),
-              validator: (value) => (value ?? '').trim().length > 100
-                  ? 'Terminal is too long'
-                  : null,
-              onChanged: (value) => ref
-                  .read(bookingFlowProvider.notifier)
-                  .updateFlightDetails(terminal: value.trim()),
-            ),
-            const SizedBox(height: 24),
-          ],
           const SectionTitle('For your driver'),
           const SizedBox(height: 14),
           const FieldLabel('Notes', optional: true),
@@ -192,6 +219,10 @@ class DetailsStageState extends ConsumerState<DetailsStage> {
               required isFocused,
               maxLength,
             }) => null,
+            // The last field: Done drops the keyboard, and with it the
+            // confirm button comes back into view.
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
             decoration: const InputDecoration(
               hintText: 'Add a note for your driver',
               prefixIcon: Padding(

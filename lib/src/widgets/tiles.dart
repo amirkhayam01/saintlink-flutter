@@ -122,7 +122,7 @@ class SegmentedTabs extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark ? colors.card : colors.inkFaint.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(999),
@@ -136,7 +136,7 @@ class SegmentedTabs extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 7),
                   decoration: BoxDecoration(
                     color: i == index
                         ? (isDark ? AppTheme.brand : AppTheme.midnight)
@@ -159,54 +159,6 @@ class SegmentedTabs extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// Three side-by-side promises under a hero or a form.
-class BadgeRow extends StatelessWidget {
-  const BadgeRow({super.key, required this.items});
-
-  final List<({IconData icon, String label, String? caption})> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final item in items)
-          Expanded(
-            child: Column(
-              children: [
-                IconDisc(item.icon, size: 46),
-                const SizedBox(height: 8),
-                Text(
-                  item.label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: colors.ink,
-                  ),
-                ),
-                if (item.caption != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    item.caption!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: colors.inkMuted,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-      ],
     );
   }
 }

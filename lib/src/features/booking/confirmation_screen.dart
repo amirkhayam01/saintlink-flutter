@@ -7,7 +7,7 @@ import '../../core/formatting.dart';
 import '../../core/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/inner_screen_header.dart';
-import '../../widgets/ticket_card.dart';
+import '../../widgets/booking_summary.dart';
 import '../auth/auth_controller.dart';
 import '../payment/payment_controller.dart';
 import '../payment/payment_service.dart';
@@ -50,22 +50,21 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
 
     final payment = ref.watch(paymentControllerProvider(booking.reference));
 
+    void leave(String location) {
+      ref.read(bookingFlowProvider.notifier).reset();
+      context.go(location);
+    }
+
     return PopScope(
       canPop: false,
       child: Scaffold(
         appBar: const InnerScreenHeader(title: 'Your booking', showBack: false),
         body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          padding: const EdgeInsets.fromLTRB(18, 24, 18, 28),
           children: [
             _ConfirmedHero(booking: booking, paid: payment.isPaid),
-            const SizedBox(height: 22),
-            TicketCard(
-              booking: booking,
-              headline: payment.isPaid
-                  ? 'Paid and booked'
-                  : 'Thanks — we have your booking',
-              paidOverride: payment.isPaid,
-            ),
+            const SizedBox(height: 28),
+            BookingSummary(booking: booking, paidOverride: payment.isPaid),
             const SizedBox(height: 20),
             _NextSteps(
               booking: booking,
@@ -76,40 +75,42 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
               const SizedBox(height: 12),
               ErrorNotice(payment.error!),
             ],
-          ],
-        ),
-        bottomNavigationBar: BottomAction(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (booking.canPay && !payment.isPaid) ...[
-                FilledButton(
-                  onPressed: payment.isPaying ? null : () => _pay(booking),
-                  child: payment.isPaying
-                      ? const ButtonSpinner()
-                      : Text(
-                          'Pay ${Formatting.money(booking.totalAmount, booking.currency)} now',
-                        ),
-                ),
-                const SizedBox(height: 8),
-              ],
-              OutlinedButton(
-                onPressed: () {
-                  ref.read(bookingFlowProvider.notifier).reset();
-                  context.go(signedIn ? '/trips' : '/');
-                },
-                child: Text(signedIn ? 'View my trips' : 'Done'),
-              ),
-              if (signedIn)
-                TextButton(
-                  onPressed: () {
-                    ref.read(bookingFlowProvider.notifier).reset();
-                    context.go('/');
-                  },
+            if (signedIn) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => leave('/'),
                   child: const Text('Back to home'),
                 ),
+              ),
             ],
-          ),
+          ],
+        ),
+        // One primary action: pay while it is due, otherwise on to the trips.
+        bottomNavigationBar: BottomAction(
+          child: booking.canPay && !payment.isPaid
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FilledButton(
+                      onPressed: payment.isPaying ? null : () => _pay(booking),
+                      child: payment.isPaying
+                          ? const ButtonSpinner()
+                          : Text(
+                              'Pay ${Formatting.money(booking.totalAmount, booking.currency)} now',
+                            ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: () => leave(signedIn ? '/trips' : '/'),
+                      child: Text(signedIn ? 'Pay later' : 'Done'),
+                    ),
+                  ],
+                )
+              : FilledButton(
+                  onPressed: () => leave(signedIn ? '/trips' : '/'),
+                  child: Text(signedIn ? 'View my trips' : 'Done'),
+                ),
         ),
       ),
     );
@@ -153,9 +154,9 @@ class _ConfirmedHero extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         Text(
-          paid ? 'Paid and booked!' : 'Booking confirmed!',
+          paid ? 'Paid and booked' : 'Booking confirmed',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium,
         ),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
@@ -43,11 +44,32 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   /// The sheet's height as a fraction of the body, as it moves. Only the map
   /// listens, so a drag rebuilds the map and nothing else.
   final _sheetExtent = ValueNotifier<double>(0.56);
+  GoogleMapController? _map;
+  // Read up front: `ref` is off limits by the time dispose runs.
+  late final BookingFlowController _booking;
+
+  Future<void> _centreOnMe() async {
+    final map = _map;
+    if (map == null) return;
+    try {
+      final fix = await ref.read(locationSourceProvider).current();
+      await map.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(fix.latitude, fix.longitude), 15),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your location is not available.')),
+      );
+    }
+  }
+
   final _details = GlobalKey<DetailsStageState>();
 
   @override
   void initState() {
     super.initState();
+    _booking = ref.read(bookingFlowProvider.notifier);
     _prefillPickup();
     _syncTicker();
   }
@@ -56,12 +78,37 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   void dispose() {
     _ticker?.cancel();
     _sheetExtent.dispose();
+    // Leaving the form ends the draft, whichever way out was taken: the
+    // back button, the system gesture, or Done on the confirmation. Presets
+    // from Home are applied before the next push, so they survive this.
+    // After the frame: providers cannot change while the tree is torn down.
+    final booking = _booking;
+    WidgetsBinding.instance.addPostFrameCallback((_) => booking.endDraft());
     super.dispose();
   }
 
   /// As high as the sheet may go: just under the buttons floating over the
   /// map. Set from the layout, since it depends on the status bar.
   double _maxExtent = 0.9;
+
+  /// The pickup picker, opened from the button as well as from the field.
+  Future<void> _pickPickupTime(JourneyDraft journey) async {
+    final value = await showJourneyDateTimeSheet(
+      context,
+      title: 'Pickup date & time',
+      minimum: DateTime.now(),
+      initial: journey.pickupDateTime,
+    );
+    if (value == null || !mounted) return;
+    ref
+        .read(bookingFlowProvider.notifier)
+        .updateJourney(
+          (j) => j.copyWith(
+            pickupDate: DateUtils.dateOnly(value),
+            pickupTime: TimeOfDay.fromDateTime(value),
+          ),
+        );
+  }
 
   void _go(JourneyStage stage) {
     setState(() => _stage = stage);
@@ -130,6 +177,9 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
       JourneyStage.details => () => _go(JourneyStage.vehicles),
     };
     final topInset = MediaQuery.paddingOf(context).top;
+    // Read here, above the Scaffold: it hands its body a MediaQuery with
+    // the keyboard inset already taken out.
+    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return Scaffold(
       // The map is the ground for the whole booking: it runs under the
@@ -149,23 +199,35 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                   regionWhenEmpty: true,
                   topPadding: (topInset + 64).round(),
                   bottomPadding: extent * constraints.maxHeight,
+                  onMapCreated: (map) => _map = map,
+                ),
+              ),
+              // Back on the left; on the right, my location with the reset
+              // beneath it, so the more frequent tap is the higher one.
+              Positioned(
+                top: topInset + 10,
+                left: 14,
+                child: HeroIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  semanticLabel: 'Back',
+                  onPressed: onBack,
                 ),
               ),
               Positioned(
                 top: topInset + 10,
-                left: 14,
                 right: 14,
-                child: Row(
+                child: Column(
                   children: [
-                    HeroIconButton(
-                      icon: Icons.arrow_back_rounded,
-                      semanticLabel: 'Back',
-                      onPressed: onBack,
-                    ),
-                    const Spacer(),
+                    if (ref.watch(locationGrantedProvider).value ?? false)
+                      HeroIconButton(
+                        icon: Icons.my_location_rounded,
+                        semanticLabel: 'My location',
+                        onPressed: _centreOnMe,
+                      ),
                     if (!journey.pickup.isEmpty ||
                         !journey.dropoff.isEmpty ||
-                        journey.pickupDate != null)
+                        journey.pickupDate != null) ...[
+                      const SizedBox(height: 10),
                       HeroIconButton(
                         icon: Icons.restart_alt_rounded,
                         semanticLabel: 'Clear journey',
@@ -174,6 +236,7 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                           _go(JourneyStage.route);
                         },
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -245,64 +308,84 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                             ],
                           ),
                         ),
-                        BottomAction(
-                          verticalPadding: 8,
-                          child: switch (stage) {
-                            JourneyStage.route => FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48),
+                        // While the keyboard is up only the first fields
+                        // show, and a confirm button right above the keys
+                        // invites booking before the flight or notes were
+                        // ever seen. Next/Done on the keys walk the form;
+                        // the button returns when the keyboard goes.
+                        if (stage != JourneyStage.details || !keyboardUp)
+                          BottomAction(
+                            verticalPadding: 8,
+                            child: switch (stage) {
+                              JourneyStage.route => FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                onPressed: journey.hasRoute
+                                    ? () => _go(JourneyStage.when)
+                                    : null,
+                                child: const Text('Continue'),
                               ),
-                              onPressed: journey.hasRoute
-                                  ? () => _go(JourneyStage.when)
-                                  : null,
-                              child: const Text('Continue'),
-                            ),
-                            JourneyStage.when => FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48),
-                              ),
-                              onPressed: journey.isQuotable && !state.isQuoting
-                                  ? () async {
-                                      if (await controller.requestQuote() &&
-                                          mounted) {
-                                        _go(JourneyStage.vehicles);
+                              // With no pickup time yet the button says so and
+                              // opens the picker itself, instead of sitting
+                              // greyed out with nothing to explain why.
+                              JourneyStage.when when !journey.hasPickupTime =>
+                                FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(48),
+                                  ),
+                                  onPressed: () => _pickPickupTime(journey),
+                                  child: const Text(
+                                    'Choose a date to see prices',
+                                  ),
+                                ),
+                              JourneyStage.when => FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                onPressed:
+                                    journey.isQuotable && !state.isQuoting
+                                    ? () async {
+                                        if (await controller.requestQuote() &&
+                                            mounted) {
+                                          _go(JourneyStage.vehicles);
+                                        }
                                       }
-                                    }
-                                  : null,
-                              child: state.isQuoting
-                                  ? const ButtonSpinner()
-                                  : const Text('See prices'),
-                            ),
-                            JourneyStage.vehicles => FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48),
+                                    : null,
+                                child: state.isQuoting
+                                    ? const ButtonSpinner()
+                                    : const Text('See prices'),
                               ),
-                              onPressed: canContinue
-                                  ? () => _go(JourneyStage.details)
-                                  : null,
-                              child: Text(
-                                canContinue
-                                    ? 'Continue · ${Formatting.money(state.totalDue!)}'
-                                    : 'Select a vehicle',
+                              JourneyStage.vehicles => FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                onPressed: canContinue
+                                    ? () => _go(JourneyStage.details)
+                                    : null,
+                                child: Text(
+                                  canContinue
+                                      ? 'Continue · ${Formatting.money(state.totalDue!)}'
+                                      : 'Select a vehicle',
+                                ),
                               ),
-                            ),
-                            JourneyStage.details => FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(48),
+                              JourneyStage.details => FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                onPressed: state.isBooking
+                                    ? null
+                                    : () => _details.currentState?.submit(),
+                                child: state.isBooking
+                                    ? const ButtonSpinner()
+                                    : Text(
+                                        state.totalDue == null
+                                            ? 'Confirm booking'
+                                            : 'Confirm booking · ${Formatting.money(state.totalDue!)}',
+                                      ),
                               ),
-                              onPressed: state.isBooking
-                                  ? null
-                                  : () => _details.currentState?.submit(),
-                              child: state.isBooking
-                                  ? const ButtonSpinner()
-                                  : Text(
-                                      state.totalDue == null
-                                          ? 'Confirm booking'
-                                          : 'Confirm booking · ${Formatting.money(state.totalDue!)}',
-                                    ),
-                            ),
-                          },
-                        ),
+                            },
+                          ),
                       ],
                     ),
                   ),
@@ -719,8 +802,28 @@ class _JourneyDateTimeField extends StatelessWidget {
               },
               child: InputDecorator(
                 isEmpty: !complete,
+                // Unset, the field is the next thing to do and reads like
+                // it: tinted, edged in the accent, the prompt in ink. The
+                // black switch and steppers below no longer outweigh it.
+                // Chosen, it settles into an ordinary field.
                 decoration: InputDecoration(
                   hintText: 'Choose a date and time',
+                  hintStyle: complete
+                      ? null
+                      : TextStyle(
+                          color: colors.ink,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  fillColor: complete ? null : colors.tint,
+                  enabledBorder: complete
+                      ? null
+                      : OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: colors.accent,
+                            width: 1.5,
+                          ),
+                        ),
                   prefixIcon: Icon(
                     Icons.calendar_month_outlined,
                     size: 21,
@@ -729,7 +832,7 @@ class _JourneyDateTimeField extends StatelessWidget {
                   suffixIcon: Icon(
                     Icons.expand_more_rounded,
                     size: 18,
-                    color: colors.inkMuted,
+                    color: complete ? colors.inkMuted : colors.accent,
                   ),
                 ),
                 child: Text(

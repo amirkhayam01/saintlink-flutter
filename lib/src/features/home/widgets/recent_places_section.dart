@@ -6,8 +6,10 @@ import '../../../domain/place.dart';
 import '../../places/recent_places.dart';
 import '../../../widgets/common.dart';
 import '../../../widgets/list_row.dart';
+import '../../auth/auth_controller.dart';
 
-/// The places this customer keeps going back to. Hidden with no history: the chips above already offer every shortcut.
+/// Personal history belongs only to a signed-in returning customer. New and
+/// signed-out customers move directly from search to the service choices.
 class RecentPlacesSection extends ConsumerWidget {
   const RecentPlacesSection({
     super.key,
@@ -24,14 +26,17 @@ class RecentPlacesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isSignedIn = ref.watch(
+      authControllerProvider.select((auth) => auth.isSignedIn),
+    );
     final places = ref.watch(goAgainPlacesProvider).take(_maxRows).toList();
 
-    if (places.isEmpty) return const SizedBox.shrink();
+    if (!isSignedIn || places.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionTitle('Recent'),
+        const SectionTitle('Recent destinations'),
         const SizedBox(height: 4),
         for (final place in places)
           ListRow(

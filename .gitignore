@@ -56,3 +56,8 @@ android/.kotlin/
 
 # Native map keys, per developer. Never committed.
 ios/Flutter/Secrets.xcconfig
+android/key.properties
+android/upload-keystore.jks
+
+# Gradle output under android/, like /build/ at the root.
+android/build/

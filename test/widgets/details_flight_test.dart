@@ -47,6 +47,9 @@ void main() {
         ],
       );
       addTearDown(router.dispose);
+      // A British phone, so the number field offers +44.
+      tester.platformDispatcher.localeTestValue = const Locale('en', 'GB');
+      addTearDown(tester.platformDispatcher.clearLocaleTestValue);
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -59,7 +62,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(field('e.g. Ada Lovelace'), 'Ada Lovelace');
       await tester.scrollUntilVisible(
-        field('07700 900123'),
+        field('7700 900123'),
         150,
         scrollable: find
             .descendant(
@@ -69,7 +72,8 @@ void main() {
             .first,
       );
       await tester.pumpAndSettle();
-      await tester.enterText(field('07700 900123'), '07700900123');
+      // Typed the British way, with the trunk zero; sent as +44.
+      await tester.enterText(field('7700 900123'), '07700 900123');
       await tester.scrollUntilVisible(
         field('e.g. BA123'),
         200,
@@ -108,6 +112,10 @@ void main() {
         'BA123',
       );
       expect(repository.bookingRequests.single['outbound_terminal'], 'T5');
+      expect(
+        repository.bookingRequests.single['customer_phone'],
+        '+447700900123',
+      );
       expect(repository.bookingRequests.single['quote_token'], quote!.token);
       expect(tester.takeException(), isNull);
     },
