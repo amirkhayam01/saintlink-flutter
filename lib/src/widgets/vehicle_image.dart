@@ -26,3 +26,14 @@ class VehicleImage extends StatelessWidget {
     );
   }
 }
+
+/// Bookings carry the vehicle's display name; the photo is found by its slug form.
+String vehicleSlugFor(String name) {
+  final lower = name.toLowerCase();
+  if (lower.contains('minibus')) return 'minibus-8';
+  if (lower.contains('mpv')) return 'mpv-6';
+  if (lower.contains('executive')) return 'executive-saloon';
+  if (lower.contains('estate')) return 'estate-car';
+
+  return 'saloon-car';
+}

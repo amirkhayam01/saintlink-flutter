@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_exception.dart';
 import '../../core/providers.dart';
 import '../../domain/customer.dart';
-import 'demo_session.dart';
+import '../places/recent_places_storage.dart';
 
 /// Who is signed in, if anyone.
 @immutable
@@ -57,18 +57,12 @@ class AuthController extends Notifier<AuthState> {
       // Only a rejected token ends the session; a network failure keeps it for next launch.
       if (error.isUnauthenticated) {
         await repository.signOut();
+        await clearStoredRecentPlaces();
       }
 
       if (revision != _sessionRevision) return;
       state = const AuthState.guest();
     }
-  }
-
-  void signInDemo() {
-    if (!kDebugMode) return;
-    _sessionRevision++;
-    final customer = ref.read(demoSessionProvider.notifier).start();
-    state = AuthState.signedIn(customer);
   }
 
   Future<void> completeSignIn(Customer customer) async {
@@ -79,6 +73,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> signOut() async {
     _sessionRevision++;
     await ref.read(authRepositoryProvider).signOut();
+    await clearStoredRecentPlaces();
     state = const AuthState.guest();
   }
 

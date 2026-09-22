@@ -21,16 +21,10 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
   /// The curved edge that begins the content below; off when the body is a map.
   final bool curvedEdge;
 
-  /// Brand gold gradient background for inner screen headers.
-  static Widget brandBackground() => const SizedBox.expand(
+  /// The midnight gradient from the sign-in header, for the tab screens.
+  static Widget midnightBackground() => const SizedBox.expand(
     child: DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppTheme.brand, AppTheme.brandDark],
-        ),
-      ),
+      decoration: BoxDecoration(gradient: AppTheme.midnightGradient),
     ),
   );
 
@@ -49,8 +43,8 @@ class InnerScreenHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveTitleColor =
-        titleColor ?? (background == null ? Colors.white : AppTheme.midnight);
+    // Every background here is dark, so the title defaults to white.
+    final effectiveTitleColor = titleColor ?? Colors.white;
 
     return AppBar(
       backgroundColor: background == null

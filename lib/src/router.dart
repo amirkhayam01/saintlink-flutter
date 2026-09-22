@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import 'features/auth/auth_controller.dart';
 import 'features/auth/sign_in_screen.dart';
-import 'features/booking/booking_flow_controller.dart';
 import 'features/booking/confirmation_screen.dart';
 import 'features/booking/journey_screen.dart';
 import 'features/home/home_screen.dart';
@@ -14,8 +13,15 @@ import 'features/services/service_screen.dart';
 import 'features/trips/trip_detail_screen.dart';
 import 'features/trips/trips_screen.dart';
 import 'widgets/app_shell.dart';
+import 'widgets/zoom_tab_container.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+
+/// go_router 18 only recognises `material_ui`'s MaterialApp, so left to its
+/// own devices it wraps our routes in NoTransitionPage. An explicit
+/// MaterialPage keeps the theme's zoom transition on every push.
+MaterialPage<void> _page(GoRouterState state, Widget child) =>
+    MaterialPage(key: state.pageKey, child: child);
 
 /// Rebuilds the router's redirect when sign-in state changes, without
 /// recreating the router and losing the navigation stack.
@@ -56,33 +62,46 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, navigationShell) {
           return AppShell(navigationShell: navigationShell);
+        },
+        // Like indexedStack, every tab keeps its state; unlike it, a switch
+        // zooms between tabs instead of cutting.
+        navigatorContainerBuilder: (context, navigationShell, children) {
+          return ZoomTabContainer(
+            index: navigationShell.currentIndex,
+            children: children,
+          );
         },
         branches: [
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/',
-                builder: (_, _) => const HomeScreen(),
+                pageBuilder: (_, state) => _page(state, const HomeScreen()),
                 routes: [
                   GoRoute(
                     path: 'services/airport',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, _) =>
-                        const ServiceScreen(kind: ServiceKind.airport),
+                    pageBuilder: (_, state) => _page(
+                      state,
+                      const ServiceScreen(kind: ServiceKind.airport),
+                    ),
                   ),
                   GoRoute(
                     path: 'services/cruise',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, _) =>
-                        const ServiceScreen(kind: ServiceKind.cruise),
+                    pageBuilder: (_, state) => _page(
+                      state,
+                      const ServiceScreen(kind: ServiceKind.cruise),
+                    ),
                   ),
                   GoRoute(
                     path: 'prices',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, _) => const PricesScreen(),
+                    pageBuilder: (_, state) =>
+                        _page(state, const PricesScreen()),
                   ),
                 ],
               ),
@@ -92,13 +111,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/trips',
-                builder: (_, _) => const TripsScreen(),
+                pageBuilder: (_, state) => _page(state, const TripsScreen()),
                 routes: [
                   GoRoute(
                     path: ':reference',
                     parentNavigatorKey: _rootNavigatorKey,
-                    builder: (_, state) => TripDetailScreen(
-                      reference: state.pathParameters['reference']!,
+                    pageBuilder: (_, state) => _page(
+                      state,
+                      TripDetailScreen(
+                        reference: state.pathParameters['reference']!,
+                      ),
                     ),
                   ),
                 ],
@@ -109,7 +131,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/profile',
-                builder: (_, _) => const ProfileScreen(),
+                pageBuilder: (_, state) => _page(state, const ProfileScreen()),
               ),
             ],
           ),
@@ -119,36 +141,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/book',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, _) => const JourneyScreen(),
+        pageBuilder: (_, state) => _page(state, const JourneyScreen()),
         routes: [
           GoRoute(
             path: 'confirmed',
             parentNavigatorKey: _rootNavigatorKey,
-            builder: (_, _) => const ConfirmationScreen(),
+            pageBuilder: (_, state) => _page(state, const ConfirmationScreen()),
           ),
         ],
       ),
       GoRoute(
         path: '/sign-in',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) =>
-            SignInScreen(redirectTo: state.uri.queryParameters['redirect']),
+        pageBuilder: (_, state) => _page(
+          state,
+          SignInScreen(redirectTo: state.uri.queryParameters['redirect']),
+        ),
       ),
     ],
   );
-  var previousPath = router.routeInformationProvider.value.uri.path;
-  void resetBookingOnHome() {
-    final path = router.routeInformationProvider.value.uri.path;
-    if (path == '/' && previousPath != '/') {
-      ref.read(bookingFlowProvider.notifier).reset();
-    }
-    previousPath = path;
-  }
-
-  router.routeInformationProvider.addListener(resetBookingOnHome);
-  ref.onDispose(() {
-    router.routeInformationProvider.removeListener(resetBookingOnHome);
-    router.dispose();
-  });
+  ref.onDispose(router.dispose);
   return router;
 });

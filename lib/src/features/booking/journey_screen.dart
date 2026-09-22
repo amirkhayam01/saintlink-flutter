@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/formatting.dart';
 import '../../core/theme.dart';
@@ -43,11 +44,32 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   /// The sheet's height as a fraction of the body, as it moves. Only the map
   /// listens, so a drag rebuilds the map and nothing else.
   final _sheetExtent = ValueNotifier<double>(0.56);
+  GoogleMapController? _map;
+  // Read up front: `ref` is off limits by the time dispose runs.
+  late final BookingFlowController _booking;
+
+  Future<void> _centreOnMe() async {
+    final map = _map;
+    if (map == null) return;
+    try {
+      final fix = await ref.read(locationSourceProvider).current();
+      await map.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(fix.latitude, fix.longitude), 15),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your location is not available.')),
+      );
+    }
+  }
+
   final _details = GlobalKey<DetailsStageState>();
 
   @override
   void initState() {
     super.initState();
+    _booking = ref.read(bookingFlowProvider.notifier);
     _prefillPickup();
     _syncTicker();
   }
@@ -56,6 +78,12 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   void dispose() {
     _ticker?.cancel();
     _sheetExtent.dispose();
+    // Leaving the form ends the draft, whichever way out was taken: the
+    // back button, the system gesture, or Done on the confirmation. Presets
+    // from Home are applied before the next push, so they survive this.
+    // After the frame: providers cannot change while the tree is torn down.
+    final booking = _booking;
+    WidgetsBinding.instance.addPostFrameCallback((_) => booking.reset());
     super.dispose();
   }
 
@@ -149,23 +177,35 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                   regionWhenEmpty: true,
                   topPadding: (topInset + 64).round(),
                   bottomPadding: extent * constraints.maxHeight,
+                  onMapCreated: (map) => _map = map,
+                ),
+              ),
+              // Back on the left; on the right, my location with the reset
+              // beneath it, so the more frequent tap is the higher one.
+              Positioned(
+                top: topInset + 10,
+                left: 14,
+                child: HeroIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  semanticLabel: 'Back',
+                  onPressed: onBack,
                 ),
               ),
               Positioned(
                 top: topInset + 10,
-                left: 14,
                 right: 14,
-                child: Row(
+                child: Column(
                   children: [
-                    HeroIconButton(
-                      icon: Icons.arrow_back_rounded,
-                      semanticLabel: 'Back',
-                      onPressed: onBack,
-                    ),
-                    const Spacer(),
+                    if (ref.watch(locationGrantedProvider).value ?? false)
+                      HeroIconButton(
+                        icon: Icons.my_location_rounded,
+                        semanticLabel: 'My location',
+                        onPressed: _centreOnMe,
+                      ),
                     if (!journey.pickup.isEmpty ||
                         !journey.dropoff.isEmpty ||
-                        journey.pickupDate != null)
+                        journey.pickupDate != null) ...[
+                      const SizedBox(height: 10),
                       HeroIconButton(
                         icon: Icons.restart_alt_rounded,
                         semanticLabel: 'Clear journey',
@@ -174,6 +214,7 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                           _go(JourneyStage.route);
                         },
                       ),
+                    ],
                   ],
                 ),
               ),

@@ -34,7 +34,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
       appBar: InnerScreenHeader(
         title: 'My trips',
         showBack: false,
-        background: InnerScreenHeader.brandBackground(),
+        background: InnerScreenHeader.midnightBackground(),
       ),
       body: Column(
         children: [

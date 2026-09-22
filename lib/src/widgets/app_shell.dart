@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/auth/demo_session.dart';
 import '../features/booking/map_warmup.dart';
 
 import 'package:go_router/go_router.dart';
@@ -128,23 +127,6 @@ class AppShell extends ConsumerWidget {
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
-                    ),
-                  ),
-                ),
-              if (ref.watch(demoSessionProvider) != null)
-                SafeArea(
-                  bottom: false,
-                  child: Container(
-                    width: double.infinity,
-                    color: context.colors.tint,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    child: Text(
-                      'Demo account · sample trips',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: context.colors.ink),
                     ),
                   ),
                 ),

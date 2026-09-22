@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -146,19 +145,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         slivers: [
           SliverToBoxAdapter(
             child: HeroPage(
-              hero: HeroBanner(
-                image: const AssetImage('assets/brand/hero-harbor.webp'),
-                height: 230,
-                bottomInset: OverlapSheet.overlap,
-                title: awaitingCode ? 'Enter your code' : 'Sign in',
+              hero: _AuthHero(
+                title: awaitingCode ? 'Enter your code' : 'Welcome back',
                 subtitle: awaitingCode
                     ? 'Sent to ${_sent!.maskedPhone}. It expires in a few minutes.'
-                    : 'We will text you a six-digit code. No password, nothing to remember.',
-                leading: HeroIconButton(
-                  icon: Icons.arrow_back,
-                  semanticLabel: 'Back',
-                  onPressed: back,
-                ),
+                    : 'Sign in with your mobile number to manage your journeys.',
+                onBack: back,
               ),
               sheet: OverlapSheet(
                 padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
@@ -282,23 +274,150 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ? const ButtonSpinner()
                   : Text(awaitingCode ? 'Sign in' : 'Send code'),
             ),
-            if (kDebugMode)
-              TextButton.icon(
-                onPressed: _busy
-                    ? null
-                    : () {
-                        FocusScope.of(context).unfocus();
-                        ref.read(authControllerProvider.notifier).signInDemo();
-                        context.go(widget.redirectTo ?? '/trips');
-                      },
-                icon: const Icon(Icons.person_outline, size: 18),
-                label: const Text('Demo login'),
-              ),
           ],
         ),
       ),
     );
   }
+}
+
+/// A compact, code-built auth header. It uses the real wordmark instead of a
+/// travel photo, keeping the sign-in task calm and recognisably Saints Link.
+class _AuthHero extends StatelessWidget {
+  const _AuthHero({
+    required this.title,
+    required this.subtitle,
+    required this.onBack,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top;
+    // Two rows with air between them: navigation and brand, then the message.
+    final fullHeight = 224.0 + topPadding;
+    // Centred in the same row as the back button, so it must clear that
+    // button (and its mirror on the right) on the narrowest phones.
+    final logoWidth = (MediaQuery.sizeOf(context).width * 0.42)
+        .clamp(150.0, 190.0)
+        .toDouble();
+
+    return SizedBox(
+      height: fullHeight - OverlapSheet.overlap,
+      child: OverflowBox(
+        alignment: Alignment.topCenter,
+        minHeight: fullHeight,
+        maxHeight: fullHeight,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const DecoratedBox(
+              decoration: BoxDecoration(gradient: AppTheme.midnightGradient),
+            ),
+            const Positioned.fill(child: CustomPaint(painter: _RouteMotif())),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                topPadding + 8,
+                24,
+                24 + OverlapSheet.overlap,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: 48,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/brand/logo-dark.png',
+                          width: logoWidth,
+                          fit: BoxFit.contain,
+                          semanticLabel: 'Saints Link',
+                        ),
+                        Positioned(
+                          // Optically align the arrow with the text edge below.
+                          left: -12,
+                          child: HeroIconButton(
+                            icon: Icons.arrow_back,
+                            semanticLabel: 'Back',
+                            onPressed: onBack,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      fontSize: 13.5,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RouteMotif extends CustomPainter {
+  const _RouteMotif();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width * 0.58, size.height + 10)
+      ..cubicTo(
+        size.width * 0.72,
+        size.height * 0.78,
+        size.width * 0.74,
+        size.height * 0.57,
+        size.width + 12,
+        size.height * 0.35,
+      );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppTheme.brand.withValues(alpha: 0.24)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawPath(
+      path.shift(const Offset(0, 10)),
+      Paint()
+        ..color = AppTheme.brand.withValues(alpha: 0.10)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RouteMotif oldDelegate) => false;
 }
 
 /// Six digit boxes over one invisible text field, so the keyboard, paste and

@@ -69,6 +69,6 @@
 	<key>GoogleMapsAPIKey</key>
 	<string>$(GOOGLE_MAPS_IOS_KEY)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Saints Link uses your location only when you tap “Use my current location”, to fill in your pickup address.</string>
+	<string>Saints Link uses your location to prefill your pickup address when the app opens, or when you choose “Use my current location”.</string>
 </dict>
 </plist>

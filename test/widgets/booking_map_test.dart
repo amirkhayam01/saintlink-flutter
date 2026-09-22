@@ -120,9 +120,9 @@ void main() {
     expect(map.scrollGesturesEnabled, isTrue);
     expect(map.liteModeEnabled, isFalse);
     expect(map.style, isNotNull);
-    // Granted already, so the "you are here" dot draws — and the button to
-    // recentre on it, since this is the map you can move.
+    // Granted already, so the "you are here" dot draws. The recentre button
+    // is the screen's own, placed with the other map buttons, not Google's.
     expect(map.myLocationEnabled, isTrue);
-    expect(map.myLocationButtonEnabled, isTrue);
+    expect(map.myLocationButtonEnabled, isFalse);
   });
 }

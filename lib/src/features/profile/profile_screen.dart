@@ -104,103 +104,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appBar: InnerScreenHeader(
         title: 'Account',
         showBack: false,
-        background: InnerScreenHeader.brandBackground(),
-        actions: [
-          IconButton(
-            tooltip: 'Edit profile',
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            onPressed: () => _openEditSheet(customer),
-          ),
-        ],
+        background: InnerScreenHeader.midnightBackground(),
+        contentHeight: _ProfileIdentity.height,
+        headerContent: _ProfileIdentity(
+          customer: customer,
+          onEdit: () => _openEditSheet(customer),
+        ),
       ),
       body: SafeArea(
         top: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 36),
           children: [
-            // ── Account Identity Card ──
-            Card(
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => _openEditSheet(customer),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 54,
-                        height: 54,
-                        alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.brand,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          _initials(customer),
-                          style: const TextStyle(
-                            color: AppTheme.midnight,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      // Details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              customer.name,
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: colors.ink,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              customer.email?.isNotEmpty == true
-                                  ? customer.email!
-                                  : 'No email added',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: colors.inkMuted,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              customer.phone.isNotEmpty
-                                  ? customer.phone
-                                  : customer.maskedPhone,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: colors.inkMuted,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Your number is how you sign in. To change it, '
-                              'sign out and sign in with the new one.',
-                              style: TextStyle(
-                                fontSize: 11,
-                                height: 1.3,
-                                color: colors.inkMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-
             // ── General Section ──
             const SectionTitle('General'),
             const SizedBox(height: 8),
@@ -369,6 +284,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
   }
+}
+
+/// Who is signed in, on the header itself: avatar, name and the two ways we
+/// reach them. Tapping any of it opens the edit sheet.
+class _ProfileIdentity extends StatelessWidget {
+  const _ProfileIdentity({required this.customer, required this.onEdit});
+
+  final Customer customer;
+  final VoidCallback onEdit;
+
+  static const height = 112.0;
 
   static String _initials(Customer customer) {
     final parts = [
@@ -376,6 +302,125 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       customer.lastName ?? '',
     ].where((p) => p.isNotEmpty).map((p) => p[0].toUpperCase()).take(2).join();
     return parts.isEmpty ? '?' : parts;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final email = customer.email?.isNotEmpty == true ? customer.email! : null;
+    final phone = customer.phone.isNotEmpty
+        ? customer.phone
+        : customer.maskedPhone;
+    final muted = Colors.white.withValues(alpha: 0.72);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
+          child: Row(
+            children: [
+              Container(
+                width: 68,
+                height: 68,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppTheme.brand,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    width: 3,
+                  ),
+                ),
+                child: Text(
+                  _initials(customer),
+                  style: const TextStyle(
+                    color: AppTheme.midnight,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      customer.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    _ContactLine(icon: Icons.phone_outlined, text: phone),
+                    const SizedBox(height: 3),
+                    _ContactLine(
+                      icon: Icons.mail_outline,
+                      text: email ?? 'Add an email for receipts',
+                      color: email == null ? AppTheme.brand : muted,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                  color: Colors.white,
+                  semanticLabel: 'Edit profile',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ContactLine extends StatelessWidget {
+  const _ContactLine({required this.icon, required this.text, this.color});
+
+  final IconData icon;
+  final String text;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? Colors.white.withValues(alpha: 0.72);
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: c),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: c,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -530,6 +575,17 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
                       : 'Please enter a valid email address';
                 },
                 onFieldSubmitted: (_) => _submit(),
+              ),
+
+              const SizedBox(height: 10),
+              Text(
+                'Your mobile number is how you sign in. To change it, sign '
+                'out and sign in with the new one.',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color: colors.inkMuted,
+                ),
               ),
 
               if (state.error != null) ...[

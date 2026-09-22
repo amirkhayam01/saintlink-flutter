@@ -61,7 +61,7 @@ class PopularFaresSection extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: gutter),
-          child: const SectionTitle('Popular fixed fares'),
+          child: const SectionTitle('Popular destinations'),
         ),
         const SizedBox(height: 12),
         SingleChildScrollView(

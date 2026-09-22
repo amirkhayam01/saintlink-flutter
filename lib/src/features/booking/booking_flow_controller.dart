@@ -230,8 +230,10 @@ class BookingFlowController extends Notifier<BookingFlowState> {
     }
   }
 
-  /// Start a fresh booking, keeping the fleet list.
+  /// Start a fresh booking, keeping the fleet list. Safe to call late, from
+  /// a screen going away as the whole app does.
   void reset() {
+    if (!ref.mounted) return;
     _resetGeneration++;
     state = BookingFlowState(vehicles: state.vehicles);
   }

@@ -123,21 +123,8 @@ class HomeScreen extends ConsumerWidget {
                               onSelect: (place) => presetAndBook(
                                 (j) => j.copyWith(dropoff: place),
                               ),
-                              spacingBelow: 18,
+                              spacingBelow: 24,
                             ),
-                            // The one explicit door into the full form, replacing the old Book tab.
-                            FilledButton.icon(
-                              onPressed: () {
-                                bookingController.reset();
-                                context.push('/book');
-                              },
-                              icon: const Icon(
-                                Icons.edit_calendar_outlined,
-                                size: 18,
-                              ),
-                              label: const Text('Plan a journey'),
-                            ),
-                            const SizedBox(height: sectionGap),
                             ServicesGrid(
                               onSelectService: (serviceName, defaultDropoff) {
                                 if (defaultDropoff == null) {

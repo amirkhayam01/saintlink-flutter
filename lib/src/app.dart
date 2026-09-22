@@ -18,7 +18,8 @@ class _SaintsLinkAppState extends ConsumerState<SaintsLinkApp> {
   @override
   void initState() {
     super.initState();
-    // Ask for location once the first frame is up, so the pickup can be prefilled.
+    // Ask once after the first frame so an empty booking form can prefill its
+    // pickup. The platform permission copy describes this launch-time request.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(currentPlaceProvider);
     });

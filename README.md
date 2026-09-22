@@ -28,10 +28,9 @@ header reserves room for the From/To overlay and is not pannable; expanding
 opens an interactive map in a sheet. Dark mode gets a dark map.
 
 It is the native Maps SDK, not a WebView: the SDK is compiled in and caches
-its tiles, so the map draws on the first frame with no spinner. There is no
-route line on purpose — the backend measures a journey as a straight line
-scaled by a constant and never asks Google for a route, so drawing one would
-claim a precision the fare does not have.
+its tiles, so the map draws on the first frame with no spinner. A route line
+is a visual guide only; the backend remains authoritative for the distance,
+duration and price shown to the customer.
 
 **Keys.** Native SDK keys ship inside the binary, so each is restricted in
 the Google console to the app's own identity and to one API, and a copy lifted
@@ -101,7 +100,7 @@ lib/src/
     services/  airport and cruise landing pages, routes & prices (static content)
     splash/    launch overlay, above the router
   widgets/     design kit: hero_banner + overlap sheet, tiles (service, field, contact, badges, callout, segmented tabs), ticket_card, route_timeline, skeleton
-  router.dart  go_router with a four-tab shell; /trips and /profile require sign-in, booking does not
+  router.dart  go_router with a three-tab shell; /trips and /profile require sign-in, booking does not
 ```
 
 Screens are rendered to `test/screenshots/out/` with
