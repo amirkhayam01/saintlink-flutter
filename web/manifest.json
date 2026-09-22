@@ -1,11 +1,11 @@
 {
-    "name": "saints_link",
-    "short_name": "saints_link",
+    "name": "Saints Link",
+    "short_name": "Saints Link",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F8FAFC",
+    "theme_color": "#020617",
+    "description": "Book fixed-price airport, cruise and private-hire transfers with Saints Link.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
