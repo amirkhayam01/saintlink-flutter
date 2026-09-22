@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Android 12+ draws its own splash before the window: the app icon on this colour. -->
+    <!-- Android 12+ masks the splash icon into a 160dp circle, so a wordmark
+         can never read at this size. The SL mark fills that circle, like the
+         app icon; the Flutter splash that follows shows the full wordmark. -->
     <style name="LaunchTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:windowSplashScreenBackground">@color/launch_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_mark</item>
         <item name="android:windowBackground">@drawable/launch_background</item>
     </style>
     <style name="NormalTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
