@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 0.1.0+1
 
 environment:
-  sdk: ^3.13.3
+  sdk: '>=3.12.0 <4.0.0'
 
 dependencies:
   dio: ^5.11.1
@@ -17,7 +17,7 @@ dependencies:
   geolocator: ^14.0.3
   go_router: ^18.0.1
   google_maps_flutter: ^2.18.1
-  intl: ^0.20.3
+  intl: ^0.20.2
   json_annotation: ^4.12.0
   shared_preferences: ^2.5.5
   url_launcher: ^6.3.2
@@ -25,9 +25,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  freezed: ^4.0.1
+  freezed: '>=3.1.0 <5.0.0'
   json_serializable: ^6.14.1
-  build_runner: ^2.16.1
+  build_runner: ^2.15.1
   google_maps_flutter_platform_interface: ^2.17.0
   plugin_platform_interface: ^2.1.8
 flutter:
