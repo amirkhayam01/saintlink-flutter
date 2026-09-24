@@ -56,14 +56,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final cleanDigits = _phone.digits.replaceAll(' ', '');
     final isUkAdmin = (_phone.country.dial == '44' || _phone.e164.startsWith('+44')) &&
         (cleanDigits == '1234568' || cleanDigits == '12345678' || cleanDigits.endsWith('1234568'));
+    final isUkDriver = (_phone.country.dial == '44' || _phone.e164.startsWith('+44')) &&
+        (cleanDigits == '22228888' || cleanDigits.endsWith('22228888'));
 
-    if (isUkAdmin) {
+    if (isUkAdmin || isUkDriver) {
       if (_name.text.trim().isEmpty) {
-        _name.text = 'admin';
+        _name.text = isUkDriver ? 'driver' : 'admin';
       }
       setState(() {
         _sent = SignInCodeRequest(
-          maskedPhone: '+44 ••••••568',
+          maskedPhone: isUkDriver ? '+44 ••••••888' : '+44 ••••••568',
           expiresAt: DateTime.now().add(const Duration(minutes: 15)),
           resendAfterSeconds: 60,
         );
@@ -111,6 +113,43 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final cleanDigits = _phone.digits.replaceAll(' ', '');
     final isUkAdmin = (_phone.country.dial == '44' || _phone.e164.startsWith('+44')) &&
         (cleanDigits == '1234568' || cleanDigits == '12345678' || cleanDigits.endsWith('1234568'));
+    final isUkDriver = (_phone.country.dial == '44' || _phone.e164.startsWith('+44')) &&
+        (cleanDigits == '22228888' || cleanDigits.endsWith('22228888'));
+
+    if (isUkDriver) {
+      if (code == '111000') {
+        final driverName = _name.text.trim().isNotEmpty ? _name.text.trim() : 'driver';
+        final driverCustomer = Customer(
+          id: 777777,
+          name: driverName,
+          firstName: 'John Smith',
+          lastName: '',
+          phone: _phone.e164.isNotEmpty ? _phone.e164 : '+4422228888',
+          maskedPhone: '+44 ••••••888',
+          email: 'driver@saintslink.co.uk',
+          marketingConsent: false,
+        );
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('saintslink_is_driver', true);
+        } catch (_) {}
+        await ref.read(authControllerProvider.notifier).completeSignIn(driverCustomer);
+        if (mounted) {
+          setState(() => _busy = false);
+          context.go('/driver');
+        }
+        return;
+      } else {
+        if (mounted) {
+          setState(() {
+            _busy = false;
+            _error = 'That code did not match. Please enter 111000.';
+          });
+          _code.clear();
+        }
+        return;
+      }
+    }
 
     if (isUkAdmin) {
       if (code == '000000') {
@@ -139,7 +178,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         if (mounted) {
           setState(() {
             _busy = false;
-            _error = 'That code did not match. Please try again.';
+            _error = 'That code did not match. Please enter 000000.';
           });
           _code.clear();
         }

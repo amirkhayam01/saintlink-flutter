@@ -7,6 +7,9 @@ import 'features/auth/auth_controller.dart';
 import 'features/auth/sign_in_screen.dart';
 import 'features/booking/confirmation_screen.dart';
 import 'features/booking/journey_screen.dart';
+import 'features/driver/driver_shell.dart';
+import 'features/driver/screens/driver_settings_screen.dart';
+import 'features/driver/screens/driver_trip_navigation_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/services/prices_screen.dart';
@@ -57,6 +60,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (state.matchedLocation == '/sign-in' && auth.isSignedIn) {
+        if (auth.customer?.name.toLowerCase() == 'driver' ||
+            auth.customer?.firstName.toLowerCase() == 'driver') {
+          return '/driver';
+        }
         if (auth.customer?.name.toLowerCase() == 'admin' ||
             auth.customer?.firstName.toLowerCase() == 'admin') {
           return '/admin';
@@ -167,6 +174,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/admin',
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (_, state) => _page(state, const AdminShell()),
+      ),
+      GoRoute(
+        path: '/driver',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (_, state) => _page(state, const DriverShell()),
+        routes: [
+          GoRoute(
+            path: 'trip',
+            parentNavigatorKey: _rootNavigatorKey,
+            pageBuilder: (_, state) =>
+                _page(state, const DriverTripNavigationScreen()),
+          ),
+          GoRoute(
+            path: 'settings',
+            parentNavigatorKey: _rootNavigatorKey,
+            pageBuilder: (_, state) =>
+                _page(state, const DriverSettingsScreen()),
+          ),
+        ],
       ),
     ],
   );

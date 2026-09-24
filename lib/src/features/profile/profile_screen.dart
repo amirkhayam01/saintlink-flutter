@@ -143,6 +143,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const ListRowDivider(),
                   ListRow(
+                    icon: Icons.drive_eta_rounded,
+                    title: 'Driver Portal',
+                    chevron: true,
+                    onTap: () => context.go('/driver'),
+                  ),
+                  const ListRowDivider(),
+                  ListRow(
                     icon: Icons.dark_mode_outlined,
                     title: 'Dark mode',
                     trailing: Transform.scale(
