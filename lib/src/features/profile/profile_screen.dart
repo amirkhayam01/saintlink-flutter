@@ -135,10 +135,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     trailing: _ComingSoon(),
                   ),
                   const ListRowDivider(),
-                  const ListRow(
-                    icon: Icons.vpn_key_rounded,
-                    title: 'Ride Pin',
-                    trailing: _ComingSoon(),
+                  ListRow(
+                    icon: Icons.admin_panel_settings_rounded,
+                    title: 'Admin Console',
+                    chevron: true,
+                    onTap: () => context.go('/admin'),
                   ),
                   const ListRowDivider(),
                   ListRow(
