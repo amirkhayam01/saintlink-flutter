@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
 import '../admin_models.dart';
 import '../admin_state.dart';
-import '../widgets/admin_header.dart';
+import '../../../widgets/inner_screen_header.dart';
 
 class AdminFleetScreen extends ConsumerWidget {
   const AdminFleetScreen({super.key});
@@ -17,33 +17,25 @@ class AdminFleetScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.surface,
+      appBar: InnerScreenHeader(
+        title: 'Fleet & Drivers',
+        showBack: false,
+        background: InnerScreenHeader.midnightBackground(),
+      ),
       body: SafeArea(
-        child: Column(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
           children: [
-            const AdminHeader(),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
-                children: [
-                  // Title & Subtitle
-                  Text(
-                    'Fleet & Drivers',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: colors.ink,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Manage your drivers, vehicles, and availability.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colors.inkMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+            // Subtitle
+            Text(
+              'Manage your drivers, vehicles, and availability.',
+              style: TextStyle(
+                fontSize: 13,
+                color: colors.inkMuted,
+              ),
+            ),
+            const SizedBox(height: 14),
 
                   // Segmented Tabs Pill: Drivers vs Vehicles
                   Container(
@@ -286,10 +278,7 @@ class AdminFleetScreen extends ConsumerWidget {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          );
   }
 }
 

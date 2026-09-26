@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
 import '../admin_models.dart';
 import '../admin_state.dart';
-import '../widgets/admin_header.dart';
+import '../../../widgets/inner_screen_header.dart';
 
 class AdminAlertsScreen extends ConsumerWidget {
   const AdminAlertsScreen({super.key});
@@ -24,33 +24,25 @@ class AdminAlertsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.surface,
+      appBar: InnerScreenHeader(
+        title: 'Operations Alerts',
+        showBack: false,
+        background: InnerScreenHeader.midnightBackground(),
+      ),
       body: SafeArea(
-        child: Column(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
           children: [
-            const AdminHeader(notificationCount: 3),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
-                children: [
-                  // Title & Subtitle
-                  Text(
-                    'Operations Alerts',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: colors.ink,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Urgent actions, pending confirmations, and notifications.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colors.inkMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+            // Subtitle
+            Text(
+              'Urgent actions, pending confirmations, and notifications.',
+              style: TextStyle(
+                fontSize: 13,
+                color: colors.inkMuted,
+              ),
+            ),
+            const SizedBox(height: 14),
 
                   // Filter Pills Row: All (6), Urgent (2), Confirmations (1), Cancellations (3)
                   SingleChildScrollView(
@@ -161,10 +153,7 @@ class AdminAlertsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          );
   }
 }
 

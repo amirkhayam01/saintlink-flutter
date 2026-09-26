@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
 import '../admin_models.dart';
 import '../admin_state.dart';
-import '../widgets/admin_header.dart';
+import '../../../widgets/inner_screen_header.dart';
 import 'admin_booking_detail_screen.dart';
 
 class AdminBookingsScreen extends ConsumerStatefulWidget {
@@ -39,35 +39,26 @@ class _AdminBookingsScreenState extends ConsumerState<AdminBookingsScreen> {
 
     return Scaffold(
       backgroundColor: colors.surface,
+      appBar: InnerScreenHeader(
+        title: 'Bookings',
+        showBack: false,
+        background: InnerScreenHeader.midnightBackground(),
+      ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
           children: [
-            const AdminHeader(),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
-                children: [
-                  // Title & Subtitle
-                  Text(
-                    'Bookings',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: colors.ink,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Track journeys, manage driver allocations, passenger schedules, and booking lifecycles.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colors.inkMuted,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+            // Subtitle
+            Text(
+              'Track journeys, manage driver allocations, passenger schedules, and booking lifecycles.',
+              style: TextStyle(
+                fontSize: 13,
+                color: colors.inkMuted,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 14),
 
                   // Search Bar
                   Container(
@@ -311,10 +302,7 @@ class _AdminBookingsScreenState extends ConsumerState<AdminBookingsScreen> {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          );
   }
 }
 
