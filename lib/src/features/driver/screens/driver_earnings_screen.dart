@@ -99,11 +99,15 @@ class DriverEarningsScreen extends ConsumerWidget {
                   const SizedBox(height: 18),
                   // Weekly 7 Days Bar Chart
                   SizedBox(
-                    height: 110,
+                    width: double.infinity,
+                    height: 125,
                     child: CustomPaint(
                       painter: _WeeklyBarChartPainter(
-                        barColor: AppTheme.brand,
+                        brandColor: AppTheme.brand,
+                        trackColor: colors.inkFaint.withValues(alpha: 0.4),
                         labelColor: colors.inkMuted,
+                        activeLabelColor: colors.ink,
+                        todayIndex: 3, // Thursday (Today £86.40)
                       ),
                     ),
                   ),
@@ -354,58 +358,102 @@ class _EarningsRow extends StatelessWidget {
 
 class _WeeklyBarChartPainter extends CustomPainter {
   const _WeeklyBarChartPainter({
-    required this.barColor,
+    required this.brandColor,
+    required this.trackColor,
     required this.labelColor,
+    required this.activeLabelColor,
+    this.todayIndex = 3,
   });
 
-  final Color barColor;
+  final Color brandColor;
+  final Color trackColor;
   final Color labelColor;
+  final Color activeLabelColor;
+  final int todayIndex;
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final heights = [0.45, 0.65, 0.55, 0.85, 0.70, 0.95, 0.60];
     final barCount = days.length;
     final slotW = size.width / barCount;
-    final barW = (slotW * 0.45).clamp(8.0, 20.0);
-    const bottomLabelH = 18.0;
+    final barW = (slotW * 0.42).clamp(14.0, 26.0);
+    const bottomLabelH = 22.0;
     final chartH = size.height - bottomLabelH;
 
-    final barPaint = Paint()
-      ..color = barColor
+    // Subtle background guidelines
+    final gridPaint = Paint()
+      ..color = trackColor.withValues(alpha: 0.5)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final dashY1 = chartH * 0.5;
+    canvas.drawLine(Offset(0, dashY1), Offset(size.width, dashY1), gridPaint);
+
+    final trackPaint = Paint()
+      ..color = trackColor
       ..style = PaintingStyle.fill;
 
-    final textStyle = TextStyle(
-      fontSize: 10,
-      fontWeight: FontWeight.w600,
-      color: labelColor,
-    );
+    final activeBarPaint = Paint()
+      ..color = brandColor
+      ..style = PaintingStyle.fill;
+
+    final inactiveBarPaint = Paint()
+      ..color = brandColor.withValues(alpha: 0.38)
+      ..style = PaintingStyle.fill;
+
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     for (var i = 0; i < barCount; i++) {
-      final bH = heights[i] * chartH;
+      final isToday = i == todayIndex;
       final x = (i * slotW) + (slotW - barW) / 2;
-      final y = chartH - bH;
+      final cornerRadius = Radius.circular(barW / 2);
 
-      final rrect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, y, barW, bH),
-        const Radius.circular(4),
+      // Background track capsule
+      final trackRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, 6, barW, chartH - 6),
+        cornerRadius,
       );
-      canvas.drawRRect(rrect, barPaint);
+      canvas.drawRRect(trackRect, trackPaint);
 
-      // Label
-      textPainter.text = TextSpan(text: days[i], style: textStyle);
+      // Filled portion capsule
+      final fillH = (heights[i] * (chartH - 12)).clamp(barW, chartH - 6);
+      final y = chartH - fillH;
+      final fillRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, y, barW, fillH),
+        cornerRadius,
+      );
+      canvas.drawRRect(fillRect, isToday ? activeBarPaint : inactiveBarPaint);
+
+      // Day label
+      textPainter.text = TextSpan(
+        text: days[i],
+        style: TextStyle(
+          fontSize: isToday ? 11.5 : 10.5,
+          fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+          color: isToday ? activeLabelColor : labelColor,
+        ),
+      );
       textPainter.layout();
       textPainter.paint(
         canvas,
         Offset(
           (i * slotW) + (slotW - textPainter.width) / 2,
-          chartH + 4,
+          chartH + 6,
         ),
       );
     }
   }
 
   @override
-  bool shouldRepaint(covariant _WeeklyBarChartPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _WeeklyBarChartPainter oldDelegate) {
+    return oldDelegate.brandColor != brandColor ||
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.labelColor != labelColor ||
+        oldDelegate.activeLabelColor != activeLabelColor ||
+        oldDelegate.todayIndex != todayIndex;
+  }
 }
+
