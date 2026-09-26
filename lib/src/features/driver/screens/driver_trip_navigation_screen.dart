@@ -28,24 +28,195 @@ class _DriverTripNavigationScreenState
 
   late final AnimationController _carAnimController;
 
-  // Realistic road route from Southampton Central Station to Southampton Airport (SOU)
+  // Real-world road polyline following actual Southampton streets (182 waypoints)
   static const List<LatLng> _routePoints = [
-    LatLng(50.9077, -1.4136), // 0: Southampton Central Station (Pickup)
-    LatLng(50.9095, -1.4110), // 1: Commercial Rd (42° angle from station)
-    LatLng(50.9125, -1.4055), // 2: Above Bar St / Civic Centre
-    LatLng(50.9180, -1.4020), // 3: The Avenue (A33) start
-    LatLng(50.9230, -1.4010), // 4: The Avenue near Southampton Common
-    LatLng(50.9290, -1.3995), // 5: The Avenue / Highfield (Mid-trip)
-    LatLng(50.9380, -1.3980), // 6: Bassett Cross / Burgess Rd
-    LatLng(50.9420, -1.3920), // 7: Bassett Green Rd (A335)
-    LatLng(50.9455, -1.3800), // 8: Stoneham Way (A335)
-    LatLng(50.9480, -1.3660), // 9: Wide Lane junction
-    LatLng(50.9503, -1.3568), // 10: Southampton Airport Terminal (Destination)
+    LatLng(50.90804, -1.41356),
+    LatLng(50.90795, -1.41220),
+    LatLng(50.90791, -1.41163),
+    LatLng(50.90786, -1.41125),
+    LatLng(50.90774, -1.41049),
+    LatLng(50.90773, -1.41033),
+    LatLng(50.90828, -1.40910),
+    LatLng(50.90843, -1.40878),
+    LatLng(50.90859, -1.40845),
+    LatLng(50.90893, -1.40874),
+    LatLng(50.90905, -1.40880),
+    LatLng(50.90919, -1.40883),
+    LatLng(50.90940, -1.40878),
+    LatLng(50.90947, -1.40874),
+    LatLng(50.90960, -1.40858),
+    LatLng(50.90970, -1.40839),
+    LatLng(50.90985, -1.40774),
+    LatLng(50.91006, -1.40668),
+    LatLng(50.91013, -1.40632),
+    LatLng(50.91027, -1.40576),
+    LatLng(50.91050, -1.40489),
+    LatLng(50.91074, -1.40402),
+    LatLng(50.91091, -1.40333),
+    LatLng(50.91094, -1.40302),
+    LatLng(50.91092, -1.40276),
+    LatLng(50.91089, -1.40258),
+    LatLng(50.91078, -1.40222),
+    LatLng(50.91071, -1.40199),
+    LatLng(50.91071, -1.40189),
+    LatLng(50.91070, -1.40181),
+    LatLng(50.91070, -1.40173),
+    LatLng(50.91075, -1.40155),
+    LatLng(50.91094, -1.40144),
+    LatLng(50.91101, -1.40146),
+    LatLng(50.91125, -1.40134),
+    LatLng(50.91144, -1.40124),
+    LatLng(50.91180, -1.40098),
+    LatLng(50.91210, -1.40081),
+    LatLng(50.91219, -1.40075),
+    LatLng(50.91229, -1.40051),
+    LatLng(50.91240, -1.40032),
+    LatLng(50.91251, -1.40009),
+    LatLng(50.91309, -1.39949),
+    LatLng(50.91363, -1.39893),
+    LatLng(50.91409, -1.39848),
+    LatLng(50.91473, -1.39785),
+    LatLng(50.91503, -1.39755),
+    LatLng(50.91541, -1.39714),
+    LatLng(50.91578, -1.39667),
+    LatLng(50.91601, -1.39641),
+    LatLng(50.91641, -1.39613),
+    LatLng(50.91690, -1.39582),
+    LatLng(50.91713, -1.39568),
+    LatLng(50.91735, -1.39561),
+    LatLng(50.91795, -1.39549),
+    LatLng(50.91829, -1.39545),
+    LatLng(50.91864, -1.39544),
+    LatLng(50.91880, -1.39541),
+    LatLng(50.91895, -1.39532),
+    LatLng(50.91900, -1.39530),
+    LatLng(50.91912, -1.39509),
+    LatLng(50.91924, -1.39487),
+    LatLng(50.91941, -1.39451),
+    LatLng(50.91957, -1.39410),
+    LatLng(50.91965, -1.39378),
+    LatLng(50.91978, -1.39315),
+    LatLng(50.91993, -1.39233),
+    LatLng(50.92013, -1.39127),
+    LatLng(50.92031, -1.39047),
+    LatLng(50.92044, -1.39006),
+    LatLng(50.92050, -1.38991),
+    LatLng(50.92072, -1.38953),
+    LatLng(50.92093, -1.38929),
+    LatLng(50.92107, -1.38918),
+    LatLng(50.92147, -1.38891),
+    LatLng(50.92200, -1.38858),
+    LatLng(50.92276, -1.38808),
+    LatLng(50.92360, -1.38756),
+    LatLng(50.92402, -1.38733),
+    LatLng(50.92423, -1.38733),
+    LatLng(50.92443, -1.38733),
+    LatLng(50.92453, -1.38736),
+    LatLng(50.92458, -1.38736),
+    LatLng(50.92500, -1.38732),
+    LatLng(50.92519, -1.38718),
+    LatLng(50.92540, -1.38699),
+    LatLng(50.92550, -1.38688),
+    LatLng(50.92555, -1.38678),
+    LatLng(50.92556, -1.38672),
+    LatLng(50.92564, -1.38662),
+    LatLng(50.92581, -1.38638),
+    LatLng(50.92590, -1.38626),
+    LatLng(50.92610, -1.38610),
+    LatLng(50.92625, -1.38598),
+    LatLng(50.92652, -1.38582),
+    LatLng(50.92739, -1.38530),
+    LatLng(50.92805, -1.38491),
+    LatLng(50.92821, -1.38481),
+    LatLng(50.92876, -1.38446),
+    LatLng(50.92919, -1.38422),
+    LatLng(50.92974, -1.38389),
+    LatLng(50.93053, -1.38344),
+    LatLng(50.93278, -1.38214),
+    LatLng(50.93413, -1.38135),
+    LatLng(50.93461, -1.38102),
+    LatLng(50.93683, -1.37967),
+    LatLng(50.93809, -1.37889),
+    LatLng(50.93845, -1.37867),
+    LatLng(50.93957, -1.37801),
+    LatLng(50.93997, -1.37780),
+    LatLng(50.94008, -1.37774),
+    LatLng(50.94020, -1.37775),
+    LatLng(50.94040, -1.37776),
+    LatLng(50.94048, -1.37777),
+    LatLng(50.94057, -1.37786),
+    LatLng(50.94069, -1.37764),
+    LatLng(50.94081, -1.37745),
+    LatLng(50.94096, -1.37728),
+    LatLng(50.94134, -1.37687),
+    LatLng(50.94162, -1.37661),
+    LatLng(50.94215, -1.37612),
+    LatLng(50.94222, -1.37584),
+    LatLng(50.94222, -1.37558),
+    LatLng(50.94218, -1.37523),
+    LatLng(50.94215, -1.37499),
+    LatLng(50.94206, -1.37391),
+    LatLng(50.94203, -1.37366),
+    LatLng(50.94201, -1.37349),
+    LatLng(50.94200, -1.37343),
+    LatLng(50.94215, -1.37285),
+    LatLng(50.94226, -1.37263),
+    LatLng(50.94231, -1.37255),
+    LatLng(50.94248, -1.37234),
+    LatLng(50.94310, -1.37157),
+    LatLng(50.94398, -1.37044),
+    LatLng(50.94445, -1.36985),
+    LatLng(50.94465, -1.36956),
+    LatLng(50.94492, -1.36921),
+    LatLng(50.94528, -1.36874),
+    LatLng(50.94557, -1.36841),
+    LatLng(50.94603, -1.36796),
+    LatLng(50.94637, -1.36765),
+    LatLng(50.94664, -1.36738),
+    LatLng(50.94678, -1.36722),
+    LatLng(50.94700, -1.36695),
+    LatLng(50.94721, -1.36666),
+    LatLng(50.94743, -1.36632),
+    LatLng(50.94756, -1.36613),
+    LatLng(50.94769, -1.36590),
+    LatLng(50.94780, -1.36564),
+    LatLng(50.94795, -1.36533),
+    LatLng(50.94801, -1.36528),
+    LatLng(50.94805, -1.36521),
+    LatLng(50.94808, -1.36511),
+    LatLng(50.94809, -1.36500),
+    LatLng(50.94807, -1.36489),
+    LatLng(50.94803, -1.36481),
+    LatLng(50.94800, -1.36477),
+    LatLng(50.94794, -1.36455),
+    LatLng(50.94791, -1.36438),
+    LatLng(50.94794, -1.36426),
+    LatLng(50.94799, -1.36417),
+    LatLng(50.94803, -1.36414),
+    LatLng(50.94840, -1.36399),
+    LatLng(50.94866, -1.36389),
+    LatLng(50.94900, -1.36378),
+    LatLng(50.94922, -1.36377),
+    LatLng(50.94963, -1.36358),
+    LatLng(50.94988, -1.36343),
+    LatLng(50.94999, -1.36334),
+    LatLng(50.95031, -1.36299),
+    LatLng(50.95108, -1.36207),
+    LatLng(50.95113, -1.36202),
+    LatLng(50.95109, -1.36196),
+    LatLng(50.95100, -1.36173),
+    LatLng(50.95089, -1.36128),
+    LatLng(50.95082, -1.36092),
+    LatLng(50.95082, -1.36080),
+    LatLng(50.95083, -1.36064),
+    LatLng(50.95081, -1.36054),
+    LatLng(50.95077, -1.36051),
+    LatLng(50.95072, -1.36051),
   ];
 
   late LatLng _currentCarPosition = _routePoints.first;
   late double _currentCarBearing =
-      _calculateBearing(_routePoints[0], _routePoints[1]); // ~42.3° exact road angle
+      _calculateBearing(_routePoints[0], _routePoints[1]);
 
   final Map<int, BitmapDescriptor> _carIconCache = {};
   double _lastRenderedBearing = -999.0;
@@ -55,7 +226,7 @@ class _DriverTripNavigationScreenState
     super.initState();
     _carAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(milliseconds: 3600),
     );
     _loadCustomMarkers();
   }
@@ -292,8 +463,8 @@ class _DriverTripNavigationScreenState
               Positioned.fill(
                 child: GoogleMap(
                   initialCameraPosition: const CameraPosition(
-                    target: LatLng(50.9090, -1.4120),
-                    zoom: 15.0,
+                    target: LatLng(50.90804, -1.41356),
+                    zoom: 16.0,
                   ),
                   markers: markers,
                   polylines: polylines,
@@ -544,11 +715,11 @@ class _DriverTripNavigationScreenState
                             } else if (_step == 1) {
                               setState(() => _step = 2);
                               // Smoothly drive along route from Central Station to The Avenue
-                              _animateAlongWaypoints(_routePoints.sublist(0, 5));
+                              _animateAlongWaypoints(_routePoints.sublist(0, 50));
                             } else {
                               // Smoothly drive to Southampton Airport Terminal
                               _animateAlongWaypoints(
-                                _routePoints.sublist(4),
+                                _routePoints.sublist(49),
                                 onComplete: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('Trip completed successfully! Earnings added.')),
