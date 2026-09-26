@@ -298,6 +298,8 @@ class _DriverTripNavigationScreenState
                   markers: markers,
                   polylines: polylines,
                   style: isDark ? _darkMapStyle : null,
+                  minMaxZoomPreference: const MinMaxZoomPreference(11.5, 18.5),
+                  webGestureHandling: WebGestureHandling.cooperative,
                   zoomControlsEnabled: false,
                   mapToolbarEnabled: false,
                   myLocationButtonEnabled: false,
@@ -423,6 +425,7 @@ class _DriverTripNavigationScreenState
                     ),
                     child: ListView(
                       controller: scrollController,
+                      physics: const ClampingScrollPhysics(),
                       padding: EdgeInsets.fromLTRB(18, 10, 18, bottomInset + 20),
                       children: [
                         // Drag handle pill
