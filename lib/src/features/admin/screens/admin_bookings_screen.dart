@@ -367,21 +367,25 @@ class _BookingCard extends StatelessWidget {
                         children: [
                           Text(
                             booking.reference,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF3B82F6),
+                              color: Color(0xFF3B82F6),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            booking.pickupTime,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              color: colors.inkMuted,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              booking.pickupTime,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colors.inkMuted,
+                              ),
                             ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
@@ -402,6 +406,8 @@ class _BookingCard extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   booking.status,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
@@ -417,6 +423,8 @@ class _BookingCard extends StatelessWidget {
                       // Customer Name
                       Text(
                         booking.customerName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,

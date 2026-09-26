@@ -387,12 +387,16 @@ class _AnalyticsCard extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: colors.inkMuted),
               const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: colors.inkMuted,
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: colors.inkMuted,
+                  ),
                 ),
               ),
             ],

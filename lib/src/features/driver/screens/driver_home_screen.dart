@@ -399,28 +399,28 @@ class DriverHomeScreen extends ConsumerWidget {
                                     bottom: Radius.circular(15),
                                   ),
                                 ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                child: Row(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.navigation_rounded,
-                                          size: 16,
-                                          color: AppTheme.brand,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Next Trip in 1h 20m · Tap for Navigation',
-                                          style: TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
+                                    const Icon(
+                                      Icons.navigation_rounded,
+                                      size: 16,
+                                      color: AppTheme.brand,
                                     ),
-                                    Icon(
+                                    const SizedBox(width: 8),
+                                    const Expanded(
+                                      child: Text(
+                                        'Next Trip in 1h 20m · Tap for Navigation',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(
                                       Icons.arrow_forward_rounded,
                                       size: 18,
                                       color: AppTheme.brand,

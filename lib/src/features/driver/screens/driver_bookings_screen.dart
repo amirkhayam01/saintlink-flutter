@@ -214,6 +214,8 @@ class DriverBookingsScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 job.passengerName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -222,6 +224,8 @@ class DriverBookingsScreen extends ConsumerWidget {
                               ),
                               Text(
                                 '${job.passengersCount} Passengers • ${job.reference}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   color: colors.inkMuted,
@@ -230,6 +234,7 @@ class DriverBookingsScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           '£${job.fare.toStringAsFixed(2)}',
                           style: TextStyle(
