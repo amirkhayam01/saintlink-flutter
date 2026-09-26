@@ -8,7 +8,7 @@ import 'features/auth/sign_in_screen.dart';
 import 'features/booking/confirmation_screen.dart';
 import 'features/booking/journey_screen.dart';
 import 'features/driver/driver_shell.dart';
-import 'features/driver/screens/driver_settings_screen.dart';
+import 'features/driver/screens/driver_profile_screen.dart';
 import 'features/driver/screens/driver_trip_navigation_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/profile/profile_screen.dart';
@@ -190,7 +190,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'settings',
             parentNavigatorKey: _rootNavigatorKey,
             pageBuilder: (_, state) =>
-                _page(state, const DriverSettingsScreen()),
+                _page(state, const DriverProfileScreen(showBack: true)),
           ),
         ],
       ),

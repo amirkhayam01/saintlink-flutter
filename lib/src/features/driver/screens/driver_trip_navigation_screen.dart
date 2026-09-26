@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme.dart';
+import '../../../widgets/inner_screen_header.dart';
 import '../driver_state.dart';
 
 class DriverTripNavigationScreen extends ConsumerStatefulWidget {
@@ -30,21 +31,10 @@ class _DriverTripNavigationScreenState
 
     return Scaffold(
       backgroundColor: colors.surface,
-      appBar: AppBar(
-        backgroundColor: colors.card,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: colors.ink),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          _step >= 2 ? 'Active Trip' : 'Trip Navigation',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: colors.ink,
-          ),
-        ),
+      appBar: InnerScreenHeader(
+        title: _step >= 2 ? 'Active Trip' : 'Trip Navigation',
+        showBack: true,
+        background: InnerScreenHeader.midnightBackground(),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -52,7 +42,7 @@ class _DriverTripNavigationScreenState
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: const Row(
@@ -75,8 +65,10 @@ class _DriverTripNavigationScreenState
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 90),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 90),
         children: [
           // Map Representation Card
           Container(
@@ -346,6 +338,7 @@ class _DriverTripNavigationScreenState
             ),
           ),
         ],
+        ),
       ),
       bottomSheet: Container(
         padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),

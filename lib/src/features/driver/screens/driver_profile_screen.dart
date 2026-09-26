@@ -3,298 +3,358 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme.dart';
-import '../widgets/driver_header.dart';
+import '../../../core/theme_controller.dart';
+import '../../../widgets/inner_screen_header.dart';
+import '../../../widgets/list_row.dart';
+import '../../auth/auth_controller.dart';
+import '../driver_state.dart';
 
 class DriverProfileScreen extends ConsumerWidget {
-  const DriverProfileScreen({super.key});
+  const DriverProfileScreen({super.key, this.showBack = false});
+
+  final bool showBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colors.surface,
+      appBar: InnerScreenHeader(
+        title: 'Account',
+        showBack: showBack,
+        background: InnerScreenHeader.midnightBackground(),
+        contentHeight: _DriverIdentity.height,
+        headerContent: const _DriverIdentity(),
+      ),
       body: SafeArea(
-        child: Column(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 36),
           children: [
-            const DriverHeader(),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+            // ── Driver & Vehicle ──
+            const _SectionTitle('Driver & Vehicle'),
+            const SizedBox(height: 8),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Driver Profile',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: colors.ink,
-                          letterSpacing: -0.3,
-                        ),
+                  ListRow(
+                    icon: Icons.person_outline_rounded,
+                    title: 'Driver Details',
+                    subtitle: 'John Smith · +44 7123 456789',
+                    chevron: true,
+                    onTap: () {},
+                  ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.directions_car_outlined,
+                    title: 'Assigned Vehicle',
+                    subtitle: 'Toyota Corolla · White (2021) · ABC 123',
+                    chevron: true,
+                    onTap: () {},
+                  ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.verified_user_outlined,
+                    title: 'Licence & Insurance',
+                    subtitle: 'Private Hire Licence (PCO) · Verified & Active',
+                    chevron: true,
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+
+            // ── Earnings & Payouts ──
+            const _SectionTitle('Earnings & Payouts'),
+            const SizedBox(height: 8),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  ListRow(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'Payout Settings',
+                    subtitle: 'Weekly payout to Barclays •••• 4589',
+                    chevron: true,
+                    onTap: () {
+                      ref
+                          .read(driverControllerProvider.notifier)
+                          .setNavIndex(2);
+                    },
+                  ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Tax Invoices & Summaries',
+                    subtitle: 'Download monthly and annual statements',
+                    chevron: true,
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+
+            // ── App Preferences ──
+            const _SectionTitle('App Preferences'),
+            const SizedBox(height: 8),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  ListRow(
+                    icon: isDark
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                    title: 'Dark mode',
+                    trailing: Transform.scale(
+                      scale: 0.85,
+                      alignment: Alignment.centerRight,
+                      child: Switch.adaptive(
+                        value: isDark,
+                        activeTrackColor: AppTheme.brand,
+                        onChanged: (_) =>
+                            ref.read(themeModeProvider.notifier).toggleTheme(),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.settings_outlined, color: colors.ink, size: 22),
-                        onPressed: () {
-                          context.push('/driver/settings');
-                        },
+                    ),
+                  ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'Trip Notifications',
+                    subtitle: 'Loud alert for new booking dispatch',
+                    trailing: Transform.scale(
+                      scale: 0.85,
+                      alignment: Alignment.centerRight,
+                      child: Switch.adaptive(
+                        value: true,
+                        activeTrackColor: AppTheme.brand,
+                        onChanged: (_) {},
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Driver Identity Card
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colors.card,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: colors.inkFaint),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor: AppTheme.brand,
-                          child: const Text(
-                            'JS',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.midnight,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'John Smith',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                      color: colors.ink,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: const Text(
-                                      'Active',
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF10B981),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                'Driver ID: SL-4587',
-                                style: TextStyle(fontSize: 12, color: colors.inkMuted),
-                              ),
-                              const SizedBox(height: 2),
-                              const Row(
-                                children: [
-                                  Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
-                                  SizedBox(width: 3),
-                                  Text(
-                                    '4.8 (128 trips)',
-                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
                   ),
-                  const SizedBox(height: 14),
-
-                  // Vehicle Details
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colors.card,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: colors.inkFaint),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Vehicle Details', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: colors.ink)),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: colors.surface,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(Icons.directions_car_filled_rounded, color: colors.ink, size: 22),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Toyota Corolla', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: colors.ink)),
-                                  Text('ABC 123 • White • 2021', style: TextStyle(fontSize: 12, color: colors.inkMuted)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.navigation_outlined,
+                    title: 'Navigation App',
+                    subtitle: 'Built-in Saints Link Navigation',
+                    chevron: true,
+                    onTap: () {},
                   ),
-                  const SizedBox(height: 14),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
 
-                  // Earnings Overview
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colors.card,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: colors.inkFaint),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Earnings Overview', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: colors.ink)),
-                            Text('View All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF3B82F6))),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Today', style: TextStyle(fontSize: 11.5, color: colors.inkMuted)),
-                                  const SizedBox(height: 2),
-                                  Text('£86.40', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: colors.ink)),
-                                  Text('6 trips', style: TextStyle(fontSize: 11, color: colors.inkMuted)),
-                                ],
-                              ),
-                            ),
-                            Container(width: 1, height: 36, color: colors.inkFaint),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 14),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('This Week', style: TextStyle(fontSize: 11.5, color: colors.inkMuted)),
-                                    const SizedBox(height: 2),
-                                    Text('£542.30', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: colors.ink)),
-                                    Text('33 trips', style: TextStyle(fontSize: 11, color: colors.inkMuted)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+            // ── Switch App ──
+            const _SectionTitle('Switch View'),
+            const SizedBox(height: 8),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  ListRow(
+                    icon: Icons.swap_horiz_rounded,
+                    title: 'Switch to Customer App',
+                    chevron: true,
+                    onTap: () => context.go('/'),
                   ),
-                  const SizedBox(height: 14),
-
-                  // Payout Settings
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colors.card,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: colors.inkFaint),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppTheme.brand.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(Icons.account_balance_wallet_outlined, color: AppTheme.brandDark, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Payout Settings', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: colors.ink)),
-                              Text('Weekly payout • Next: Fri, 26 Sep', style: TextStyle(fontSize: 11.5, color: colors.inkMuted)),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.chevron_right_rounded, size: 20, color: colors.inkMuted),
-                      ],
-                    ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.admin_panel_settings_outlined,
+                    title: 'Admin Console',
+                    chevron: true,
+                    onTap: () => context.go('/admin'),
                   ),
-                  const SizedBox(height: 14),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
 
-                  // Recent History
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colors.card,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: colors.inkFaint),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Recent History', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: colors.ink)),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.check_rounded, color: Color(0xFF10B981), size: 16),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Payout Completed', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.ink)),
-                                  Text('12 Sep 2025', style: TextStyle(fontSize: 11, color: colors.inkMuted)),
-                                ],
-                              ),
-                            ),
-                            Text('£320.00', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: colors.ink)),
-                          ],
-                        ),
-                      ],
-                    ),
+            // ── Support & Security ──
+            const _SectionTitle('Support & Security'),
+            const SizedBox(height: 8),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  ListRow(
+                    icon: Icons.support_agent_rounded,
+                    title: '24/7 Driver Support & Dispatch',
+                    chevron: true,
+                    onTap: () {},
+                  ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.privacy_tip_outlined,
+                    title: 'Driver Terms & Privacy Policy',
+                    chevron: true,
+                    onTap: () {},
+                  ),
+                  const ListRowDivider(),
+                  ListRow(
+                    icon: Icons.logout_rounded,
+                    iconColor: AppTheme.danger,
+                    title: 'Sign out',
+                    titleColor: AppTheme.danger,
+                    onTap: () async {
+                      await ref
+                          .read(authControllerProvider.notifier)
+                          .signOut();
+                      if (context.mounted) context.go('/sign-in');
+                    },
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Driver identity header – mirrors _ProfileIdentity from profile_screen.dart.
+class _DriverIdentity extends StatelessWidget {
+  const _DriverIdentity();
+
+  static const height = 110.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
+      child: Row(
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.brand,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.18),
+                width: 3,
+              ),
+            ),
+            child: const Text(
+              'JS',
+              style: TextStyle(
+                color: AppTheme.midnight,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'John Smith',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        'Active',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const _ContactLine(
+                  icon: Icons.badge_outlined,
+                  text: 'Driver ID: SL-4587 · ★ 4.8 (128 trips)',
+                ),
+                const SizedBox(height: 3),
+                const _ContactLine(
+                  icon: Icons.directions_car_filled_rounded,
+                  text: 'Toyota Corolla · ABC 123',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactLine extends StatelessWidget {
+  const _ContactLine({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Colors.white.withValues(alpha: 0.75);
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: c),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: c,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: context.colors.inkMuted,
+        letterSpacing: 0.3,
       ),
     );
   }

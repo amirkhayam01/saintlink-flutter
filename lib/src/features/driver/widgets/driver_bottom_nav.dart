@@ -18,18 +18,41 @@ class DriverBottomNav extends StatelessWidget {
     final activeColor = isDark ? AppTheme.brand : AppTheme.brandDark;
 
     final items = const [
-      _NavItem(icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: 'Home'),
-      _NavItem(icon: Icons.calendar_today_outlined, selectedIcon: Icons.calendar_month_rounded, label: 'Bookings'),
-      _NavItem(icon: Icons.account_balance_wallet_outlined, selectedIcon: Icons.account_balance_wallet_rounded, label: 'Earnings'),
-      _NavItem(icon: Icons.person_outline_rounded, selectedIcon: Icons.person_rounded, label: 'Profile'),
+      _NavItem(
+        icon: Icons.home_outlined,
+        selectedIcon: Icons.home_rounded,
+        label: 'Home',
+      ),
+      _NavItem(
+        icon: Icons.calendar_today_outlined,
+        selectedIcon: Icons.calendar_month_rounded,
+        label: 'Bookings',
+      ),
+      _NavItem(
+        icon: Icons.account_balance_wallet_outlined,
+        selectedIcon: Icons.account_balance_wallet_rounded,
+        label: 'Earnings',
+      ),
+      _NavItem(
+        icon: Icons.person_outline_rounded,
+        selectedIcon: Icons.person_rounded,
+        label: 'Account',
+      ),
     ];
 
     return Container(
       decoration: BoxDecoration(
         color: colors.card,
         border: Border(
-          top: BorderSide(color: colors.inkFaint, width: 1),
+          top: BorderSide(color: colors.inkFaint, width: 0.8),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
@@ -54,8 +77,10 @@ class DriverBottomNav extends StatelessWidget {
                       Text(
                         item.label,
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          fontFamily: 'Figtree',
+                          fontSize: 11.5,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
                           color: isSelected ? activeColor : colors.inkMuted,
                         ),
                       ),
